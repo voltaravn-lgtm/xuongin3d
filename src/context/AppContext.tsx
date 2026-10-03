@@ -675,7 +675,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!isFirebaseConfigured) return undefined;
 
     return onAuthStateChanged(auth, (currentUser) => {
-      setCanReadAdminData(isAdminEmail(currentUser?.email));
+      setCanReadAdminData(Boolean(currentUser?.emailVerified && isAdminEmail(currentUser.email)));
     });
   }, []);
 

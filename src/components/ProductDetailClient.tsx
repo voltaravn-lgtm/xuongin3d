@@ -460,7 +460,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       <iframe
                         src={video.embedUrl}
                         title={`${currentProduct.name} video ${index + 1}`}
-                        className="aspect-video w-full bg-black"
+                        className={`${video.provider === "instagram" || /facebook\.com\/reel\//i.test(video.originalUrl) ? "mx-auto aspect-[9/16] max-w-md" : "aspect-video"} w-full bg-black`}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                       />

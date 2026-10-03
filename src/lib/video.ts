@@ -2,7 +2,7 @@ export interface ProductVideoEmbed {
   originalUrl: string;
   embedUrl?: string;
   directUrl?: string;
-  provider: "youtube" | "direct" | "external";
+  provider: "youtube" | "instagram" | "facebook" | "direct" | "external";
   label: string;
 }
 
@@ -23,6 +23,32 @@ function getYouTubeId(url: URL) {
   return "";
 }
 
+function getInstagramEmbedUrl(url: URL) {
+  const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (hostname !== "instagram.com") return "";
+
+  const parts = url.pathname.split("/").filter(Boolean);
+  const type = parts[0]?.toLowerCase();
+  const shortcode = parts[1];
+  if (!shortcode || !["p", "reel", "tv"].includes(type)) return "";
+
+  return `https://www.instagram.com/${type}/${encodeURIComponent(shortcode)}/embed/captioned/`;
+}
+
+function getFacebookEmbedUrl(url: URL) {
+  const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+  const supportedHost = hostname === "facebook.com" || hostname === "m.facebook.com" || hostname === "web.facebook.com" || hostname === "fb.watch";
+  if (!supportedHost) return "";
+
+  const isVideoUrl = hostname === "fb.watch"
+    || /\/(reel|videos)\//i.test(url.pathname)
+    || url.pathname === "/watch"
+    || url.pathname === "/watch/";
+  if (!isVideoUrl) return "";
+
+  return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url.toString())}&show_text=false&width=560`;
+}
+
 export function getProductVideoEmbed(rawUrl: string, index = 0): ProductVideoEmbed | null {
   const originalUrl = String(rawUrl || "").trim();
   if (!originalUrl) return null;
@@ -37,6 +63,26 @@ export function getProductVideoEmbed(rawUrl: string, index = 0): ProductVideoEmb
         embedUrl: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`,
         provider: "youtube",
         label: `Video ${index + 1}`,
+      };
+    }
+
+    const instagramEmbedUrl = getInstagramEmbedUrl(url);
+    if (instagramEmbedUrl) {
+      return {
+        originalUrl,
+        embedUrl: instagramEmbedUrl,
+        provider: "instagram",
+        label: `Instagram ${index + 1}`,
+      };
+    }
+
+    const facebookEmbedUrl = getFacebookEmbedUrl(url);
+    if (facebookEmbedUrl) {
+      return {
+        originalUrl,
+        embedUrl: facebookEmbedUrl,
+        provider: "facebook",
+        label: `Facebook ${index + 1}`,
       };
     }
 

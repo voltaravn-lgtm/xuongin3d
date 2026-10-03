@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  createUserWithEmailAndPassword,
   EmailAuthProvider,
   GoogleAuthProvider,
   linkWithCredential,
   onAuthStateChanged,
   reauthenticateWithPopup,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -43,7 +44,7 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
     });
   }, []);
 
-  const isAllowed = isAdminEmail(user?.email);
+  const isAllowed = Boolean(user?.emailVerified && isAdminEmail(user.email));
   const hasPasswordProvider = Boolean(user?.providerData.some((provider) => provider.providerId === "password"));
 
   const saveAdminPassword = async (event: React.FormEvent) => {
@@ -121,51 +122,29 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await reload(result.user);
+      await result.user.getIdToken(true);
+
       if (!isAdminEmail(result.user.email)) {
         await signOut(auth);
         setError("Email này không có quyền truy cập quản trị Xưởng In 3D.");
-      }
-    } catch {
-      setError("Không đăng nhập được. Kiểm tra lại email hoặc mật khẩu.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateAdminAccount = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!normalizedEmail || !password) {
-      setError("Nhập email admin và mật khẩu trước khi tạo tài khoản.");
-      return;
-    }
-
-    if (!isAdminEmail(normalizedEmail)) {
-      setError("Email này không nằm trong danh sách quản trị Xưởng In 3D.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Mật khẩu Firebase cần tối thiểu 6 ký tự.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-      if (!isAdminEmail(result.user.email)) {
+      } else if (!result.user.emailVerified) {
+        await sendEmailVerification(result.user);
         await signOut(auth);
-        setError("Email này không có quyền truy cập quản trị Xưởng In 3D.");
+        setError("Email quản trị chưa được xác minh. Xưởng đã gửi liên kết xác minh vào hộp thư; hãy xác minh rồi đăng nhập lại, hoặc dùng Google.");
       }
     } catch (error: any) {
-      if (error?.code === "auth/email-already-in-use") {
-        setError("Email này đã có tài khoản. Bấm Đăng nhập hoặc Quên mật khẩu.");
-      } else if (error?.code === "auth/operation-not-allowed") {
-        setError("Firebase chưa bật Email/Password. Vào Authentication > Sign-in method để bật.");
+      const code = error?.code || "";
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+        setError("Email hoặc mật khẩu Admin chưa chính xác.");
+      } else if (code === "auth/too-many-requests") {
+        setError("Tài khoản tạm khóa do thử đăng nhập nhiều lần. Vui lòng chờ một lúc hoặc dùng Quên mật khẩu.");
+      } else if (code === "auth/user-disabled") {
+        setError("Tài khoản này đã bị vô hiệu hóa trong Firebase Authentication.");
+      } else if (code === "auth/network-request-failed") {
+        setError("Không kết nối được Firebase. Vui lòng kiểm tra mạng rồi thử lại.");
       } else {
-        setError("Không tạo được tài khoản admin. Kiểm tra email/mật khẩu rồi thử lại.");
+        setError(`Không đăng nhập được${code ? ` (${code})` : ""}.`);
       }
     } finally {
       setLoading(false);
@@ -388,15 +367,6 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
           >
             <LogIn className="w-4 h-4" />
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCreateAdminAccount}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 border border-gold-dark/40 text-gold-light px-4 py-3 text-xs font-display font-bold uppercase tracking-widest hover:border-gold-light disabled:opacity-60"
-          >
-            Tạo tài khoản admin
           </button>
 
           <button

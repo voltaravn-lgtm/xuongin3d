@@ -72,6 +72,63 @@ function getDescriptionImages(description: string | undefined) {
   }));
 }
 
+function parseDelimitedRows(source: string) {
+  const firstLine = source.split(/\r?\n/, 1)[0] || "";
+  const delimiter = firstLine.includes("\t") ? "\t" : (firstLine.split(";").length > firstLine.split(",").length ? ";" : ",");
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    const next = source[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === delimiter && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim())) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim())) rows.push(row);
+  return rows;
+}
+
+async function readProductImportRows(file: File) {
+  if (/\.xlsx$/i.test(file.name)) {
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) return [];
+    return XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[firstSheetName], {
+      header: 1,
+      defval: "",
+      raw: false,
+    });
+  }
+
+  const source = await file.text();
+  if (/^\s*<!doctype html|^\s*<html/i.test(source)) {
+    const document = new DOMParser().parseFromString(source, "text/html");
+    return Array.from(document.querySelectorAll("tr")).map((tableRow) =>
+      Array.from(tableRow.querySelectorAll("th,td")).map((cell) => cell.textContent?.trim() || ""),
+    ).filter((row) => row.some(Boolean));
+  }
+  return parseDelimitedRows(source.replace(/^\uFEFF/, ""));
+}
+
 const allowedDescriptionHtmlTags = new Set([
   "A",
   "B",
@@ -308,6 +365,7 @@ export default function ProductsAdmin() {
   const [quickPriceDrafts, setQuickPriceDrafts] = useState<Record<string, string>>({});
   const [quickVariantPriceDrafts, setQuickVariantPriceDrafts] = useState<Record<string, string>>({});
   const [savingQuickPriceId, setSavingQuickPriceId] = useState<string | null>(null);
+  const [bulkImporting, setBulkImporting] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newChildCategoryNames, setNewChildCategoryNames] = useState<Record<string, string>>({});
   
@@ -326,6 +384,7 @@ export default function ProductsAdmin() {
   const descriptionDraftRef = useRef("");
   const productFormScrollRef = useRef<HTMLFormElement | null>(null);
   const hasSyncedProductPreviewRef = useRef(false);
+  const bulkImportInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured || hasSyncedProductPreviewRef.current) return;
@@ -1631,6 +1690,127 @@ export default function ProductsAdmin() {
     showToast(`Đã xuất ${exportRows.length} sản phẩm ra Excel.`, "success");
   };
 
+  const handleDownloadImportTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx";
+    link.download = "mau-nhap-san-pham-xuong-in-3d.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showToast("Đã tải file Excel mẫu có danh mục chọn sẵn.", "success");
+  };
+
+  const handleImportProducts = async (file: File | undefined) => {
+    if (!file) return;
+    setBulkImporting(true);
+
+    try {
+      const matrix = await readProductImportRows(file);
+      if (matrix.length < 2) throw new Error("File chưa có dòng dữ liệu sản phẩm.");
+
+      const headers = matrix[0].map((header) => header.trim().toLowerCase());
+      const headerIndex = new Map(headers.map((header, index) => [header, index]));
+      const cell = (row: string[], label: string) => {
+        const index = headerIndex.get(label.toLowerCase());
+        return index === undefined ? "" : String(row[index] || "").trim();
+      };
+      const splitLines = (value: string) => value.split(/\r?\n|\s*\|\s*/).map((item) => item.trim()).filter(Boolean);
+      const parseSpecs = (value: string) => Object.fromEntries(
+        splitLines(value).map((line) => {
+          const separatorIndex = line.indexOf(":");
+          return separatorIndex > 0
+            ? [line.slice(0, separatorIndex).trim(), line.slice(separatorIndex + 1).trim()]
+            : [line, ""];
+        }).filter(([key, value]) => key && value),
+      );
+      const existingById = new Map(products.map((product) => [product.id, product]));
+      const candidates: Product[] = [];
+      const normalizeCategoryValue = (value: string) => value.trim().toLocaleLowerCase("vi");
+      const resolveCategoryId = (value: string, fallback: string) => {
+        if (!value) return fallback;
+        const normalized = normalizeCategoryValue(value);
+        return productCategories.find((category) => (
+          normalizeCategoryValue(category.id) === normalized
+          || normalizeCategoryValue(category.name) === normalized
+        ))?.id || value;
+      };
+      const resolveSubCategoryId = (categoryId: string, value: string, fallback: string) => {
+        if (!value) return fallback;
+        const normalized = normalizeCategoryValue(value);
+        const category = productCategories.find((item) => item.id === categoryId);
+        return category?.children?.find((child) => (
+          normalizeCategoryValue(child.id) === normalized
+          || normalizeCategoryValue(child.name) === normalized
+        ))?.id || value;
+      };
+
+      matrix.slice(1).forEach((row) => {
+        const name = cell(row, "Tên sản phẩm");
+        const productCode = cell(row, "Mã SP") || cell(row, "SKU") || cell(row, "ID");
+        const id = cell(row, "ID") || slugifyProductText(productCode || name);
+        if (!id || !name) return;
+
+        const existing = existingById.get(id);
+        const keep = (label: string, fallback = "") => cell(row, label) || fallback;
+        const imageLines = splitLines(cell(row, "Ảnh bổ sung"));
+        const videoLines = splitLines(cell(row, "Video"));
+        const specsValue = cell(row, "Thông số kỹ thuật");
+        const visibility = cell(row, "Trạng thái hiển thị").toLowerCase();
+        const categoryId = resolveCategoryId(
+          cell(row, "Danh mục"),
+          existing?.category || productCategories[0]?.id || "khac",
+        );
+        const imported: Product = {
+          ...(existing || {} as Product),
+          id,
+          slug: getProductSlug({ id, name } as Product),
+          name,
+          category: categoryId,
+          subCategory: resolveSubCategoryId(categoryId, cell(row, "Danh mục con"), existing?.subCategory || ""),
+          brand: keep("Thương hiệu", existing?.brand || "XƯỞNG IN 3D"),
+          voltage: keep("Kích thước / quy mô", existing?.voltage || "Theo yêu cầu"),
+          capacity: keep("Hình thức thực hiện", existing?.capacity || "Theo yêu cầu"),
+          cellType: keep("Vật liệu", existing?.cellType || "Theo yêu cầu"),
+          warranty: keep("Bảo hành", existing?.warranty || "Hỗ trợ sau bàn giao"),
+          price: keep("Giá bán", existing?.price || "Liên hệ"),
+          salePrice: keep("Giá giảm", existing?.salePrice || ""),
+          image: keep("Ảnh đại diện", existing?.image || "/images/san-pham.webp"),
+          images: imageLines.length ? imageLines : existing?.images || [],
+          videoUrls: videoLines.length ? videoLines : existing?.videoUrls || [],
+          description: keep("Mô tả", existing?.description || "Đang cập nhật nội dung sản phẩm."),
+          specs: specsValue ? parseSpecs(specsValue) : existing?.specs || {},
+          sku: productCode || keep("SKU", existing?.sku || ""),
+          barcode: keep("Barcode", existing?.barcode || ""),
+          stockQuantity: keep("Số tồn", existing?.stockQuantity || ""),
+          stockStatus: (keep("Trạng thái kho", existing?.stockStatus || "") as Product["stockStatus"]),
+          hidden: visibility ? /ẩn|hidden|true|1/.test(visibility) : existing?.hidden || false,
+          createdAt: existing?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        candidates.push(imported);
+        existingById.set(id, imported);
+      });
+
+      if (!candidates.length) throw new Error("Không tìm thấy sản phẩm hợp lệ. File cần có cột Mã SP và Tên sản phẩm.");
+      const updateCount = candidates.filter((product) => products.some((current) => current.id === product.id)).length;
+      const createCount = candidates.length - updateCount;
+      if (!window.confirm(`Nhập ${candidates.length} sản phẩm: tạo mới ${createCount}, cập nhật ${updateCount}. Tiếp tục?`)) return;
+
+      let successCount = 0;
+      for (const product of candidates) {
+        const exists = products.some((current) => current.id === product.id);
+        const saved = exists ? await updateProduct(product) : await addProduct(product);
+        if (saved) successCount += 1;
+      }
+      showToast(`Đã nhập thành công ${successCount}/${candidates.length} sản phẩm lên Firebase.`, successCount === candidates.length ? "success" : "warning");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Không đọc được file sản phẩm.", "error");
+    } finally {
+      setBulkImporting(false);
+      if (bulkImportInputRef.current) bulkImportInputRef.current.value = "";
+    }
+  };
+
   return (
     <div id="products-admin-module" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1852,6 +2032,34 @@ export default function ProductsAdmin() {
               <Download className="w-3.5 h-3.5" />
               Excel
             </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadImportTemplate}
+              className="flex items-center justify-center gap-1.5 px-3 border border-blue-500/35 bg-black text-[10px] text-blue-300 font-display font-bold uppercase tracking-widest hover:border-blue-400 transition-colors"
+              title="Tải file Excel mẫu để nhập sản phẩm hàng loạt"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Tải mẫu
+            </button>
+
+            <button
+              type="button"
+              onClick={() => bulkImportInputRef.current?.click()}
+              disabled={bulkImporting}
+              className="flex items-center justify-center gap-1.5 px-3 border border-emerald-500/40 bg-black text-[10px] text-emerald-400 font-display font-bold uppercase tracking-widest hover:border-emerald-400 transition-colors disabled:opacity-50"
+              title="Nhập hàng loạt từ file Excel mẫu hoặc CSV"
+            >
+              {bulkImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              Nhập file
+            </button>
+            <input
+              ref={bulkImportInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/vnd.ms-excel"
+              hidden
+              onChange={(event) => void handleImportProducts(event.target.files?.[0])}
+            />
 
             <div className="flex items-center px-3 border border-[#1A1A1A] bg-black text-[10px] text-gray-500 font-mono uppercase">
               {filteredAdminProducts.length}/{products.length} sản phẩm
@@ -2538,11 +2746,11 @@ export default function ProductsAdmin() {
 
                 <div className="col-span-1 sm:col-span-2 space-y-2">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">
-                    Video sản phẩm (YouTube hoặc link video, mỗi link một dòng)
+                    Video sản phẩm (YouTube, Instagram, Facebook hoặc link video, mỗi link một dòng)
                   </label>
                   <textarea
                     rows={3}
-                    placeholder={"https://www.youtube.com/watch?v=...\nhttps://example.com/video.mp4"}
+                    placeholder={"https://www.youtube.com/watch?v=...\nhttps://www.instagram.com/reel/.../\nhttps://www.facebook.com/reel/...\nhttps://example.com/video.mp4"}
                     value={(productForm.videoUrls || []).join("\n")}
                     onChange={(e) => {
                       const lines = e.target.value.split(/\r?\n/).map((line) => line.trim());
@@ -2554,7 +2762,7 @@ export default function ProductsAdmin() {
                     className="w-full bg-black border border-[#1A1A1A] text-xs px-3.5 py-2.5 text-[#ECECEC] focus:outline-none font-mono placeholder:text-gray-700 leading-relaxed resize-y"
                   />
                   <p className="text-[10px] text-gray-500">
-                    Hỗ trợ YouTube, youtu.be, YouTube Shorts, link .mp4, .webm, .ogg. Link khác sẽ hiện nút mở video.
+                    Hỗ trợ YouTube/Shorts, Instagram Post/Reel, Facebook Reel/Video công khai, link .mp4, .webm, .ogg.
                   </p>
                   {productVideoEmbeds.length > 0 && (
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -2562,7 +2770,7 @@ export default function ProductsAdmin() {
                         <div key={`${video.originalUrl}-${index}`} className="border border-white/10 bg-black p-3">
                           <div className="mb-2 flex items-center justify-between gap-3">
                             <span className="text-[9px] font-display font-bold uppercase tracking-widest text-gold-light">
-                              {video.provider === "youtube" ? "YouTube" : video.provider === "direct" ? "Video file" : "Link ngoài"}
+                              {video.provider === "youtube" ? "YouTube" : video.provider === "instagram" ? "Instagram" : video.provider === "facebook" ? "Facebook" : video.provider === "direct" ? "Video file" : "Link ngoài"}
                             </span>
                             <a href={video.originalUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] uppercase tracking-wider text-gray-500 hover:text-gold-light">
                               Mở link
@@ -2572,7 +2780,7 @@ export default function ProductsAdmin() {
                             <iframe
                               src={video.embedUrl}
                               title={`Video sản phẩm ${index + 1}`}
-                              className="aspect-video w-full border border-white/10 bg-[#050505]"
+                              className={`${video.provider === "instagram" || /facebook\.com\/reel\//i.test(video.originalUrl) ? "mx-auto aspect-[9/16] max-w-sm" : "aspect-video"} w-full border border-white/10 bg-[#050505]`}
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen
                             />
