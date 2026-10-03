@@ -10,13 +10,10 @@ const routes = [
   "",
   "/gioi-thieu",
   "/san-pham",
+  "/in-3d-theo-yeu-cau",
   "/giai-phap",
-  "/dai-ly",
-  "/bao-hanh",
-  "/kich-hoat-bao-hanh",
+  "/du-an-da-thuc-hien",
   "/kien-thuc",
-  "/tuyen-dung",
-  "/hoc-vien",
   "/lien-he",
 ];
 

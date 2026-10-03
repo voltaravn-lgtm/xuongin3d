@@ -291,9 +291,11 @@ function normalizeDealerPricingSettings(settings?: Partial<DealerPricingSettings
 
 const defaultMenuBannerImages: Record<string, string> = {
   "/": "/images/voltara_banner.webp",
-  "/gioi-thieu": "/images/voltara_banner.webp",
+  "/gioi-thieu": "/images/lien-he.webp",
   "/san-pham": "/images/san-pham.webp",
+  "/in-3d-theo-yeu-cau": "/images/in-3d-theo-yeu-cau.webp",
   "/giai-phap": "/images/giai-phap.webp",
+  "/du-an-da-thuc-hien": "/images/du-an-da-thuc-hien.webp",
   "/dai-ly": "/images/dai-ly.webp",
   "/bao-hanh": "/images/bao-hanh.webp",
   "/hoc-vien": "/images/hoc-vien.webp",
@@ -303,34 +305,44 @@ const defaultMenuBannerImages: Record<string, string> = {
 };
 
 function withMenuDefaults(item: MenuItem): MenuItem {
+  const legacyBannerReplacements: Record<string, string[]> = {
+    "/gioi-thieu": ["/images/voltara_banner.webp"],
+    "/in-3d-theo-yeu-cau": ["/images/san-pham.webp"],
+    "/du-an-da-thuc-hien": ["/images/giai-phap.webp"],
+  };
+  const shouldMigrateBanner = legacyBannerReplacements[item.path]?.includes(item.bannerImage || "");
+
   return {
     ...item,
     hidden: item.hidden ?? false,
-    bannerImage: item.bannerImage || defaultMenuBannerImages[item.path] || "",
+    bannerImage: shouldMigrateBanner
+      ? defaultMenuBannerImages[item.path]
+      : item.bannerImage || defaultMenuBannerImages[item.path] || "",
   };
 }
 
 const defaultMenuItems: MenuItem[] = [
   { name: "TRANG CHỦ", path: "/" },
-  { name: "GIỚI THIỆU", path: "/gioi-thieu" },
   { name: "SẢN PHẨM", path: "/san-pham" },
-  { name: "GIẢI PHÁP", path: "/giai-phap" },
-  { name: "ĐẠI LÝ", path: "/dai-ly" },
-  { name: "BẢO HÀNH", path: "/bao-hanh" },
-  { name: "HỌC VIỆN", path: "/hoc-vien" },
-  { name: "KIẾN THỨC", path: "/kien-thuc" },
-  { name: "TUYỂN DỤNG", path: "/tuyen-dung" },
-  { name: "LIÊN HỆ", path: "/lien-he" },
+  { name: "IN 3D THEO YÊU CẦU", path: "/in-3d-theo-yeu-cau" },
+  { name: "GIẢI PHÁP DOANH NGHIỆP", path: "/giai-phap" },
+  { name: "DỰ ÁN ĐÃ THỰC HIỆN", path: "/du-an-da-thuc-hien" },
+  { name: "KIẾN THỨC 3D", path: "/kien-thuc" },
+  { name: "GIỚI THIỆU - LIÊN HỆ", path: "/gioi-thieu" },
+  { name: "HỌC VIỆN", path: "/hoc-vien", hidden: true },
+  { name: "TUYỂN DỤNG", path: "/tuyen-dung", hidden: true },
 ].map(withMenuDefaults);
 
 export const defaultProductCategories: ProductCategory[] = [
-  { id: "pin-may-cong-cu", name: "PIN MÁY CÔNG CỤ" },
-  { id: "ups-cua-cuon", name: "UPS CỬA CUỐN" },
-  { id: "pin-xe-dien", name: "PIN XE ĐIỆN" },
-  { id: "ac-quy-lithium", name: "ẮC QUY LITHIUM" },
-  { id: "ac-quy-chi-axit", name: "ẮC QUY CHÌ AXIT" },
-  { id: "pin-luu-tru-nang-luong", name: "PIN LƯU TRỮ NĂNG LƯỢNG" },
-  { id: "phu-kien-linh-kien", name: "PHỤ KIỆN & LINH KIỆN" },
+  { id: "den-do-decor-trang-tri", name: "ĐÈN - ĐỒ DECOR - TRANG TRÍ" },
+  { id: "do-dung-tien-ich-phu-kien", name: "ĐỒ DÙNG TIỆN ÍCH - PHỤ KIỆN" },
+  { id: "qua-tang-do-dung-gia-dinh", name: "QUÀ TẶNG - ĐỒ DÙNG GIA ĐÌNH" },
+  { id: "mo-hinh-tuong-nhan-vat", name: "MÔ HÌNH - TƯỢNG - NHÂN VẬT" },
+  { id: "do-cong-nghe", name: "ĐỒ CÔNG NGHỆ" },
+  { id: "chau-cay-trang-tri-cay", name: "CHẬU CÂY - TRANG TRÍ CÂY" },
+  { id: "trang-tri-ho-ca-be-ca", name: "TRANG TRÍ HỒ CÁ - BỂ CÁ" },
+  { id: "doanh-nghiep-posm", name: "DOANH NGHIỆP - POSM" },
+  { id: "kien-truc-sa-ban", name: "KIẾN TRÚC - SA BÀN" },
 ];
 
 function restoreMissingMenuItems(items: MenuItem[]) {
@@ -347,29 +359,29 @@ function restoreMissingMenuItems(items: MenuItem[]) {
 }
 
 const defaultHeroSettings: HeroSettings = {
-  title: "VOLTARA",
-  subtitle: "KÍCH HOẠT TƯƠNG LAI",
-  description: "Năng lượng thông minh – Độ bộc phát dòng xả cực đại. Voltara cung cấp các giải pháp pin Lithium LiFePO4 và bộ UPS tích trữ nguồn điện hiệu năng cao từ gia đình đến nhà máy công nghiệp quốc tế.",
+  title: "XƯỞNG IN 3D",
+  subtitle: "HIỆN THỰC HÓA MỌI Ý TƯỞNG",
+  description: "Nhận thiết kế và in 3D theo yêu cầu cho cá nhân, gia đình và doanh nghiệp. Từ một sản phẩm độc bản đến mẫu thử, POSM và mô hình dự án.",
   bannerImage: "/images/voltara_banner.webp",
-  logoTextImage: "/images/logo-text-voltera.webp",
-  useLogoImage: true,
+  logoTextImage: "",
+  useLogoImage: false,
   autoplaySpeed: 5000,
   slides: [
     {
       id: "slide-1",
-      title: "VOLTARA",
-      subtitle: "KÍCH HOẠT TƯƠNG LAI",
-      description: "Năng lượng thông minh – Độ bộc phát dòng xả cực đại. Voltara cung cấp các giải pháp pin Lithium LiFePO4 và bộ UPS tích trữ nguồn điện hiệu năng cao từ gia đình đến nhà máy công nghiệp quốc tế.",
+      title: "XƯỞNG IN 3D",
+      subtitle: "HIỆN THỰC HÓA MỌI Ý TƯỞNG",
+      description: "Nhận thiết kế và in 3D theo yêu cầu cho cá nhân, gia đình và doanh nghiệp. Từ một sản phẩm độc bản đến mẫu thử, POSM và mô hình dự án.",
       bannerImage: "/images/voltara_banner.webp",
-      logoTextImage: "/images/logo-text-voltera.webp",
-      useLogoImage: true
+      logoTextImage: "",
+      useLogoImage: false
     },
     {
       id: "slide-2",
-      title: "CÔNG NGHỆ PIN LITHIUM THẾ HỆ MỚI",
-      subtitle: "HIỆU SUẤT VÀ TUỔI THỌ VƯỢT TRỘI",
-      description: "Hệ thống lưu trữ Voltara được tích hợp bo mạch BMS tự cân bằng thông minh giúp kiểm soát dòng sạc, kéo dài dòng đời pin gấp nhiều lần, an tâm tuyệt đối.",
-      bannerImage: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&q=80&w=1600",
+      title: "IN 3D THEO YÊU CẦU",
+      subtitle: "THIẾT KẾ RIÊNG - SẢN XUẤT LINH HOẠT",
+      description: "Gửi file 3D, bản vẽ, hình ảnh tham khảo hoặc mẫu thật. Xưởng tư vấn vật liệu, kích thước và phương án hoàn thiện phù hợp nhu cầu.",
+      bannerImage: "/images/voltara_banner-1.webp",
       logoTextImage: "",
       useLogoImage: false
     }
@@ -377,11 +389,11 @@ const defaultHeroSettings: HeroSettings = {
 };
 
 const defaultContactSettings: SiteContactSettings = {
-  companyName: "Voltara Technology",
-  address: "123 Đường Năng Lượng, KCN Hòa Phú, H. Long Hồ, Vĩnh Long",
-  hotline: "1900 1234",
-  email: "info@voltara.vn",
-  workingHours: "8h00 - 17h30",
+  companyName: "Công Ty Tập Đoàn Thay Đổi Liên Tục",
+  address: "71/1E Võ Văn Hát, Long Trường, TP.HCM",
+  hotline: "0822 426 639",
+  email: "xuongin3d@gmail.com",
+  workingHours: "24/7",
   googleMapEmbedUrl: "",
   facebookUrl: "#facebook",
   youtubeUrl: "#youtube",
@@ -390,131 +402,62 @@ const defaultContactSettings: SiteContactSettings = {
 };
 
 const defaultHomeContent: HomeContent = {
-  section2Title: "Sản Phẩm Công Nghệ Voltara",
-  section2Desc: "Lõi cell nhập khẩu chất lượng cao, tích hợp bo mạch BMS tự cân bằng thông minh đỉnh cao.",
-  feature1Title: "Công Nghệ Tiên Tiến",
-  feature1Desc: "Ứng dụng cell pin Lithium dòng sạc siêu thọ.",
-  feature2Title: "Chất Lượng Vượt Trội",
-  feature2Desc: "Vỏ sợi polycarbonate chống vỡ nứt.",
-  feature3Title: "Bảo Hành Chính Hãng",
-  feature3Desc: "Kích hoạt điện tử tra cứu siêu nhanh.",
-  feature4Title: "Hệ Thống Toàn Quốc",
-  feature4Desc: "Hàng trăm đại lý phân phối rộng khắp cả nước.",
+  section2Title: "Sản Phẩm In 3D Theo Nhu Cầu",
+  section2Desc: "Đa dạng mẫu mã, vật liệu và kích thước cho trang trí, tiện ích, quà tặng, mô hình và dự án doanh nghiệp.",
+  feature1Title: "Thiết Kế Theo Yêu Cầu",
+  feature1Desc: "Nhận file, hình ảnh, bản vẽ hoặc mẫu thật.",
+  feature2Title: "Đa Dạng Vật Liệu",
+  feature2Desc: "Tư vấn PLA, PETG, ABS, TPU và Resin.",
+  feature3Title: "Nhận In Từ Một Sản Phẩm",
+  feature3Desc: "Linh hoạt từ mẫu độc bản đến lô nhỏ.",
+  feature4Title: "Hỗ Trợ 24/7",
+  feature4Desc: "Tư vấn nhanh qua hotline 0822 426 639.",
 };
 
 const defaultAboutContent: AboutContent = {
-  section1Subtitle: "VỀ VOLTARA",
-  section1Title: "KÍCH HOẠT TƯƠNG LAI",
-  section1Desc: "Voltara là thương hiệu tiên phong trong lĩnh vực nghiên cứu, chế tạo, liên kết sản xuất và cung cấp các dòng sản phẩm bộ pin Lithium sạc và nguồn điện lưu trữ thông minh tại Việt Nam. Hướng tới trở thành giải pháp năng lượng xanh vững mạnh toàn diện hỗ trợ cho sinh hoạt, di chuyển tuần hoàn bền vững của thế giới tương lai.",
+  section1Subtitle: "VỀ XƯỞNG IN 3D",
+  section1Title: "TỪ Ý TƯỞNG ĐẾN SẢN PHẨM THỰC TẾ",
+  section1Desc: "Xưởng In 3D cung cấp dịch vụ thiết kế, tạo mẫu và sản xuất sản phẩm in 3D theo yêu cầu cho cá nhân, gia đình và doanh nghiệp. Chúng tôi tiếp nhận từ ý tưởng, hình ảnh, bản vẽ, file 3D hoặc mẫu thật để tư vấn phương án phù hợp.",
   section1BannerImage: "/images/voltara_banner.webp",
-  strategicTitle: "TẦM NHÌN CHIẾN LƯỢC",
-  strategic1Year: "2030",
-  strategic1Title: "2030 – Thương Hiệu Nội Địa Dẫn Đầu",
-  strategic1Desc: "Đưa sản phẩm pin máy công cụ, phụ tùng lithium Voltara phủ khắp 63 tỉnh thành Việt Nam. Thay thế hoàn toàn 80% ắc quy chì axit cũ rách.",
-  strategic2Year: "2035",
-  strategic2Title: "2035 – Xuất Khẩu Màng Lưới Đông Nam Á",
-  strategic2Desc: "Xây dựng mạng lưới bán hàng ổn định xuất khẩu sang các thị trường Thái Lan, Indonesia, Malaysia, Campuchia đạt chứng nhận chất lượng FCC/CE.",
-  strategic3Year: "2040",
-  strategic3Title: "2040 – Năng Lượng Toàn Cầu Vững Bền",
-  strategic3Desc: "Tham gia phát triển trạm trữ điện trung tâm ESS dòng sạc siêu thọ cùng các đối tác hạ tầng ô-tô sạc ô nhiễm thấp tại các quốc gia Tây Âu và Liên Kỳ.",
-  missionTitle: "SỨ MỆNH PHỤC VỤ",
-  missionDesc: "Cung cấp những giải pháp tích trữ năng lượng Lithium thế hệ mới, tối đa tính hữu dụng thực chiến trong dụng cụ cầm tay, đảm bảo an toàn tuyệt đối, dập tắt rủi ro sinh khí bốc cháy chập mạch, kiến tạo một cộng đồng sống lành mạnh.",
+  strategicTitle: "CÁCH CHÚNG TÔI LÀM VIỆC",
+  strategic1Year: "01",
+  strategic1Title: "TIẾP NHẬN Ý TƯỞNG",
+  strategic1Desc: "Khách hàng gửi file, hình ảnh tham khảo, kích thước, bản vẽ hoặc mẫu thật cùng mục đích sử dụng.",
+  strategic2Year: "02",
+  strategic2Title: "TƯ VẤN VÀ TẠO MẪU",
+  strategic2Desc: "Xưởng đề xuất công nghệ in, vật liệu, độ hoàn thiện và phương án sản xuất phù hợp ngân sách.",
+  strategic3Year: "03",
+  strategic3Title: "SẢN XUẤT VÀ BÀN GIAO",
+  strategic3Desc: "Sản phẩm được kiểm tra trước khi bàn giao; các yêu cầu điều chỉnh được trao đổi rõ ràng theo từng dự án.",
+  missionTitle: "SỨ MỆNH",
+  missionDesc: "Giúp cá nhân và doanh nghiệp hiện thực hóa ý tưởng nhanh chóng bằng công nghệ in 3D linh hoạt, dễ tiếp cận và phù hợp nhu cầu thực tế.",
   coreValuesTitle: "GIÁ TRỊ CỐT LÕI",
   coreValue1Title: "Chất lượng",
-  coreValue1Desc: "Đặt độ an toàn của người dùng lên hàng đầu.",
+  coreValue1Desc: "Kiểm tra sản phẩm trước khi bàn giao.",
   coreValue2Title: "Đổi mới",
-  coreValue2Desc: "Cập nhập BMS thế hệ mới bảo mật rò dỉ điện môi.",
+  coreValue2Desc: "Linh hoạt thiết kế, vật liệu và cách hoàn thiện.",
   coreValue3Title: "Hợp tác",
-  coreValue3Desc: "Đồng hành trọn vẹn thịnh vượng cùng đại lý ủy quyền.",
+  coreValue3Desc: "Trao đổi rõ ràng trong suốt quá trình thực hiện.",
   coreValue4Title: "Trách nhiệm",
-  coreValue4Desc: "An tâm bảo hiểm rủi ro tài sản cao cấp chính hãng.",
-  stat1Num: "50+",
-  stat1Label: "Đại lý toàn quốc",
-  stat2Num: "100.000+",
-  stat2Label: "Sản phẩm bàn giao",
-  stat3Num: "5.000 m²",
-  stat3Label: "Nhà máy hiện đại",
-  stat4Num: "3 Năm",
-  stat4Label: "Bảo hành chính hãng",
-  factorySubtitle: "TIÊU CHUẨN ĐỒNG BỘ",
-  factoryTitle: "Nhà Máy Hiện Đại Công Nghệ Tiên Tiến",
-  factoryDesc: "Voltara đầu tư quy trình chế tác tự động hóa khép kín tại khu công nghiệp Vĩnh Long, nhằm mang lại cấu hình hoàn chỉnh cho từng module pin Lithium. Mỗi sản phẩm đều được kiểm định bằng robot đo kiểm quang học tự động, loại bỏ triệt để lỗi cơ học trong chế tác.",
+  coreValue4Desc: "Tôn trọng mục đích sử dụng và tiến độ đã thống nhất.",
+  stat1Num: "FDM",
+  stat1Label: "Công nghệ in sợi nhựa",
+  stat2Num: "RESIN",
+  stat2Label: "Công nghệ in chi tiết",
+  stat3Num: "1+",
+  stat3Label: "Nhận từ một sản phẩm",
+  stat4Num: "24/7",
+  stat4Label: "Tiếp nhận yêu cầu",
+  factorySubtitle: "NĂNG LỰC THỰC HIỆN",
+  factoryTitle: "Thiết Kế, Tạo Mẫu Và Sản Xuất Linh Hoạt",
+  factoryDesc: "Xưởng tiếp nhận nhiều nhóm sản phẩm từ decor, quà tặng và phụ kiện đến mô hình kỹ thuật, POSM và sa bàn. Mỗi yêu cầu được tư vấn vật liệu và công nghệ dựa trên công năng thực tế.",
   factoryImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800",
-  quoteText: "Voltara không chỉ sản xuất pin sạc, chúng tôi kiến tạo các giải pháp lưu trữ và phân phối năng lượng bền bỉ cho tương lai xanh, định hình lại màng lưới an toàn điện Việt Nam.",
-  quoteAuthor: "HỘI ĐỒNG SÁNG LẬP VOLTARA TECHNOLOGY",
+  quoteText: "Mỗi ý tưởng đều có thể bắt đầu từ một mẫu thử. In 3D giúp rút ngắn khoảng cách từ bản vẽ đến sản phẩm có thể cầm trên tay.",
+  quoteAuthor: "XƯỞNG IN 3D",
 };
 
-const defaultWarranties: WarrantyRecord[] = [
-  {
-    id: "w-1",
-    serial: "VOLTARA-20V-5AH",
-    productName: "PIN VOLTARA 20V 5.0Ah (Cho máy Makita)",
-    customerName: "Nguyễn Văn Hùng",
-    customerPhone: "0987654321",
-    activatedDate: "20/05/2026",
-    termMonths: 12,
-    expiryDate: "20/05/2027",
-    status: "Đang bảo hành chính hãng",
-    specNotes: "Lõi cell hoạt động an toàn SOH 98%, chưa phát hiện lịch sử xả kiệt quá áp."
-  },
-  {
-    id: "w-2",
-    serial: "VOLTARA-48V-20AH",
-    productName: "Bộ Pin Xe Điện Lithium 48V 20Ah",
-    customerName: "Trần Minh Quân",
-    customerPhone: "0912345678",
-    activatedDate: "15/02/2026",
-    termMonths: 18,
-    expiryDate: "15/08/2027",
-    status: "Đang bảo hành chính hãng",
-    specNotes: "Mạch BMS ổn định, độ lệch áp cực nhỏ < 0.02V, dung lượng SOH 99%."
-  },
-  {
-    id: "w-3",
-    serial: "VOLTARA-ESS-10KWH",
-    productName: "Tủ Lưu Trữ Điện Mặt Trời ESS 10kWh",
-    customerName: "Lê Thị Thu Hương",
-    customerPhone: "0905999888",
-    activatedDate: "10/01/2025",
-    termMonths: 36,
-    expiryDate: "10/01/2028",
-    status: "Đang bảo hành chính hãng",
-    specNotes: "Hệ thống kết nối biến tần Hybird trơn tru, nhiệt độ vận hành 28 độ C hoàn hảo."
-  }
-];
-
-const defaultQuoteRequests: QuoteRequest[] = [
-  {
-    id: "quote-1",
-    customerName: "Nguyễn Văn Hùng",
-    phone: "0912345678",
-    email: "hung.nguyen@gmail.com",
-    province: "Thành phố Hồ Chí Minh",
-    address: "124 Nguyễn Thị Minh Khai, Quận 3",
-    productName: "Bình Pin Lithium Voltara E-Scooter 72V 30Ah",
-    batteryType: "Xe Máy Điện / Xe Đạp",
-    voltage: "72V",
-    capacity: "30Ah",
-    notes: "Xin tư vấn mạch sạc thông minh chống chai pin cho xe VinFast Feliz S.",
-    date: "2026-06-05T08:30:00Z",
-    status: "Chờ xử lý"
-  },
-  {
-    id: "quote-2",
-    customerName: "Phạm Minh Đức",
-    phone: "0987654321",
-    email: "duc.pm@solartech.vn",
-    province: "Tỉnh Bình Dương",
-    address: "Khu công nghiệp VSIP I, Thuận An",
-    productName: "Bộ Pin Lưu Trữ ESS Lithium Voltara LFP 51.2V 100Ah",
-    batteryType: "Bộ điện sạc dự phòng UPS / Solar",
-    voltage: "51.2V",
-    capacity: "100Ah",
-    notes: "Cần báo giá sỉ cho dự án điện mặt trời áp mái 10kW cho hộ gia đình và đại lý cấp 2.",
-    date: "2026-06-06T02:15:00Z",
-    status: "Đã liên hệ"
-  }
-];
+const defaultWarranties: WarrantyRecord[] = [];
+const defaultQuoteRequests: QuoteRequest[] = [];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
@@ -522,48 +465,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Load or Initialize Navigation Menus
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    const saved = localStorage.getItem("voltara_menu_items");
+    const saved = localStorage.getItem("xuongin3d_menu_items");
     return saved ? restoreMissingMenuItems(JSON.parse(saved)) : defaultMenuItems;
   });
 
   const [productCategories, setProductCategories] = useState<ProductCategory[]>(() => {
-    const saved = localStorage.getItem("voltara_product_categories");
+    const saved = localStorage.getItem("xuongin3d_product_categories");
     return saved ? JSON.parse(saved) : defaultProductCategories;
   });
 
   // Load or Initialize Products
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem("voltara_products");
+    const saved = localStorage.getItem("xuongin3d_products");
     return saved ? JSON.parse(saved) : PRODUCTS_DATA;
   });
 
   // Load or Initialize Solutions
   const [solutions, setSolutions] = useState<Solution[]>(() => {
-    const saved = localStorage.getItem("voltara_solutions");
+    const saved = localStorage.getItem("xuongin3d_solutions");
     return saved ? JSON.parse(saved) : SOLUTIONS_DATA;
   });
 
   // Load or Initialize Articles
   const [articles, setArticles] = useState<Article[]>(() => {
-    const saved = localStorage.getItem("voltara_articles");
+    const saved = localStorage.getItem("xuongin3d_articles");
     return saved ? JSON.parse(saved) : ARTICLES_DATA;
   });
 
   // Load or Initialize Branches
   const [branches, setBranches] = useState<Branch[]>(() => {
-    const saved = localStorage.getItem("voltara_branches");
+    const saved = localStorage.getItem("xuongin3d_branches");
     return saved ? JSON.parse(saved) : BRANCHES_DATA;
   });
 
   // Load or Initialize Dealers
   const [dealers, setDealers] = useState<Dealer[]>(() => {
-    const saved = localStorage.getItem("voltara_dealers");
+    const saved = localStorage.getItem("xuongin3d_dealers");
     return saved ? JSON.parse(saved) : DEALERS_DATA;
   });
 
   // Load or Initialize Hero Settings
   const [heroSettings, setHeroSettings] = useState<HeroSettings>(() => {
-    const saved = localStorage.getItem("voltara_hero_settings");
+    const saved = localStorage.getItem("xuongin3d_hero_settings");
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.bannerImage && (parsed.bannerImage.endsWith(".png") || parsed.bannerImage.includes("voltara_banner_1780714848034"))) {
@@ -571,6 +514,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (parsed.slides && Array.isArray(parsed.slides)) {
         parsed.slides = parsed.slides.map((s: any) => {
+          if (s.bannerImage?.includes("photo-1544383835-bda2bc66a55d")) {
+            return { ...s, bannerImage: "/images/voltara_banner-1.webp" };
+          }
           if (s.bannerImage && (s.bannerImage.includes("voltara_banner_1780714848034") || s.bannerImage.endsWith(".png"))) {
             return { ...s, bannerImage: "/images/voltara_banner.webp" };
           }
@@ -584,13 +530,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Load or Initialize Home Content
   const [homeContent, setHomeContent] = useState<HomeContent>(() => {
-    const saved = localStorage.getItem("voltara_home_content");
+    const saved = localStorage.getItem("xuongin3d_home_content");
     return saved ? { ...defaultHomeContent, ...JSON.parse(saved) } : defaultHomeContent;
   });
 
   // Load or Initialize About Content
   const [aboutContent, setAboutContent] = useState<AboutContent>(() => {
-    const saved = localStorage.getItem("voltara_about_content");
+    const saved = localStorage.getItem("xuongin3d_about_content");
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.section1BannerImage && (parsed.section1BannerImage.includes("unsplash.com") || parsed.section1BannerImage.includes("voltara_banner_1780714848034"))) {
@@ -603,53 +549,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Load or Initialize Jobs (Recruitment)
   const [jobs, setJobs] = useState<Job[]>(() => {
-    const saved = localStorage.getItem("voltara_jobs");
+    const saved = localStorage.getItem("xuongin3d_jobs");
     return saved ? JSON.parse(saved) : JOBS_DATA;
   });
 
   // Load or Initialize Contact Submissions
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>(() => {
-    const saved = localStorage.getItem("voltara_contact_submissions");
+    const saved = localStorage.getItem("xuongin3d_contact_submissions");
     return saved ? JSON.parse(saved) : [];
   });
 
   // Load or Initialize Warranties
   const [warranties, setWarranties] = useState<WarrantyRecord[]>(() => {
-    const saved = localStorage.getItem("voltara_warranties");
+    const saved = localStorage.getItem("xuongin3d_warranties");
     return saved ? JSON.parse(saved) : defaultWarranties;
   });
 
   // Load or Initialize Academy Courses
   const [academyCourses, setAcademyCourses] = useState<Course[]>(() => {
-    const saved = localStorage.getItem("voltara_academy_courses");
+    const saved = localStorage.getItem("xuongin3d_academy_courses");
     return saved ? sortCoursesNewestFirst(JSON.parse(saved)) : sortCoursesNewestFirst(COURSES_DATA);
   });
 
   // Load or Initialize Quote Requests
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    const saved = localStorage.getItem("voltara_quote_requests");
+    const saved = localStorage.getItem("xuongin3d_quote_requests");
     return saved ? JSON.parse(saved) : defaultQuoteRequests;
   });
 
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [contactSettings, setContactSettings] = useState<SiteContactSettings>(() => {
-    const saved = localStorage.getItem("voltara_contact_settings");
+    const saved = localStorage.getItem("xuongin3d_contact_settings");
     return saved ? { ...defaultContactSettings, ...JSON.parse(saved) } : defaultContactSettings;
   });
   const [promoOverlaySettings, setPromoOverlaySettings] = useState<PromoOverlaySettings>(() => {
-    const saved = localStorage.getItem("voltara_promo_overlay_settings");
+    const saved = localStorage.getItem("xuongin3d_promo_overlay_settings");
     return saved ? { ...defaultPromoOverlaySettings, ...JSON.parse(saved) } : defaultPromoOverlaySettings;
   });
   const [dealerPricingSettings, setDealerPricingSettings] = useState<DealerPricingSettings>(() => {
-    const saved = localStorage.getItem("voltara_dealer_pricing_settings");
+    const saved = localStorage.getItem("xuongin3d_dealer_pricing_settings");
     return saved ? normalizeDealerPricingSettings(JSON.parse(saved)) : defaultDealerPricingSettings;
   });
   const [salesPrograms, setSalesPrograms] = useState<SalesProgram[]>(() => {
-    const saved = localStorage.getItem("voltara_sales_programs");
+    const saved = localStorage.getItem("xuongin3d_sales_programs");
     return saved ? JSON.parse(saved) : [];
   });
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("voltara_cart_items");
+    const saved = localStorage.getItem("xuongin3d_cart_items");
     return saved ? JSON.parse(saved) : [];
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -777,14 +723,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       try {
-        if (shouldRefreshPublicFirestoreCache("voltara_products_last_firestore_sync_v2")) {
+        if (shouldRefreshPublicFirestoreCache("xuongin3d_products_last_firestore_sync_v2")) {
           const response = await fetch("/api/products");
           if (!response.ok) throw new Error(`Product catalog request failed with ${response.status}`);
 
           const data = await response.json() as { products?: Product[]; source?: "firestore" | "fallback" };
           if (!cancelled && data.source === "firestore" && Array.isArray(data.products)) {
             setProducts(sortProductsNewestFirst(data.products));
-            localStorage.setItem("voltara_products_last_firestore_sync_v2", String(Date.now()));
+            localStorage.setItem("xuongin3d_products_last_firestore_sync_v2", String(Date.now()));
           }
         }
 
@@ -805,7 +751,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Save changes to localStorage whenever states change
   useEffect(() => {
     const menuJson = JSON.stringify(menuItems);
-    localStorage.setItem("voltara_menu_items", menuJson);
+    localStorage.setItem("xuongin3d_menu_items", menuJson);
 
     if (!isFirebaseConfigured || !canReadAdminData || !menuSettingsReady || !hasSyncedMenuSettings.current) return;
     if (lastMenuSettingsJson.current === menuJson) return;
@@ -821,7 +767,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [canReadAdminData, menuItems, menuSettingsReady, showToast]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_product_categories", JSON.stringify(productCategories));
+    localStorage.setItem("xuongin3d_product_categories", JSON.stringify(productCategories));
 
     if (!isFirebaseConfigured || !canReadAdminData || !productCategoriesReady || !hasSyncedProductCategories.current) return;
     const categoriesJson = JSON.stringify(productCategories);
@@ -837,12 +783,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [canReadAdminData, productCategories, productCategoriesReady]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_products", JSON.stringify(products));
+    localStorage.setItem("xuongin3d_products", JSON.stringify(products));
   }, [products]);
 
   useEffect(() => {
     const syncProductsAcrossTabs = (event: StorageEvent) => {
-      if (event.key !== "voltara_products" || !event.newValue) return;
+      if (event.key !== "xuongin3d_products" || !event.newValue) return;
       try {
         setProducts(sortProductsNewestFirst(JSON.parse(event.newValue) as Product[]));
       } catch (error) {
@@ -854,71 +800,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("voltara_solutions", JSON.stringify(solutions));
+    localStorage.setItem("xuongin3d_solutions", JSON.stringify(solutions));
   }, [solutions]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_articles", JSON.stringify(articles));
+    localStorage.setItem("xuongin3d_articles", JSON.stringify(articles));
   }, [articles]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_branches", JSON.stringify(branches));
+    localStorage.setItem("xuongin3d_branches", JSON.stringify(branches));
   }, [branches]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_dealers", JSON.stringify(dealers));
+    localStorage.setItem("xuongin3d_dealers", JSON.stringify(dealers));
   }, [dealers]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_hero_settings", JSON.stringify(heroSettings));
+    localStorage.setItem("xuongin3d_hero_settings", JSON.stringify(heroSettings));
   }, [heroSettings]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_home_content", JSON.stringify(homeContent));
+    localStorage.setItem("xuongin3d_home_content", JSON.stringify(homeContent));
   }, [homeContent]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_about_content", JSON.stringify(aboutContent));
+    localStorage.setItem("xuongin3d_about_content", JSON.stringify(aboutContent));
   }, [aboutContent]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_jobs", JSON.stringify(jobs));
+    localStorage.setItem("xuongin3d_jobs", JSON.stringify(jobs));
   }, [jobs]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_contact_submissions", JSON.stringify(contactSubmissions));
+    localStorage.setItem("xuongin3d_contact_submissions", JSON.stringify(contactSubmissions));
   }, [contactSubmissions]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_warranties", JSON.stringify(warranties));
+    localStorage.setItem("xuongin3d_warranties", JSON.stringify(warranties));
   }, [warranties]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_academy_courses", JSON.stringify(academyCourses));
+    localStorage.setItem("xuongin3d_academy_courses", JSON.stringify(academyCourses));
   }, [academyCourses]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_quote_requests", JSON.stringify(quoteRequests));
+    localStorage.setItem("xuongin3d_quote_requests", JSON.stringify(quoteRequests));
   }, [quoteRequests]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_contact_settings", JSON.stringify(contactSettings));
+    localStorage.setItem("xuongin3d_contact_settings", JSON.stringify(contactSettings));
   }, [contactSettings]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_promo_overlay_settings", JSON.stringify(promoOverlaySettings));
+    localStorage.setItem("xuongin3d_promo_overlay_settings", JSON.stringify(promoOverlaySettings));
   }, [promoOverlaySettings]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_dealer_pricing_settings", JSON.stringify(dealerPricingSettings));
+    localStorage.setItem("xuongin3d_dealer_pricing_settings", JSON.stringify(dealerPricingSettings));
   }, [dealerPricingSettings]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_sales_programs", JSON.stringify(salesPrograms));
+    localStorage.setItem("xuongin3d_sales_programs", JSON.stringify(salesPrograms));
   }, [salesPrograms]);
 
   useEffect(() => {
-    localStorage.setItem("voltara_cart_items", JSON.stringify(cartItems));
+    localStorage.setItem("xuongin3d_cart_items", JSON.stringify(cartItems));
   }, [cartItems]);
 
   const updateProduct = async (updatedProduct: Product) => {

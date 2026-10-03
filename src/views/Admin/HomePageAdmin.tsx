@@ -7,15 +7,15 @@ export default function HomePageAdmin() {
 
   const [form, setForm] = useState({
     feature1Title: homeContent.feature1Title || "Công Nghệ Tiên Tiến",
-    feature1Desc: homeContent.feature1Desc || "Ứng dụng cell pin Lithium dòng sạc siêu thọ.",
+    feature1Desc: homeContent.feature1Desc || "Nhận file, hình ảnh, bản vẽ hoặc mẫu thật.",
     feature2Title: homeContent.feature2Title || "Chất Lượng Vượt Trội",
     feature2Desc: homeContent.feature2Desc || "Vỏ sợi polycarbonate chống vỡ nứt.",
     feature3Title: homeContent.feature3Title || "Bảo Hành Chính Hãng",
     feature3Desc: homeContent.feature3Desc || "Kích hoạt điện tử tra cứu siêu nhanh.",
     feature4Title: homeContent.feature4Title || "Hệ Thống Toàn Quốc",
     feature4Desc: homeContent.feature4Desc || "Hàng trăm đại lý phân phối rộng khắp cả nước.",
-    section2Title: homeContent.section2Title || "Sản Phẩm Công Nghệ Voltara",
-    section2Desc: homeContent.section2Desc || "Lõi cell nhập khẩu chất lượng cao, tích hợp bo mạch BMS tự cân bằng thông minh đỉnh cao.",
+    section2Title: homeContent.section2Title || "Sản Phẩm In 3D Theo Nhu Cầu",
+    section2Desc: homeContent.section2Desc || "Đa dạng mẫu mã, vật liệu và kích thước cho cá nhân, gia đình và doanh nghiệp.",
   });
 
   const handleSave = (e: React.FormEvent) => {
@@ -153,7 +153,7 @@ export default function HomePageAdmin() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-display uppercase tracking-widest text-gray-400 block font-bold">Mô tả định hướng năng lượng cell</label>
+              <label className="text-[10px] font-display uppercase tracking-widest text-gray-400 block font-bold">Mô tả định hướng sản phẩm</label>
               <textarea
                 rows={3}
                 value={form.section2Desc}

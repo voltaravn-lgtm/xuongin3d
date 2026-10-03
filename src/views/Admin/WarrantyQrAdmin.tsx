@@ -19,8 +19,8 @@ type PdfLayout = "42" | "36" | "30" | "24" | "20" | "15" | "12";
 type SerialNumberMode = "random" | "sequential";
 
 const DEFAULT_TEMPLATE_URL = "/images/warranty-qr-template.webp";
-const TEMPLATE_STORAGE_KEY = "voltara_warranty_qr_template";
-const TEMPLATE_LIBRARY_KEY = "voltara_warranty_qr_template_library";
+const TEMPLATE_STORAGE_KEY = "xuongin3d_warranty_qr_template";
+const TEMPLATE_LIBRARY_KEY = "xuongin3d_warranty_qr_template_library";
 const MAX_SERIALS_PER_BATCH = 1000;
 const PDF_LABEL_RENDER_WIDTH = 620;
 const PDF_PAGE_MARGIN = 7;

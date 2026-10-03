@@ -1,6 +1,6 @@
-# Voltara
+# Xưởng In 3D
 
-Website Voltara built with Next.js, React, Tailwind CSS, and Firebase.
+Website Xưởng In 3D được xây dựng với Next.js, React, Tailwind CSS và Firebase.
 
 ## Local Development
 

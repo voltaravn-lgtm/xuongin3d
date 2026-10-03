@@ -1,5 +1,10 @@
-export const ADMIN_EMAILS = ["voltaravn@gmail.com", "voltaravietnam@gmail.com", "tuanmanhbh@gmail.com"];
+export const ADMIN_EMAILS = [
+  "voltaravn@gmail.com",
+  "tuanmanhbh@gmail.com",
+] as const;
 
 export function isAdminEmail(email?: string | null) {
-  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()));
+  if (!email) return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  return ADMIN_EMAILS.some((adminEmail) => adminEmail === normalizedEmail);
 }

@@ -1,12 +1,12 @@
 import { Metadata } from "next";
 
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltara.vn";
-export const siteName = "Voltara";
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://xuong-in-3d.web.app";
+export const siteName = "Xưởng In 3D";
 
 export const defaultDescription =
-  "Voltara cung cấp pin Lithium, bộ lưu điện UPS, giải pháp lưu trữ năng lượng và dịch vụ bảo hành chính hãng tại Việt Nam.";
+  "Xưởng In 3D nhận thiết kế, tạo mẫu và in 3D theo yêu cầu cho cá nhân, gia đình và doanh nghiệp tại TP.HCM.";
 
-const defaultImage = "/images/logo-voltara-new.webp";
+const defaultImage = "/images/san-pham.webp";
 
 export function buildMetadata({
   title,
@@ -80,11 +80,18 @@ export const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: siteName,
-  alternateName: "Voltara Việt Nam",
+  alternateName: "Công Ty Tập Đoàn Thay Đổi Liên Tục",
   url: siteUrl,
-  logo: new URL("/icon-512.png", siteUrl).toString(),
-  image: new URL("/images/logo-voltara-new.webp", siteUrl).toString(),
-  email: "voltaravn@gmail.com",
+  logo: new URL("/images/logo-x3d.webp", siteUrl).toString(),
+  image: new URL("/images/san-pham.webp", siteUrl).toString(),
+  email: "xuongin3d@gmail.com",
+  telephone: "+84 822 426 639",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "71/1E Võ Văn Hát, Long Trường",
+    addressLocality: "Thành phố Hồ Chí Minh",
+    addressCountry: "VN",
+  },
 };
 
 export const websiteJsonLd = {

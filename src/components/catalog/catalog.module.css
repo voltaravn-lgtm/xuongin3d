@@ -194,7 +194,7 @@
   scroll-margin-top: 10rem;
 }
 
-:global(.catalog-toolbar) {
+.viewer :global(.catalog-toolbar) {
   display: flex;
   width: 100%;
   min-height: 3.25rem;
@@ -210,15 +210,15 @@
   backdrop-filter: blur(14px);
 }
 
-:global(.catalog-toolbar-group) {
+.viewer :global(.catalog-toolbar-group) {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
-:global(.catalog-toolbar-button),
-:global(.catalog-zoom-value),
-:global(.catalog-mode-button) {
+.viewer :global(.catalog-toolbar-button),
+.viewer :global(.catalog-zoom-value),
+.viewer :global(.catalog-mode-button) {
   display: inline-flex;
   height: 2.25rem;
   align-items: center;
@@ -228,17 +228,17 @@
   transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
-:global(.catalog-toolbar-button) {
+.viewer :global(.catalog-toolbar-button) {
   width: 2.25rem;
 }
 
-:global(.catalog-toolbar-button svg),
-:global(.catalog-mode-button svg) {
+.viewer :global(.catalog-toolbar-button svg),
+.viewer :global(.catalog-mode-button svg) {
   width: 1rem;
   height: 1rem;
 }
 
-:global(.catalog-mode-button) {
+.viewer :global(.catalog-mode-button) {
   gap: 0.4rem;
   padding: 0 0.75rem;
   font-family: var(--font-display);
@@ -247,31 +247,31 @@
   text-transform: uppercase;
 }
 
-:global(.catalog-mode-button.is-active) {
+.viewer :global(.catalog-mode-button.is-active) {
   background: #d89a2b;
   color: #090909;
 }
 
-:global(.catalog-toolbar-button:hover:not(:disabled)),
-:global(.catalog-zoom-value:hover),
-:global(.catalog-mode-button:hover:not(.is-active)) {
+.viewer :global(.catalog-toolbar-button:hover:not(:disabled)),
+.viewer :global(.catalog-zoom-value:hover),
+.viewer :global(.catalog-mode-button:hover:not(.is-active)) {
   background: rgba(216, 154, 43, 0.18);
   color: #f5c45a;
 }
 
-:global(.catalog-toolbar-button:focus-visible),
-:global(.catalog-zoom-value:focus-visible),
-:global(.catalog-mode-button:focus-visible) {
+.viewer :global(.catalog-toolbar-button:focus-visible),
+.viewer :global(.catalog-zoom-value:focus-visible),
+.viewer :global(.catalog-mode-button:focus-visible) {
   outline: 2px solid #f5c45a;
   outline-offset: 2px;
 }
 
-:global(.catalog-toolbar-button:disabled) {
+.viewer :global(.catalog-toolbar-button:disabled) {
   cursor: not-allowed;
   opacity: 0.28;
 }
 
-:global(.catalog-page-indicator) {
+.viewer :global(.catalog-page-indicator) {
   display: flex;
   min-width: 4.5rem;
   justify-content: center;
@@ -281,11 +281,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-:global(.catalog-page-indicator strong) {
+.viewer :global(.catalog-page-indicator strong) {
   color: #f5c45a;
 }
 
-:global(.catalog-zoom-value) {
+.viewer :global(.catalog-zoom-value) {
   min-width: 3.8rem;
   gap: 0.25rem;
   padding: 0 0.4rem;
@@ -293,12 +293,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-:global(.catalog-zoom-value svg) {
+.viewer :global(.catalog-zoom-value svg) {
   width: 0.7rem;
   height: 0.7rem;
 }
 
-:global(.catalog-toolbar-divider) {
+.viewer :global(.catalog-toolbar-divider) {
   width: 1px;
   height: 1.35rem;
   background: rgba(255, 255, 255, 0.12);
@@ -328,41 +328,41 @@
     padding-left: 0.5rem;
   }
 
-  :global(.catalog-toolbar) {
+  .viewer :global(.catalog-toolbar) {
     flex-wrap: wrap;
     gap: 0.2rem;
     padding: 0.35rem;
   }
 
-  :global(.catalog-view-mode-group) {
+  .viewer :global(.catalog-view-mode-group) {
     width: 100%;
     justify-content: center;
   }
 
-  :global(.catalog-mode-button) {
+  .viewer :global(.catalog-mode-button) {
     width: auto;
     max-width: 9rem;
     flex: 1;
     padding: 0 0.65rem;
   }
 
-  :global(.catalog-toolbar-button) {
+  .viewer :global(.catalog-toolbar-button) {
     width: 2rem;
     height: 2rem;
   }
 
-  :global(.catalog-page-indicator) {
+  .viewer :global(.catalog-page-indicator) {
     min-width: 3.5rem;
     font-size: 0.68rem;
   }
 
-  :global(.catalog-zoom-value) {
+  .viewer :global(.catalog-zoom-value) {
     min-width: 3.1rem;
     height: 2rem;
     font-size: 0.62rem;
   }
 
-  :global(.catalog-toolbar-divider) {
+  .viewer :global(.catalog-toolbar-divider) {
     display: none;
   }
 }
@@ -380,9 +380,9 @@
 @media (prefers-reduced-motion: reduce) {
   .bookScaler,
   .pdfDocument,
-  :global(.catalog-toolbar-button),
-  :global(.catalog-zoom-value),
-  :global(.catalog-mode-button) {
+  .viewer :global(.catalog-toolbar-button),
+  .viewer :global(.catalog-zoom-value),
+  .viewer :global(.catalog-mode-button) {
     transition: none;
   }
 }

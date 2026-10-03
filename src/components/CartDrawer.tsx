@@ -232,7 +232,7 @@ export default function CartDrawer() {
                   <span className="text-gray-500">Tổng tạm tính</span>
                   <span className="font-display font-black text-gold-light">{cartTotalLabel}</span>
                 </div>
-                <div className="mt-1 text-gray-500">Điền thông tin để Voltara xác nhận đơn và giao hàng.</div>
+                <div className="mt-1 text-gray-500">Điền thông tin để Xưởng In 3D xác nhận đơn và giao hàng.</div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

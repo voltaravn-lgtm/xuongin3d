@@ -11,6 +11,7 @@ import { SectionTitle, BranchCard } from "../components/Cards";
 
 import { useApp } from "../context/AppContext";
 import { getMenuBanner } from "../lib/menuBanners";
+import PageHero from "../components/PageHero";
 
 export default function Contact() {
   const { addSubmission, contactSettings, menuItems } = useApp();
@@ -41,11 +42,17 @@ export default function Contact() {
       }));
     }
     if (prepopulatedType) {
-      if (prepopulatedType === "register_dealer") {
+      if (prepopulatedType === "print_3d") {
+        setForm(prev => ({
+          ...prev,
+          inquiryType: "print_3d",
+          subject: "Yêu cầu tư vấn in 3D theo yêu cầu"
+        }));
+      } else if (prepopulatedType === "register_dealer") {
         setForm(prev => ({
           ...prev,
           inquiryType: "dealer",
-          subject: "Đăng ký làm Đại lý ủy quyền chính thức Voltara"
+          subject: "Yêu cầu hợp tác với Xưởng In 3D"
         }));
       } else if (prepopulatedType === "spec_request") {
         setForm(prev => ({
@@ -57,7 +64,7 @@ export default function Contact() {
         setForm(prev => ({
           ...prev,
           inquiryType: "academy",
-          subject: "Đăng ký tham quan hoặc học tập tại Học viện Voltara"
+          subject: "Yêu cầu tư vấn dịch vụ in 3D"
         }));
       }
     }
@@ -97,45 +104,14 @@ export default function Contact() {
 
   return (
     <div id="contact-page" className="pb-20 relative bg-[#050505] text-left">
-      {/* 1. HERO BANNER - FULL WIDTH */}
-      <section className="relative min-h-[45vh] lg:min-h-[55vh] flex items-center overflow-hidden bg-black pt-16 lg:pt-24 pb-16 lg:pb-24 mb-12">
-        {/* Full-screen Background Banner Image */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img 
-            src={bannerImage} 
-            alt="Voltara Contact Banner Background" 
-            className="w-full h-full object-cover object-center transform scale-100 opacity-80"
-            referrerPolicy="no-referrer"
-          />
-          {/* Overlay to ensure maximum text readability and aesthetic integration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 lg:from-black/95 lg:via-black/75 lg:to-transparent/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          {/* Breadcrumb navigation */}
-          <div className="flex items-center gap-2 text-xs font-mono tracking-wider text-gray-400 mb-6">
-            <Link to="/" className="hover:text-gold-light pointer-events-auto transition-colors">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-gold-dark font-black">Liên hệ</span>
-          </div>
-
-          <div className="max-w-3xl flex flex-col items-start text-left">
-            <span className="text-xs font-display font-black tracking-[0.25em] text-gold-light uppercase mb-2">
-              KẾT NỐI VOLTARA
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold leading-tight text-white uppercase mb-6 glow-text tracking-tight">
-              LIÊN HỆ VỚI CHÚNG TÔI
-            </h1>
-            
-            <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-28 mb-6" />
-
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-2xl backdrop-blur-[1px]">
-              Mọi hỗ trợ kỹ thuật, yêu cầu báo giá đại lý hoặc tư vấn thiết kế pin Lithium, vui lòng gửi tin nhắn hoặc gọi Hotline trực tiếp.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={bannerImage}
+        imageAlt="Liên hệ Xưởng In 3D"
+        breadcrumb="Liên hệ"
+        eyebrow="Kết nối Xưởng In 3D"
+        title="Liên hệ với chúng tôi"
+        description="Gửi yêu cầu tư vấn, báo giá sản phẩm, thiết kế file hoặc dự án in 3D. Xưởng tiếp nhận thông tin 24/7."
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -145,7 +121,7 @@ export default function Contact() {
           {/* Left column: Highly styled luxurious validation Form */}
           <div className="lg:col-span-7 bg-[#121212] border border-gold-dark/20 p-6 md:p-8 rounded-xl relative">
             <div className="absolute top-0 left-8 transform -translate-y-1/2 bg-gold-dark text-black text-[9px] font-display font-extrabold px-3.5 py-1 uppercase tracking-widest rounded-sm">
-              GỬI TIN NHẮN TỚI VOLTARA
+              GỬI YÊU CẦU TỚI XƯỞNG
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,11 +172,11 @@ export default function Contact() {
                     onChange={(e) => setForm({ ...form, inquiryType: e.target.value })}
                     className="w-full bg-black text-[#ECECEC] border border-white/10 h-11 px-3.5 text-xs focus:outline-none focus:border-gold-light rounded-md"
                   >
-                    <option value="technical">Hỗ trợ kỹ thuật đo cell</option>
-                    <option value="dealer">Trở thành Đại lý ủy quyền</option>
-                    <option value="project">Báo giá dự án pin lưu trữ ESS</option>
-                    <option value="warranty">Bảo hành hoặc Đổi cũ lấy mới</option>
-                    <option value="academy">Đào tạo học tập Học viện</option>
+                    <option value="print_3d">In 3D theo yêu cầu</option>
+                    <option value="product">Đặt sản phẩm in 3D</option>
+                    <option value="project">Giải pháp dành cho doanh nghiệp</option>
+                    <option value="design">Thiết kế hoặc chỉnh sửa file 3D</option>
+                    <option value="warranty">Bảo hành hoặc hỗ trợ sau bàn giao</option>
                   </select>
                 </div>
               </div>
@@ -212,7 +188,7 @@ export default function Contact() {
                   required
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  placeholder="Ví dụ: Tư vấn pin 20V chân mạc Makita sỉ"
+                  placeholder="Ví dụ: Báo giá in mô hình theo file 3D"
                   className="w-full bg-black text-[#ECECEC] border border-white/10 px-3.5 py-3 text-xs focus:outline-none focus:border-gold-light rounded-md"
                 />
               </div>
@@ -224,7 +200,7 @@ export default function Contact() {
                   required
                   value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  placeholder="Chi tiết câu hỏi hoặc kích tước xả kiệt cell pin quý khách cần..."
+                  placeholder="Mô tả kích thước, số lượng, vật liệu, thời gian và mục đích sử dụng..."
                   className="w-full bg-black text-[#ECECEC] border border-white/10 px-3.5 py-3 text-xs focus:outline-none focus:border-gold-light rounded-md"
                 />
               </div>
@@ -256,7 +232,7 @@ export default function Contact() {
                 </div>
                 <h4 className="text-xs font-display font-bold text-white uppercase tracking-wider">GỬI LIÊN HỆ THÀNH CÔNG!</h4>
                 <p className="text-[11px] text-gray-400 mt-2 max-w-sm leading-relaxed">
-                  Đã ghi nhận yêu cầu liên hệ của bạn trơn tru. Bộ phận hỗ trợ chăm sóc kỹ thuật Voltara sẽ liên hệ lại điện thoại của bạn ngay lập tức. Cảm ơn bạn.
+                  Xưởng đã ghi nhận yêu cầu. Bộ phận tư vấn sẽ phản hồi qua số điện thoại hoặc email bạn đã cung cấp.
                 </p>
               </div>
             )}
@@ -309,7 +285,7 @@ export default function Contact() {
 
             {contactSettings.googleMapEmbedUrl ? (
               <iframe
-                title="Google Map Voltara"
+                title="Google Map Xưởng In 3D"
                 src={contactSettings.googleMapEmbedUrl}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
@@ -319,7 +295,7 @@ export default function Contact() {
               <div className="mt-6 aspect-[16/8] w-full bg-[#050505] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(216,154,43,0.05)_0%,transparent_100%)]" />
                 <div className="flex items-center justify-between text-[9px] font-mono text-gray-500 uppercase select-none">
-                  <span>VOLTARA-COOR-MAP</span>
+                  <span>XUONG-IN-3D-MAP</span>
                   <span className="text-gold-light animate-ping">● LIVE SATELLITE</span>
                 </div>
                 <div className="text-center font-mono font-black text-xs text-gold-light select-none">
@@ -339,9 +315,9 @@ export default function Contact() {
         {/* 3. PHYSICAL OFFICE & LABORATORY BRANCHES (CATALOG CARD LIST) */}
         <div className="mb-12" id="branches-list-section">
           <SectionTitle
-            subtitle="TRUNG TÂM & CHI NHÁNH"
-            title="HỆ THỐNG VĂN PHÒNG & THỬ NGHIỆM REGIONAL"
-            description="Tìm kiếm địa chỉ điểm bảo hành, phòng đo Lab, hoặc văn phòng hành chính Voltara gần khu vực của bạn nhất."
+            subtitle="THÔNG TIN ĐỊA ĐIỂM"
+            title="ĐỊA CHỈ XƯỞNG IN 3D"
+            description="Địa chỉ tiếp nhận tư vấn và làm việc của Xưởng In 3D tại TP.HCM."
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12 pr-0">

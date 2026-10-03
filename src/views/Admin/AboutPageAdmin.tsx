@@ -6,24 +6,24 @@ export default function AboutPageAdmin() {
   const { aboutContent, setAboutContent, showToast } = useApp();
 
   const [form, setForm] = useState({
-    section1Subtitle: aboutContent.section1Subtitle || "VỀ VOLTARA",
-    section1Title: aboutContent.section1Title || "KÍCH HOẠT TƯƠNG LAI",
-    section1Desc: aboutContent.section1Desc || "Voltara là thương hiệu tiên phong trong lĩnh vực nghiên cứu, chế tạo, liên kết sản xuất và cung cấp các dòng sản phẩm bộ pin Lithium sạc và nguồn điện lưu trữ thông minh tại Việt Nam...",
+    section1Subtitle: aboutContent.section1Subtitle || "VỀ XƯỞNG IN 3D",
+    section1Title: aboutContent.section1Title || "TỪ Ý TƯỞNG ĐẾN SẢN PHẨM THỰC TẾ",
+    section1Desc: aboutContent.section1Desc || "Xưởng In 3D nhận thiết kế, tạo mẫu và sản xuất sản phẩm theo yêu cầu cho cá nhân, gia đình và doanh nghiệp.",
     section1BannerImage: aboutContent.section1BannerImage || "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&q=80&w=1600",
     strategicTitle: aboutContent.strategicTitle || "TẦM NHÌN CHIẾN LƯỢC",
     strategic1Title: aboutContent.strategic1Title || "2030 – Thương Hiệu Nội Địa Dẫn Đầu",
-    strategic1Desc: aboutContent.strategic1Desc || "Đưa sản phẩm pin máy công cụ, phụ tùng lithium Voltara phủ khắp 63 tỉnh thành Việt Nam...",
+    strategic1Desc: aboutContent.strategic1Desc || "Tiếp nhận file, hình ảnh, bản vẽ hoặc mẫu thật cùng mục đích sử dụng.",
     strategic2Title: aboutContent.strategic2Title || "2035 – Xuất Khẩu Màng Lưới Đông Nam Á",
     strategic2Desc: aboutContent.strategic2Desc || "Xây dựng mạng lưới bán hàng ổn định xuất khẩu sang các thị trường...",
-    strategic3Title: aboutContent.strategic3Title || "2040 – Năng Lượng Toàn Cầu Vững Bền",
+    strategic3Title: aboutContent.strategic3Title || "SẢN XUẤT VÀ BÀN GIAO",
     strategic3Desc: aboutContent.strategic3Desc || "Tham gia phát triển trạm trữ điện trung tâm ESS dòng sạc siêu thọ...",
     missionTitle: aboutContent.missionTitle || "SỨ MỆNH PHỤC VỤ",
-    missionDesc: aboutContent.missionDesc || "Cung cấp những giải pháp tích trữ năng lượng Lithium thế hệ mới...",
+    missionDesc: aboutContent.missionDesc || "Giúp khách hàng hiện thực hóa ý tưởng nhanh chóng bằng công nghệ in 3D linh hoạt.",
     coreValuesTitle: aboutContent.coreValuesTitle || "GIÁ TRỊ CỐT LÕI",
     coreValue1Title: aboutContent.coreValue1Title || "Chất lượng",
     coreValue1Desc: aboutContent.coreValue1Desc || "Đặt độ an toàn của người dùng lên hàng đầu.",
     coreValue2Title: aboutContent.coreValue2Title || "Đổi mới",
-    coreValue2Desc: aboutContent.coreValue2Desc || "Cập nhập BMS thế hệ mới bảo mật rò dỉ điện môi.",
+    coreValue2Desc: aboutContent.coreValue2Desc || "Linh hoạt thiết kế, vật liệu và cách hoàn thiện.",
     coreValue3Title: aboutContent.coreValue3Title || "Hợp tác",
     coreValue3Desc: aboutContent.coreValue3Desc || "Đồng hành trọn vẹn thịnh vượng cùng đại lý ủy quyền.",
     coreValue4Title: aboutContent.coreValue4Title || "Trách nhiệm",
@@ -38,10 +38,10 @@ export default function AboutPageAdmin() {
     stat4Label: aboutContent.stat4Label || "Bảo hành chính hãng",
     factorySubtitle: aboutContent.factorySubtitle || "TIÊU CHUẨN ĐỒNG BỘ",
     factoryTitle: aboutContent.factoryTitle || "Nhà Máy Hiện Đại Công Nghệ Tiên Tiến",
-    factoryDesc: aboutContent.factoryDesc || "Voltara đầu tư quy trình chế tác tự động hóa khép kín tại khu công nghiệp Vĩnh Long...",
+    factoryDesc: aboutContent.factoryDesc || "Xưởng tiếp nhận nhiều nhóm sản phẩm từ decor, quà tặng đến mô hình kỹ thuật, POSM và sa bàn.",
     factoryImage: aboutContent.factoryImage || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800",
-    quoteText: aboutContent.quoteText || "Voltara không chỉ sản xuất pin sạc, chúng tôi kiến tạo các giải pháp lưu trữ và phân phối...",
-    quoteAuthor: aboutContent.quoteAuthor || "HỘI ĐỒNG SÁNG LẬP VOLTARA TECHNOLOGY",
+    quoteText: aboutContent.quoteText || "Mỗi ý tưởng đều có thể bắt đầu từ một mẫu thử và trở thành sản phẩm thực tế bằng công nghệ in 3D.",
+    quoteAuthor: aboutContent.quoteAuthor || "XƯỞNG IN 3D",
   });
 
   const handleSave = (e: React.FormEvent) => {
@@ -78,7 +78,7 @@ export default function AboutPageAdmin() {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] text-gray-400 uppercase font-bold">Mục tiêu nhỏ (Vd: VỀ VOLTARA)</label>
+              <label className="text-[10px] text-gray-400 uppercase font-bold">Mục tiêu nhỏ (Vd: VỀ XƯỞNG IN 3D)</label>
               <input
                 type="text"
                 value={form.section1Subtitle}

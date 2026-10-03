@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import WebpConverterAdmin from "../app/admin/tools/webp-converter/page";
+import PromoOverlayAdmin from "../app/admin/tools/promo-overlay/page";
 import React, { useState } from "react";
 import { useApp, MenuItem, HeroSlide } from "../context/AppContext";
 import { Product } from "../types";
@@ -31,10 +32,11 @@ import {
   QrCode,
   Calculator,
   MapPin,
-  Gift
-  ,PackageCheck,
+  Gift,
+  PackageCheck,
   PanelsTopLeft,
-  ShoppingBag
+  ShoppingBag,
+  Layers
 } from "lucide-react";
 
 import HomePageAdmin from "./Admin/HomePageAdmin";
@@ -77,7 +79,7 @@ export default function Admin() {
     deleteQuoteRequest
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"hero" | "menu" | "webp" | "products" | "landingPages" | "landingOrders" | "dealerPricing" | "dealerAccounts" | "dealerOrders" | "salesPrograms" | "homepage" | "aboutpage" | "knowledge" | "academy" | "recruitment" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions" | "dealers" | "warranties">("hero");
+  const [activeTab, setActiveTab] = useState<"hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "dealerPricing" | "dealerAccounts" | "dealerOrders" | "salesPrograms" | "homepage" | "aboutpage" | "knowledge" | "academy" | "recruitment" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions" | "dealers" | "warranties">("hero");
 
   // Hero config state & multi-slides control
   const [heroTitle, setHeroTitle] = useState(heroSettings.title);
@@ -110,7 +112,7 @@ export default function Admin() {
       id: "slide-" + Date.now(),
       title: "TIÊU ĐỀ SLIDE MỚI",
       subtitle: "KÍCH HOẠT SỨC MẠNH",
-      description: "Mô tả ngắn gọn về sản phẩm hoặc giải pháp Lithium Voltara mới trong slide này.",
+      description: "Mô tả ngắn gọn về sản phẩm, dịch vụ hoặc giải pháp in 3D trong slide này.",
       bannerImage: "/images/voltara_banner.webp",
       logoTextImage: "/images/logo-text-voltera.webp",
       useLogoImage: false
@@ -551,20 +553,36 @@ export default function Admin() {
             </a>
 
             <button
-  onClick={() => setActiveTab("webp")}
-  className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-    activeTab === "webp"
-      ? "bg-gold-dark/10 border-gold-light text-gold-light"
-      : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-    <Upload className="w-4 h-4" />
-    Công cụ WEBP
-  </span>
+              id="admin-tab-webp"
+              onClick={() => setActiveTab("webp")}
+              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
+                activeTab === "webp"
+                  ? "bg-gold-dark/10 border-gold-light text-gold-light"
+                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Upload className="w-4 h-4" />
+                Công cụ WEBP
+              </span>
+              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "webp" ? "rotate-90 text-gold-light" : ""}`} />
+            </button>
 
-  <ChevronRight className="w-4 h-4" />
-</button>
+            <button
+              id="admin-tab-promo-overlay"
+              onClick={() => setActiveTab("promoOverlay")}
+              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
+                activeTab === "promoOverlay"
+                  ? "bg-gold-dark/10 border-gold-light text-gold-light"
+                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Layers className="w-4 h-4" />
+                Công cụ Promo Overlay
+              </span>
+              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "promoOverlay" ? "rotate-90 text-gold-light" : ""}`} />
+            </button>
 
             {/* Quick Helper guidelines */}
             <div className="mt-8 p-4 bg-[#0A0A0A] border border-[#1A1A1A] select-none text-[#F5C45A]">
@@ -589,7 +607,7 @@ export default function Admin() {
                     <Zap className="w-4 h-4 text-gold-light" />
                     BẢN TIN QUẢN TRỊ SLIDESHOW BANNER CHỦ ({slides.length})
                   </h2>
-                  <p className="text-xs text-gray-400">Điều chỉnh ảnh banner, hiệu ứng chuyển đổi slide tự động, và các tiêu đề truyền cảm hứng năng lượng Voltara.</p>
+                  <p className="text-xs text-gray-400">Điều chỉnh ảnh banner, hiệu ứng chuyển slide và nội dung giới thiệu Xưởng In 3D.</p>
                 </div>
 
                 {/* Autoplay config */}
@@ -676,7 +694,7 @@ export default function Admin() {
                             type="text"
                             value={slide.title}
                             onChange={(e) => handleUpdateSlideField(slide.id, "title", e.target.value)}
-                            placeholder="Ví dụ: VOLTARA"
+                            placeholder="Ví dụ: XƯỞNG IN 3D"
                             className="w-full bg-black border border-[#1A1A1A] text-[#ECECEC] px-3 py-2 text-xs focus:outline-none focus:border-gold-light"
                           />
                         </div>
@@ -1019,6 +1037,8 @@ export default function Admin() {
             {activeTab === "warranties" && <WarrantyAdmin />}
 
             {activeTab === "webp" && <WebpConverterAdmin />}
+
+            {activeTab === "promoOverlay" && <PromoOverlayAdmin />}
 
           </div>
 

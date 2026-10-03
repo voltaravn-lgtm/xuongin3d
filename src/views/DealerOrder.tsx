@@ -127,7 +127,7 @@ export default function DealerOrder() {
     }
 
     try {
-      const saved = JSON.parse(localStorage.getItem(`voltara_dealer_cart_${user.uid}`) || '{}') as Record<string, unknown>;
+      const saved = JSON.parse(localStorage.getItem(`xuongin3d_dealer_cart_${user.uid}`) || '{}') as Record<string, unknown>;
       const restored = Object.entries(saved).reduce<Record<string, number>>((result, [productId, quantity]) => {
         const normalizedQuantity = Math.min(9999, Math.max(0, Math.floor(Number(quantity) || 0)));
         if (normalizedQuantity > 0) result[productId] = normalizedQuantity;
@@ -136,14 +136,14 @@ export default function DealerOrder() {
       setQuantities(restored);
     } catch {
       setQuantities({});
-      localStorage.removeItem(`voltara_dealer_cart_${user.uid}`);
+      localStorage.removeItem(`xuongin3d_dealer_cart_${user.uid}`);
     }
     setLoadedCartUid(user.uid);
   }, [canAccessDealerOrder, user?.uid]);
 
   useEffect(() => {
     if (!canAccessDealerOrder || !user?.uid || loadedCartUid !== user.uid) return;
-    const storageKey = `voltara_dealer_cart_${user.uid}`;
+    const storageKey = `xuongin3d_dealer_cart_${user.uid}`;
     const activeQuantities = Object.fromEntries(Object.entries(quantities).filter(([, quantity]) => quantity > 0));
     if (Object.keys(activeQuantities).length) localStorage.setItem(storageKey, JSON.stringify(activeQuantities));
     else localStorage.removeItem(storageKey);
@@ -180,8 +180,8 @@ export default function DealerOrder() {
 
   useEffect(() => {
     const openMobileCart = () => setIsMobileCartOpen(true);
-    window.addEventListener('voltara:open-dealer-cart', openMobileCart);
-    return () => window.removeEventListener('voltara:open-dealer-cart', openMobileCart);
+    window.addEventListener('xuongin3d:open-dealer-cart', openMobileCart);
+    return () => window.removeEventListener('xuongin3d:open-dealer-cart', openMobileCart);
   }, []);
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import { SOLUTIONS_DATA, PROJECTS_DATA } from "../data";
 import { SectionTitle, SolutionCard } from "../components/Cards";
 import { useApp } from "../context/AppContext";
 import { getMenuBanner } from "../lib/menuBanners";
+import PageHero from "../components/PageHero";
 
 export default function Solutions() {
   const { menuItems } = useApp();
@@ -19,31 +20,31 @@ export default function Solutions() {
     {
       num: "01",
       title: "TIẾP NHẬN YÊU CẦU",
-      desc: "Lắng nghe, ghi nhận và phân tích sâu sắc các nhu cầu đặc thù của phụ tải hệ thống.",
+      desc: "Tiếp nhận mục tiêu, số lượng, kích thước và yêu cầu sử dụng của doanh nghiệp.",
       icon: <ClipboardList className="w-5 h-5" />
     },
     {
       num: "02",
       title: "KHẢO SÁT & TƯ VẤN",
-      desc: "Kỹ sư đo lường thực địa dòng xả đột kích, đưa ra phương án sạc dự phòng khả thi.",
+      desc: "Xem file, bản vẽ hoặc mẫu thật và đề xuất công nghệ, vật liệu phù hợp.",
       icon: <HelpCircle className="w-5 h-5" />
     },
     {
       num: "03",
       title: "THIẾT KẾ GIẢI PHÁP",
-      desc: "Chọn cấu hình cell lithium, thiết lập mạch quản lý bảo mật BMS và bản vẽ 3D.",
+      desc: "Dựng hoặc tối ưu file 3D, thống nhất cấu trúc, màu sắc và cách hoàn thiện.",
       icon: <PenTool className="w-5 h-5" />
     },
     {
       num: "04",
-      title: "TRIỂN KHAI & LẮP ĐẶT",
-      desc: "Lắp ráp module dập vỏ chuyên nghiệp, đấu nối mạch truyền tin đúng tiến độ.",
+      title: "TẠO MẪU & SẢN XUẤT",
+      desc: "Tạo mẫu khi cần, xác nhận phương án rồi sản xuất theo tiến độ đã thống nhất.",
       icon: <Wrench className="w-5 h-5" />
     },
     {
       num: "05",
-      title: "BẢO HÀNH & HỖ TRỢ",
-      desc: "Xác thực kích hoạt điện tử bảo trì định kỳ thông số SOH, giải quyết sự cố 24/7.",
+      title: "BÀN GIAO & HỖ TRỢ",
+      desc: "Kiểm tra, hoàn thiện, đóng gói và hỗ trợ các yêu cầu sau bàn giao.",
       icon: <Headphones className="w-5 h-5" />
     }
   ];
@@ -51,45 +52,14 @@ export default function Solutions() {
   return (
     <div id="solutions-page" className="pb-20 relative bg-[#050505]">
       
-      {/* 1. HERO BANNER - FULL WIDTH / HIGH QUALITY MATCHING HOMEPAGE & PRODUCTS */}
-      <section className="relative min-h-[45vh] lg:min-h-[55vh] flex items-center overflow-hidden bg-black pt-16 lg:pt-24 pb-16 lg:pb-24 mb-12">
-        {/* Full-screen Background Banner Image */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img 
-            src={bannerImage} 
-            alt="Voltara Solutions Banner Background" 
-            className="w-full h-full object-cover object-center transform scale-100 opacity-80"
-            referrerPolicy="no-referrer"
-          />
-          {/* Overlay to ensure maximum text readability and aesthetic integration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 lg:from-black/95 lg:via-black/75 lg:to-transparent/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          {/* Breadcrumb navigation */}
-          <div className="flex items-center gap-2 text-xs font-mono tracking-wider text-gray-400 mb-6">
-            <Link to="/" className="hover:text-gold-light pointer-events-auto transition-colors">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-gold-dark font-black">Giải pháp</span>
-          </div>
-
-          <div className="max-w-3xl flex flex-col items-start text-left">
-            <span className="text-xs font-display font-black tracking-[0.25em] text-gold-light uppercase mb-2">
-              NĂNG LỰC DỰ ÁN
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold leading-tight text-white uppercase mb-6 glow-text tracking-tight">
-              GIẢI PHÁP PHÂN PHỐI NĂNG LƯỢNG LITHIUM
-            </h1>
-            
-            <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-28 mb-6" />
-
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-2xl backdrop-blur-[1px]">
-              Đồng hành cùng phát triển bền vững cho hộ gia đình và đại xí nghiệp quốc gia. Tránh rủi ro gián đoạn sản xuất kinh doanh bằng các mô hình dự trữ an tâm dứt điểm.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={bannerImage}
+        imageAlt="Giải pháp in 3D cho doanh nghiệp"
+        breadcrumb="Giải pháp doanh nghiệp"
+        eyebrow="Thiết kế và sản xuất theo dự án"
+        title="Giải pháp in 3D cho doanh nghiệp"
+        description="Hỗ trợ doanh nghiệp tạo mẫu nhanh, sản xuất POSM, quà tặng, mô hình trình diễn, đồ gá và chi tiết tùy chỉnh với số lượng linh hoạt."
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -97,7 +67,7 @@ export default function Solutions() {
         <div className="space-y-8 mb-20" id="solutions-by-demand">
           <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
             <h3 className="text-xs font-display font-black text-white uppercase tracking-wider">
-              CÁC GIẢI PHÁP THEO CHƯƠNG TRÌNH NHU CẦU
+              CÁC GIẢI PHÁP THEO NHU CẦU
             </h3>
             <span className="text-[10px] text-gray-500 font-mono">AVAILABLE SERVICES</span>
           </div>
@@ -116,7 +86,7 @@ export default function Solutions() {
             <SectionTitle
               subtitle="QUY TRÌNH QUẢN TRỊ"
               title="QUY TRÌNH TRIỂN KHAI GIẢI PHÁP"
-              description="Toàn bộ quy trình diễn ra dưới sự giám sát chặt chẽ của các chuyên gia công nghệ năng lượng bậc cao."
+              description="Quy trình được thống nhất theo từng mốc từ tiếp nhận yêu cầu đến duyệt mẫu, sản xuất và bàn giao."
             />
 
             {/* Horizontal timeline of steps with link arrows */}
@@ -155,9 +125,9 @@ export default function Solutions() {
         <div className="mb-20" id="featured-projects">
           
           <SectionTitle
-            subtitle="THỰC TẾ CHIẾN TRƯỜNG"
-            title="DỰ ÁN PHÂN PHỐI TIÊU BIỂU"
-            description="Bản đồ các địa danh và dự án tiêu biểu lắp đặt thành công thiết bị Voltara của chúng tôi."
+            subtitle="MẪU DỰ ÁN"
+            title="DỰ ÁN IN 3D TIÊU BIỂU"
+            description="Các nhóm dự án xưởng có thể triển khai. Hình ảnh thực tế sẽ tiếp tục được cập nhật trong trang quản trị."
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -171,7 +141,7 @@ export default function Solutions() {
                     className="w-full h-full object-cover filter brightness-75 group-hover:scale-105 transition-all duration-500"
                   />
                   <div className="absolute top-3 left-3 bg-[#0A0A0A] border border-gold-dark/30 px-2 py-0.5 text-[8.5px] font-display font-bold text-gold-light uppercase tracking-wider">
-                    DỰ ÁN ĐỒNG BỘ
+                    DỰ ÁN THEO YÊU CẦU
                   </div>
                 </div>
 
@@ -200,17 +170,17 @@ export default function Solutions() {
             CẦN TƯ VẤN THIẾT KẾ RIÊNG?
           </span>
           <h3 className="text-sm font-display font-black text-[#ECECEC] uppercase tracking-widest mb-4">
-            Đội ngũ Kỹ sư R&D Voltara luôn sẵn sàng khảo sát thực tế miễn phí
+            Xưởng sẵn sàng tiếp nhận và phân tích yêu cầu dự án
           </h3>
           <p className="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed mb-6">
-            Thiết kế riêng khối pin lắp ráp cho máy robot hàn tự động, cụm xe nâng logistic đặc chủng theo tệp CAD/3D phụ tải yêu cầu của quý vị.
+            Gửi file CAD/3D, bản vẽ, hình ảnh hoặc mẫu thật để được tư vấn giải pháp, vật liệu và kế hoạch thực hiện phù hợp.
           </p>
 
           <Link
             to="/lien-he?type=spec_request"
             className="inline-flex items-center gap-1.5 bg-gradient-to-r from-gold-dark to-gold-light text-black font-display font-bold py-3.5 px-8 text-xs tracking-widest uppercase hover:opacity-90 active:scale-95 transition-all rounded-md"
           >
-            <span>ĐĂNG KÝ KHẢO SÁT CHUYÊN SÂU</span>
+            <span>GỬI YÊU CẦU DỰ ÁN</span>
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>

@@ -134,7 +134,7 @@ export default function OrderRequestModal({ isOpen, onClose, productName, varian
                 Đã nhận đơn hàng!
               </h4>
               <p className="text-xs text-gray-400 max-w-sm leading-relaxed px-4">
-                Voltara sẽ liên hệ xác nhận sản phẩm <strong className="text-gold-light">"{productName}"</strong> và thông tin giao hàng.
+                Xưởng In 3D sẽ liên hệ xác nhận sản phẩm <strong className="text-gold-light">"{productName}"</strong> và thông tin giao hàng.
               </p>
             </div>
           ) : (

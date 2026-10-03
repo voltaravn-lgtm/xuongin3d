@@ -2,41 +2,35 @@ import React from "react";
 import { Metadata } from "next";
 import Script from "next/script";
 import RootClientLayout from "./RootClientLayout";
-import MascotOverlay from "../components/MascotOverlay";
-import ProductSalesMascot from "../components/ProductSalesMascot";
-import OrderThankYouMascot from "../components/OrderThankYouMascot";
 import { buildMetadata, organizationJsonLd, siteName, siteUrl, websiteJsonLd } from "../lib/seo";
 import "../index.css";
 
 export const metadata: Metadata = {
   ...buildMetadata({
-    title: "Voltara - Pin Lithium, UPS và giải pháp lưu trữ năng lượng",
+    title: "Xưởng In 3D - Thiết kế và in 3D theo yêu cầu",
     path: "/",
-    image: "/images/logo-voltara-new.webp",
+    image: "/images/san-pham.webp",
   }),
   metadataBase: new URL(siteUrl),
   applicationName: siteName,
-  category: "energy",
+  category: "3D printing",
   keywords: [
-    "Voltara",
-    "pin lithium",
-    "pin LiFePO4",
-    "UPS",
-    "bộ lưu điện",
-    "pin xe điện",
-    "lưu trữ năng lượng",
-    "bảo hành pin lithium",
+    "xưởng in 3D",
+    "in 3D theo yêu cầu",
+    "dịch vụ in 3D TP.HCM",
+    "mô hình in 3D",
+    "quà tặng in 3D",
+    "POSM in 3D",
+    "sa bàn kiến trúc",
+    "in 3D FDM Resin",
   ],
   manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.webp", sizes: "1334x1334", type: "image/webp" },
     ],
-    shortcut: "/favicon.ico",
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.webp",
+    apple: [{ url: "/favicon.webp", sizes: "1334x1334", type: "image/webp" }],
   },
 };
 
@@ -46,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className="dark scroll-smooth" suppressHydrationWarning>
+    <html lang="vi" className="dark scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         className="min-h-screen bg-[#050505] text-[#ECECEC] antialiased"
         suppressHydrationWarning
@@ -64,9 +58,6 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <RootClientLayout>{children}</RootClientLayout>
-        <MascotOverlay />
-        <ProductSalesMascot />
-        <OrderThankYouMascot />
       </body>
     </html>
   );

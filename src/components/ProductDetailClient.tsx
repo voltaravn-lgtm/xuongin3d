@@ -16,7 +16,7 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
-  const { products, salesPrograms, addToCart } = useApp();
+  const { products, salesPrograms, addToCart, contactSettings } = useApp();
   const currentProduct = products.find((item) => item.id === product.id) || product;
   const productSource = (products.length > 0 ? products : [product, ...relatedProducts]).filter(item => !item.hidden);
   const sameCategoryProducts = productSource.filter(
@@ -415,11 +415,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   {hasVisiblePrice ? "Đặt hàng / tư vấn" : "Yêu cầu báo giá"}
                 </button>
                 <a
-                  href="tel:19001234"
+                  href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`}
                   className="inline-flex h-12 items-center justify-center gap-2 border border-gold-dark/30 px-6 text-[11px] font-display font-bold uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
                 >
                   <Phone className="h-4 w-4" />
-                  1900 1234
+                  {contactSettings.hotline}
                 </a>
               </div>
             </div>
@@ -515,14 +515,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             <div className="mb-4 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-gold-light" />
               <h2 className="font-display text-sm font-black uppercase tracking-widest text-white">
-                Cam kết Voltara
+                Cam kết của Xưởng In 3D
               </h2>
             </div>
             <ul className="space-y-3 text-xs leading-relaxed text-gray-300">
               {[
-                "Tư vấn đúng cấu hình theo thiết bị và môi trường sử dụng.",
-                "Kiểm tra dung lượng, điện áp và mạch bảo vệ trước khi bàn giao.",
-                "Hỗ trợ đại lý, kỹ thuật và bảo hành chính hãng Voltara.",
+                "Tư vấn công nghệ và vật liệu theo mục đích sử dụng.",
+                "Thống nhất kích thước, màu sắc và phương án trước khi sản xuất.",
+                "Kiểm tra sản phẩm và hỗ trợ sau bàn giao.",
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-gold-light" />

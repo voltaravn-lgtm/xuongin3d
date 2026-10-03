@@ -14,6 +14,7 @@ import { getMenuBanner } from "../lib/menuBanners";
 import ProductDetailClient from "../components/ProductDetailClient";
 import ProductPromoImage from "../components/ProductPromoImage";
 import { getProductDescriptionExcerpt } from "../lib/productDescription";
+import PageHero from "../components/PageHero";
 
 const PRODUCTS_PAGE_SIZE = 12;
 
@@ -73,7 +74,7 @@ export default function Products() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedIdFromUrl = searchParams.get("select");
-  const { products, showToast, menuItems, productCategories } = useApp();
+  const { products, showToast, menuItems, productCategories, contactSettings } = useApp();
   const bannerImage = getMenuBanner(menuItems, "/san-pham", "/images/san-pham.webp");
   const visibleProducts = useMemo(() => products.filter(product => !product.hidden), [products]);
 
@@ -235,45 +236,14 @@ export default function Products() {
   return (
     <div id="products-page" className="pb-20 relative bg-[#050505]">
       
-      {/* 1. HERO BANNER - FULL SCREEN / HIGH QUALITY MATCHING HOMEPAGE & ABOUT */}
-      <section className="relative min-h-[45vh] lg:min-h-[55vh] flex items-center overflow-hidden bg-black pt-16 lg:pt-24 pb-16 lg:pb-24 mb-12">
-        {/* Full-screen Background Banner Image */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img 
-            src={bannerImage} 
-            alt="Voltara Products Banner Background" 
-            className="w-full h-full object-cover object-center transform scale-100 opacity-80"
-            referrerPolicy="no-referrer"
-          />
-          {/* Overlay to ensure maximum text readability and aesthetic integration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 lg:from-black/95 lg:via-black/75 lg:to-transparent/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          {/* Breadcrumb navigation */}
-          <div className="flex items-center gap-2 text-xs font-mono tracking-wider text-gray-400 mb-6">
-            <Link to="/" className="hover:text-gold-light pointer-events-auto transition-colors">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-gold-dark">Sản phẩm</span>
-          </div>
-
-          <div className="max-w-3xl flex flex-col items-start text-left">
-            <span className="text-xs font-display font-semibold tracking-[0.25em] text-gold-light uppercase mb-2">
-              MÀNG LƯỚI NĂNG LƯỢNG
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-black leading-tight text-white uppercase mb-6 glow-text">
-              SẢN PHẨM VOLTARA
-            </h1>
-            
-            <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-28 mb-6" />
-
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-2xl backdrop-blur-[1px]">
-              Voltara cung cấp đa dạng các hệ pin Lithium, UPS cửa cuốn và tủ ắc quy điện áp cao, được đo kiểm nghiêm ngặt, cách điện toàn mạch an toàn cho gia đình đến công trường.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={bannerImage}
+        imageAlt="Sản phẩm in 3D theo yêu cầu"
+        breadcrumb="Sản phẩm"
+        eyebrow="Danh mục sản phẩm"
+        title="Sản phẩm in 3D"
+        description="Khám phá các sản phẩm decor, tiện ích, quà tặng, mô hình, POSM và sa bàn. Mỗi mẫu có thể được điều chỉnh về kích thước, màu sắc và vật liệu."
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -354,26 +324,25 @@ export default function Products() {
               </div>
               <h4 className="text-[11px] font-display font-extrabold text-gold-light uppercase tracking-widest border-b border-white/5 pb-2.5 mb-3 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-gold-dark" />
-                <span>CAM KẾT VOLTARA</span>
+                <span>CAM KẾT CỦA XƯỞNG</span>
               </h4>
               <ul className="space-y-2 text-[10.5px] text-gray-400">
-                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Dung lượng thực chuẩn 100%</span></li>
-                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Hóa chất cell pin nhập khẩu cao cấp</span></li>
-                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Phiếu bảo hành minh bạch minh bạch</span></li>
-                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Đội ngũ kỹ thuật hỗ trợ tận tâm 24/7</span></li>
-                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Giao vận màng lưới toàn quốc</span></li>
+                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Tư vấn vật liệu theo mục đích sử dụng</span></li>
+                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Thống nhất kích thước trước khi sản xuất</span></li>
+                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Kiểm tra sản phẩm trước bàn giao</span></li>
+                <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-gold-light shrink-0 mt-0.5" /> <span>Hỗ trợ tiếp nhận yêu cầu 24/7</span></li>
               </ul>
             </div>
 
             {/* C. DIRECT HOTLINE ADVISOR CAN TU VAN? */}
             <div className="border border-gold-dark/20 bg-gold-dark/5 p-5 text-center">
               <h4 className="text-[11px] font-display font-bold text-white uppercase tracking-wider mb-1">CẦN TƯ VẤN SẢN PHẨM?</h4>
-              <p className="text-[10px] text-gray-500 mb-3.5">Hỗi trợ kỹ thuật giải đáp 24/7 miễn phí cuộc gọi.</p>
-              <a href="tel:19001234" className="inline-flex items-center gap-2 bg-gold-dark text-black font-mono font-extrabold text-sm px-4 py-2.5 rounded-md shadow-[0_0_10px_rgba(216,154,43,0.3)] hover:bg-gold-light transition-all">
+              <p className="text-[10px] text-gray-500 mb-3.5">Tiếp nhận yêu cầu và tư vấn 24/7.</p>
+              <a href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-2 bg-gold-dark text-black font-mono font-extrabold text-sm px-4 py-2.5 rounded-md shadow-[0_0_10px_rgba(216,154,43,0.3)] hover:bg-gold-light transition-all">
                 <Phone className="w-4 h-4" />
-                <span>1900 1234</span>
+                <span>{contactSettings.hotline}</span>
               </a>
-              <span className="block text-[8.5px] text-gray-600 mt-2 font-mono">(8h00 - 17h30, Thứ 2 - Thứ 7)</span>
+              <span className="block text-[8.5px] text-gray-600 mt-2 font-mono">({contactSettings.workingHours})</span>
             </div>
 
           </div>
@@ -469,13 +438,13 @@ export default function Products() {
 
                   {/* Voltage */}
                   <div className="flex flex-col">
-                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Điện áp</label>
+                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Kích thước / quy mô</label>
                     <select
                       value={filterVoltage}
                       onChange={(e) => setFilterVoltage(e.target.value)}
                       className="bg-black border border-white/10 text-xs text-gray-300 h-9 px-3 rounded-md focus:outline-none focus:border-gold-light"
                     >
-                      <option value="all">Tất cả điện áp</option>
+                      <option value="all">Tất cả kích thước</option>
                       {voltages.filter(v => v !== "all").map(v => (
                         <option key={v} value={v}>{v}</option>
                       ))}
@@ -484,13 +453,13 @@ export default function Products() {
 
                   {/* Capacity */}
                   <div className="flex flex-col">
-                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Dung lượng</label>
+                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Hình thức thực hiện</label>
                     <select
                       value={filterCapacity}
                       onChange={(e) => setFilterCapacity(e.target.value)}
                       className="bg-black border border-white/10 text-xs text-gray-300 h-9 px-3 rounded-md focus:outline-none focus:border-gold-light"
                     >
-                      <option value="all">Tất cả dung lượng</option>
+                      <option value="all">Tất cả hình thức</option>
                       {capacities.filter(c => c !== "all").map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -656,10 +625,10 @@ export default function Products() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-[11px] font-display font-extrabold text-[#ECECEC] uppercase tracking-wider group-hover:text-gold-light transition-colors">
-                  CÔNG NGHỆ HIỆN ĐẠI
+                  CÔNG NGHỆ FDM & RESIN
                 </h4>
                 <p className="text-[10.5px] text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                  Ứng dụng công nghệ tiên tiến trong từng sản phẩm
+                  Lựa chọn công nghệ theo kích thước và độ chi tiết
                 </p>
               </div>
             </div>
@@ -671,10 +640,10 @@ export default function Products() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-[11px] font-display font-extrabold text-[#ECECEC] uppercase tracking-wider group-hover:text-gold-light transition-colors">
-                  AN TOÀN TUYỆT ĐỐI
+                  ĐA DẠNG VẬT LIỆU
                 </h4>
                 <p className="text-[10.5px] text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                  Hệ thống bảo vệ đa lớp, chống cháy nổ
+                  PLA, PETG, ABS, TPU, Resin và vật liệu phù hợp
                 </p>
               </div>
             </div>
@@ -686,10 +655,10 @@ export default function Products() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-[11px] font-display font-extrabold text-[#ECECEC] uppercase tracking-wider group-hover:text-gold-light transition-colors">
-                  HIỆU SUẤT CAO
+                  THIẾT KẾ LINH HOẠT
                 </h4>
                 <p className="text-[10.5px] text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                  Tối ưu hiệu suất, tiết kiệm năng lượng
+                  Điều chỉnh kích thước, màu sắc và công năng sử dụng
                 </p>
               </div>
             </div>
@@ -701,10 +670,10 @@ export default function Products() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-[11px] font-display font-extrabold text-[#ECECEC] uppercase tracking-wider group-hover:text-gold-light transition-colors">
-                  THÂN THIỆN MÔI TRƯỜNG
+                  NHẬN TỪ MỘT SẢN PHẨM
                 </h4>
                 <p className="text-[10.5px] text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                  Pin Lithium không chì, không độc hại, dễ tái chế
+                  Phù hợp mẫu thử, cá nhân hóa và đơn hàng số lượng nhỏ
                 </p>
               </div>
             </div>
@@ -829,20 +798,20 @@ export default function Products() {
                       <span>Bảo hành {selectedProduct.warranty}</span>
                     </span>
                     <span>•</span>
-                    <span>Chính hãng Voltara</span>
+                      <span>Sản xuất theo yêu cầu</span>
                   </div>
 
                   {/* Supplementary quick contact info strip */}
                   <div className="p-3 bg-gold-dark/5 border border-gold-dark/15 space-y-1 text-left rounded-md">
                     <div className="text-[10px] uppercase font-display font-black text-gold-light tracking-wider flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-gold-dark shrink-0" />
-                      <span>LIÊN HỆ ĐẶT HÀNG & TƯ VẤN CHIẾT KHẤU</span>
+                      <span>LIÊN HỆ ĐẶT HÀNG & TƯ VẤN PHƯƠNG ÁN</span>
                     </div>
                     <div className="text-[11px] text-gray-300">
-                      Tổng đài: <strong className="text-white">1900 1234</strong> | Zalo kỹ thuật: <strong className="text-gold-light">0945 123 456</strong>
+                      Hotline: <strong className="text-white">{contactSettings.hotline}</strong> | Email: <strong className="text-gold-light">{contactSettings.email}</strong>
                     </div>
                     <div className="text-[10px] text-gray-500">
-                      Giao hàng hỏa tốc và hỗ trợ cấu hình mạch sạc xả BMS riêng cho từng dòng phụ tải.
+                      Gửi file, bản vẽ hoặc hình ảnh tham khảo để được tư vấn vật liệu và báo giá.
                     </div>
                   </div>
 
@@ -853,7 +822,7 @@ export default function Products() {
                       className="flex-1 bg-gradient-to-r from-gold-dark to-gold-light text-black font-display font-bold py-3 text-xs tracking-widest uppercase hover:opacity-90 active:scale-95 transition-all text-center flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(216,154,43,0.3)]"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      <span>YÊU CẦU BÁO GIÁ ĐẠI LÝ</span>
+                      <span>YÊU CẦU BÁO GIÁ</span>
                     </button>
                     
                     <button
@@ -978,7 +947,7 @@ export default function Products() {
               {/* Voltage Selectors */}
               <div className="space-y-2">
                 <h4 className="text-[10px] font-display font-bold text-gray-400 uppercase tracking-wider border-l-2 border-gold-light pl-2">
-                  ĐIỆN ÁP (V)
+                  KÍCH THƯỚC / QUY MÔ
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {voltages.map((v) => (
@@ -1000,7 +969,7 @@ export default function Products() {
               {/* Capacity Selectors */}
               <div className="space-y-2">
                 <h4 className="text-[10px] font-display font-bold text-gray-400 uppercase tracking-wider border-l-2 border-gold-light pl-2">
-                  DUNG LƯỢNG (Ah)
+                  HÌNH THỨC THỰC HIỆN
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {capacities.map((c) => (

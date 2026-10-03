@@ -24,63 +24,21 @@ function formatSearchPrice(price: string | undefined) {
   return `${Number(digits).toLocaleString("vi-VN")}đ`;
 }
 
-export const VoltaraLogo: React.FC<{ className?: string; iconOnly?: boolean }> = ({ className = "h-8", iconOnly = false }) => {
-  const [useImgFallback, setUseImgFallback] = useState(false);
-
-  return (
-    <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      {!useImgFallback ? (
-        <img
-          src="/images/logo-voltara.webp"
-          alt="Voltara Logo"
-          className="h-10 lg:h-12 w-auto object-contain"
-          referrerPolicy="no-referrer"
-          onError={() => {
-            setUseImgFallback(true);
-          }}
-        />
-      ) : (
-        <>
-          {/* Golden futuristic shield with lightning bolt inside */}
-          <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 100 100" className="w-8.5 h-8.5 filter drop-shadow-[0_0_8px_rgba(218,154,43,0.6)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Hexagonal glowing border */}
-              <polygon points="50,5 90,28 90,72 50,95 10,72 10,28" stroke="url(#goldGradient)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="#0A0A0A" />
-              {/* Inner futuristic V with lightning bolt */}
-              <path d="M28,30 L45,70 L52,70 L60,45" stroke="#ECECEC" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M42,25 L65,25 L50,55 L70,55 L38,82 L47,50 L32,50 Z" fill="url(#lightningGradient)" />
-              
-              <defs>
-                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F5C45A" />
-                  <stop offset="100%" stopColor="#D89A2B" />
-                </linearGradient>
-                <linearGradient id="lightningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FFE082" />
-                  <stop offset="100%" stopColor="#F5C45A" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          
-          {!iconOnly && (
-            <div className="flex flex-col tracking-wider shrink-0">
-              <span className="font-display font-black text-lg xl:text-xl italic text-white tracking-[0.12em] leading-none mb-0.5 glow-text">
-                VOLTARA
-              </span>
-              <span className="text-[7px] font-display text-gold-dark font-medium tracking-[0.28em] uppercase leading-none pl-0.5">
-                KÍCH HOẠT TƯƠNG LAI
-              </span>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
+export const SiteLogo: React.FC<{ className?: string; iconOnly?: boolean }> = ({
+  className = "w-[132px] sm:w-[146px] xl:w-[158px]",
+  iconOnly = false,
+}) => (
+  <img
+    src={iconOnly ? "/favicon.webp" : "/images/logo-x3d.webp"}
+    alt="Xưởng In 3D"
+    className={`block h-auto max-h-[62px] select-none object-contain object-left ${className}`}
+    width={iconOnly ? 64 : 1328}
+    height={iconOnly ? 64 : 575}
+    decoding="async"
+  />
+);
 
 export default function Header() {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,21 +46,13 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("voltara_display_mode");
+    const savedMode = localStorage.getItem("xuongin3d_display_mode");
     const nextIsDayMode = savedMode === "day";
     setIsDayMode(nextIsDayMode);
     document.body.classList.toggle("day-mode", nextIsDayMode);
@@ -112,7 +62,7 @@ export default function Header() {
     const nextIsDayMode = !isDayMode;
     setIsDayMode(nextIsDayMode);
     document.body.classList.toggle("day-mode", nextIsDayMode);
-    localStorage.setItem("voltara_display_mode", nextIsDayMode ? "day" : "night");
+    localStorage.setItem("xuongin3d_display_mode", nextIsDayMode ? "day" : "night");
   };
 
   const { menuItems, productCategories, products, articles, openCart, cartCount } = useApp();
@@ -120,7 +70,7 @@ export default function Header() {
   const handleCartClick = () => {
     if (isDealerOrderPage) {
       if (window.matchMedia("(max-width: 1023px)").matches) {
-        window.dispatchEvent(new CustomEvent("voltara:open-dealer-cart"));
+        window.dispatchEvent(new CustomEvent("xuongin3d:open-dealer-cart"));
         return;
       }
       document.getElementById("dealer-order-cart")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -184,19 +134,15 @@ export default function Header() {
     <>
       <header
         id="main-header"
-        className={`sticky top-0 w-full z-50 transition-all duration-300 border-b ${
-          isScrolled
-            ? "bg-[#050505]/95 backdrop-blur-md py-3 shadow-lg border-gold-dark/15"
-            : "bg-[#050505] py-4.5 border-white/5"
-        }`}
+        className="sticky top-0 z-50 w-full border-b border-gold-dark/15 bg-[#050505]/95 py-3.5 shadow-lg backdrop-blur-md"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-nowrap lg:gap-2 xl:gap-4">
           <Link to="/" id="logo-link" className="shrink-0">
-            <VoltaraLogo />
+            <SiteLogo />
           </Link>
 
           {/* Desktop Navigation Menu */}
-          <nav id="desktop-nav" className="hidden lg:flex items-center gap-0.5 xl:gap-2 whitespace-nowrap">
+          <nav id="desktop-nav" className="hidden xl:flex items-center gap-0.5 whitespace-nowrap">
             {visibleMenuItems.map((item) => {
               const isActive =
                 item.path === "/"
@@ -259,7 +205,7 @@ export default function Header() {
           </nav>
 
           {/* Right Action buttons */}
-          <div id="header-actions" className="hidden lg:flex items-center gap-1.5 xl:gap-4 shrink-0">
+          <div id="header-actions" className="hidden xl:flex items-center gap-1.5 shrink-0">
             <button
               id="search-header-btn"
               onClick={() => setIsSearchOpen(true)}
@@ -294,15 +240,15 @@ export default function Header() {
 
             <Link
               id="header-cta-btn"
-              to="/dai-ly"
+              to="/in-3d-theo-yeu-cau"
               className="gold-border bg-transparent text-[10px] xl:text-xs font-display font-semibold tracking-wider xl:tracking-widest text-[#ECECEC] px-3.5 xl:px-6 py-2 rounded-md hover:bg-gold-dark hover:text-black transition-all duration-300 uppercase shadow-[0_0_15px_rgba(216,154,43,0.1)] hover:shadow-[0_0_20px_rgba(216,154,43,0.4)] shrink-0"
             >
-              Tìm Đại Lý
+              Gửi Yêu Cầu
             </Link>
           </div>
 
           {/* Mobile Header Actions */}
-          <div id="mobile-menu-trigger" className="flex lg:hidden items-center gap-1 sm:gap-2">
+          <div id="mobile-menu-trigger" className="flex xl:hidden items-center gap-1 sm:gap-2">
             <button
               id="search-mobile-btn"
               type="button"
@@ -355,7 +301,7 @@ export default function Header() {
         <div className="p-6 flex flex-col h-full justify-between">
           <div>
             <div className="flex items-center justify-between pb-6 border-b border-white/5">
-              <VoltaraLogo />
+              <SiteLogo />
               <button
                 id="close-mobile-drawer"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -416,7 +362,7 @@ export default function Header() {
         <div
           id="mobile-menu-backdrop"
           onClick={() => setIsMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 xl:hidden"
         />
       )}
       {isSearchOpen && (

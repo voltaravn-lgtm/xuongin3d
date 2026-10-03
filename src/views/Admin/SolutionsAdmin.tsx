@@ -90,7 +90,7 @@ export default function SolutionsAdmin() {
         ...formData,
         details: filteredDetails
       });
-      showToast("Thêm Giải pháp năng lượng mới thành công!", "success");
+      showToast("Thêm giải pháp doanh nghiệp mới thành công!", "success");
     }
     resetForm();
   };
@@ -106,10 +106,10 @@ export default function SolutionsAdmin() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
         <div>
           <h2 className="text-sm font-display font-black tracking-widest text-gold-light uppercase mb-1">
-            DANH SÁCH GIẢI PHÁP NĂNG LƯỢNG
+            DANH SÁCH GIẢI PHÁP DOANH NGHIỆP
           </h2>
           <p className="text-[11px] text-gray-500">
-            Cấu hình các giải pháp pin Lithium và trạm ESS hiệu năng cao cho website
+            Cấu hình các giải pháp tạo mẫu, POSM, mô hình và sản xuất in 3D cho website
           </p>
         </div>
         {!isAdding && !editingId && (
@@ -148,7 +148,7 @@ export default function SolutionsAdmin() {
                 required
                 value={formData.title}
                 onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Ví dụ: PIN LƯU TRỮ SOLAR ESS GIA ĐÌNH"
+                placeholder="Ví dụ: TẠO MẪU SẢN PHẨM NHANH"
                 className="w-full bg-[#121212] border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-light"
               />
             </div>

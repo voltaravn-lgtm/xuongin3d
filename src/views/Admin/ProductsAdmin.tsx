@@ -18,7 +18,7 @@ const defaultSpecTemplate: Product["specs"] = {
   "Trọng lượng thân máy": "",
   "Động cơ": "",
   "Kích thước bộ": "",
-  "Điện áp": "",
+  "Kích thước": "",
   "Mô-men xoắn tối đa": "",
 };
 
@@ -645,7 +645,7 @@ export default function ProductsAdmin() {
       });
     } else {
       setEditingProduct(null);
-      const blankForm = createBlankProductForm("VOLTARA-" + Math.floor(Math.random() * 90000 + 10000));
+    const blankForm = createBlankProductForm("IN3D-" + Math.floor(Math.random() * 90000 + 10000));
       descriptionDraftRef.current = blankForm.description || "";
       setProductForm(blankForm);
     }
@@ -1578,9 +1578,9 @@ export default function ProductsAdmin() {
       ["Danh mục", (product) => product.category],
       ["Danh mục con", (product) => product.subCategory],
       ["Thương hiệu", (product) => product.brand],
-      ["Điện áp", (product) => product.voltage],
-      ["Dung lượng", (product) => product.capacity],
-      ["Cell", (product) => product.cellType],
+      ["Kích thước / quy mô", (product) => product.voltage],
+      ["Hình thức thực hiện", (product) => product.capacity],
+      ["Vật liệu", (product) => product.cellType],
       ["Bảo hành", (product) => product.warranty],
       ["Giá bán", (product) => product.price],
       ["Giá giảm", (product) => product.salePrice],
@@ -1623,7 +1623,7 @@ export default function ProductsAdmin() {
     const today = new Date().toISOString().slice(0, 10);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `voltara-products-${today}.xls`;
+    link.download = `xuong-in-3d-products-${today}.xls`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1639,7 +1639,7 @@ export default function ProductsAdmin() {
             <Battery className="w-4 h-4 scale-110" />
             QUẢN LÝ KHO HÀNG SẢN PHẨM ({products.length})
           </h2>
-          <p className="text-xs text-gray-400">Xem và hiệu chỉnh dòng xả sạc, dung lượng pin, bảo hành kỹ thuật của các dòng sản phẩm.</p>
+          <p className="text-xs text-gray-400">Quản lý danh mục, kích thước, vật liệu, giá và thông tin các sản phẩm in 3D.</p>
         </div>
         
         <button
@@ -2082,7 +2082,7 @@ export default function ProductsAdmin() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Nhãn hiệu điện thế (Voltage)</label>
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Kích thước / quy mô</label>
                   <input
                     type="text"
                     required
@@ -2093,7 +2093,7 @@ export default function ProductsAdmin() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Dung lượng (Capacity)</label>
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Hình thức thực hiện</label>
                   <input
                     type="text"
                     value={productForm.capacity}
@@ -2223,12 +2223,12 @@ export default function ProductsAdmin() {
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Cell</label>
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Vật liệu</label>
                   <input
                     type="text"
                     value={productForm.cellType}
                     onChange={(e) => setProductForm(prev => ({ ...prev, cellType: e.target.value }))}
-                    placeholder="VD: Pin Lithium Sắt Phosphate (LiFePO4)"
+                    placeholder="VD: PLA / PETG / Resin"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
                 </div>

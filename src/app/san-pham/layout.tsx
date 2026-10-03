@@ -3,9 +3,9 @@ import { Metadata } from "next";
 import { buildMetadata } from "../../lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Sản phẩm Voltara - Pin Lithium, UPS và ESS",
+  title: "Sản phẩm in 3D - Decor, mô hình, POSM và sa bàn",
   description:
-    "Khám phá sản phẩm Voltara: pin Lithium cho máy công cụ, pin xe điện, bộ lưu điện UPS và hệ lưu trữ năng lượng ESS.",
+    "Khám phá sản phẩm in 3D: đồ decor, tiện ích, quà tặng, mô hình, chậu cây, POSM doanh nghiệp và sa bàn kiến trúc.",
   path: "/san-pham",
   image: "/images/san-pham.webp",
 });

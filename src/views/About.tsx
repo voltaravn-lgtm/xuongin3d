@@ -8,62 +8,32 @@ import { Link } from "react-router-dom";
 import { ShieldCheck, Zap, Award, Globe, Users, ChevronRight, Activity, Cpu, Factory, Trophy, Handshake, MapPin, Package } from "lucide-react";
 import { SectionTitle } from "../components/Cards";
 import { useApp } from "../context/AppContext";
+import { getMenuBanner } from "../lib/menuBanners";
+import PageHero from "../components/PageHero";
 
 export default function About() {
-  const { aboutContent, showToast } = useApp();
+  const { aboutContent, contactSettings, showToast, menuItems } = useApp();
+  const bannerImage = getMenuBanner(menuItems, "/gioi-thieu", "/images/lien-he.webp");
   return (
     <div id="about-page" className="relative">
       
-      {/* 1. HERO - BRAND IDENTITY BLOCK (MATCHING PHOTO 2 TOP) */}
-      <section className="relative min-h-[55vh] lg:min-h-[65vh] flex items-center overflow-hidden bg-black pt-16 lg:pt-24 pb-16 lg:pb-24">
-        {/* Full-screen Background Banner Image */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img 
-            src={aboutContent.section1BannerImage || "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&q=80&w=1600"} 
-            alt="Voltara About Banner Background" 
-            className="w-full h-full object-cover object-center transform scale-100 opacity-90"
-            referrerPolicy="no-referrer"
-          />
-          {/* Overlay to ensure maximum text readability and aesthetic integration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 lg:from-black/95 lg:via-black/75 lg:to-transparent/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          
-          <div className="flex items-center gap-2 mb-2 text-xs font-mono tracking-wider text-gray-500">
-            <Link to="/" className="hover:text-gold-light">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-gold-dark">Giới thiệu</span>
-          </div>
-
-          <div className="max-w-3xl flex flex-col items-start text-left mt-6">
-            <span className="text-xs font-display font-semibold tracking-[0.25em] text-gold-light uppercase mb-2">
-              {aboutContent.section1Subtitle || "VỀ VOLTARA"}
-            </span>
-            <h1 className="text-4xl sm:text-5xl font-display font-black leading-tight text-white uppercase mb-6 glow-text">
-              {aboutContent.section1Title || "KÍCH HOẠT TƯƠNG LAI"}
-            </h1>
-            
-            <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-28 mb-6" />
-
-            <p className="text-xs sm:text-sm text-gray-200 leading-relaxed mb-8 max-w-2xl backdrop-blur-[1px]">
-              {aboutContent.section1Desc || "Voltara là thương hiệu tiên phong trong lĩnh vực nghiên cứu, chế tạo, liên kết sản xuất và cung cấp các dòng sản phẩm bộ pin Lithium sạc và nguồn điện lưu trữ thông minh tại Việt Nam. Hướng tới trở thành giải pháp năng lượng xanh vững mạnh toàn diện hỗ trợ cho sinh hoạt, di chuyển tuần hoàn bền vững của thế giới tương lai."}
-            </p>
-
-            <button
-              onClick={() => {
-                const element = document.getElementById("voltara-factory-section");
-                element?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="inline-flex items-center gap-2 border border-[#D89A2B]/40 hover:border-gold-light text-[#ECECEC] font-display font-semibold px-5 py-3 text-xs tracking-widest uppercase hover:bg-gold-dark hover:text-black transition-all"
-            >
-              <span>TÌM HIỂU HÀNH TRÌNH VOLTARA</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={bannerImage}
+        imageAlt="Giới thiệu Xưởng In 3D"
+        breadcrumb="Giới thiệu - Liên hệ"
+        eyebrow={aboutContent.section1Subtitle || "Về Xưởng In 3D"}
+        title={aboutContent.section1Title || "Từ ý tưởng đến sản phẩm thực tế"}
+        description={aboutContent.section1Desc || "Xưởng In 3D nhận thiết kế, tạo mẫu và sản xuất sản phẩm theo yêu cầu cho cá nhân, gia đình và doanh nghiệp."}
+        className="mb-0"
+      >
+        <button
+          onClick={() => document.getElementById("voltara-factory-section")?.scrollIntoView({ behavior: "smooth" })}
+          className="inline-flex items-center gap-2 border border-[#D89A2B]/40 px-5 py-3 text-xs font-semibold uppercase tracking-widest text-[#ECECEC] transition-all hover:border-gold-light hover:bg-gold-dark hover:text-black"
+        >
+          <span>Tìm hiểu quy trình làm việc</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </PageHero>
 
       {/* 2. VISION, MISSION, VALUES BLOCK (MATCHING MOCKUP PHOTO EXACTLY WITH FULL BACKGROUND EARTH GLOBE) */}
       <section 
@@ -102,7 +72,7 @@ export default function About() {
                       {aboutContent.strategic1Year || "2030"}
                     </div>
                     <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-light">
-                      {aboutContent.strategic1Desc || "Đưa sản phẩm pin máy công cụ, phụ tùng lithium Voltara phủ khắp 63 tỉnh thành Việt Nam. Thay thế hoàn toàn 80% ắc quy chì axit cũ rách."}
+                      {aboutContent.strategic1Desc || "Tiếp nhận file, hình ảnh, bản vẽ hoặc mẫu thật cùng mục đích sử dụng."}
                     </p>
                   </div>
                 </div>
@@ -119,7 +89,7 @@ export default function About() {
                       {aboutContent.strategic2Year || "2035"}
                     </div>
                     <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-light">
-                      {aboutContent.strategic2Desc || "Xây dựng mạng lưới bán hàng ổn định xuất khẩu sang các thị trường Thái Lan, Indonesia, Malaysia, Campuchia đạt chứng nhận chất lượng FCC/CE."}
+                      {aboutContent.strategic2Desc || "Tư vấn công nghệ, vật liệu, màu sắc và cách hoàn thiện phù hợp."}
                     </p>
                   </div>
                 </div>
@@ -136,7 +106,7 @@ export default function About() {
                       {aboutContent.strategic3Year || "2040"}
                     </div>
                     <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-light">
-                      {aboutContent.strategic3Desc || "Tham gia phát triển trạm trữ điện trung tâm ESS dòng sạc siêu thọ cùng các đối tác hạ tầng ô-tô sạc ô nhiễm thấp tại các quốc gia Tây Âu và Liên Kỳ."}
+                      {aboutContent.strategic3Desc || "Sản xuất, kiểm tra và bàn giao theo phương án đã thống nhất."}
                     </p>
                   </div>
                 </div>
@@ -155,7 +125,7 @@ export default function About() {
                   <div className="absolute bottom-0 left-0 w-16 h-[2px] bg-gradient-to-r from-gold-light to-gold-dark" />
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-light">
-                  {aboutContent.missionDesc || "Cung cấp những giải pháp tích trữ năng lượng Lithium thế hệ mới, tối đa tính hữu dụng thực chiến trong dụng cụ cầm tay, đảm bảo an toàn tuyệt đối, dập tắt rủi ro sinh khí bốc cháy chập mạch, kiến tạo một cộng đồng sống lành mạnh."}
+                  {aboutContent.missionDesc || "Giúp khách hàng hiện thực hóa ý tưởng nhanh chóng bằng công nghệ in 3D linh hoạt."}
                 </p>
               </div>
 
@@ -190,7 +160,7 @@ export default function About() {
                       {aboutContent.coreValue2Title || "ĐỔI MỚI"}
                     </h4>
                     <p className="text-[10px] text-gray-400 font-light leading-snug">
-                      {aboutContent.coreValue2Desc || "Cập nhập BMS thế hệ mới bảo mật rò dỉ điện môi."}
+                      {aboutContent.coreValue2Desc || "Linh hoạt thiết kế, vật liệu và cách hoàn thiện."}
                     </p>
                   </div>
 
@@ -337,36 +307,36 @@ export default function About() {
                 {aboutContent.factorySubtitle || "TIÊU CHUẨN ĐỒNG BỘ"}
               </span>
               <h2 className="text-2xl sm:text-3xl font-display font-bold text-white uppercase mt-1 mb-4 leading-normal">
-                {aboutContent.factoryTitle || "Nhà Máy Hiện Đại Công Nghệ Tiên Tiến"}
+                {aboutContent.factoryTitle || "Thiết Kế, Tạo Mẫu Và Sản Xuất Linh Hoạt"}
               </h2>
               <p className="text-xs text-gray-400 leading-relaxed mb-6">
-                {aboutContent.factoryDesc || "Voltara đầu tư quy trình chế tác tự động hóa khép kín tại khu công nghiệp Vĩnh Long..."}
+                {aboutContent.factoryDesc || "Xưởng tiếp nhận nhiều nhóm sản phẩm từ decor, quà tặng đến mô hình kỹ thuật, POSM và sa bàn."}
               </p>
 
               <div className="grid grid-cols-2 gap-4 w-full mb-6">
                 <div className="border border-white/5 p-3">
-                  <div className="text-gold-light text-xs font-display font-black">XÍCH DÂY TRUYỀN</div>
-                  <div className="text-[10px] text-gray-500">Tự động hoá 90%</div>
+                  <div className="text-gold-light text-xs font-display font-black">CÔNG NGHỆ</div>
+                  <div className="text-[10px] text-gray-500">FDM và Resin</div>
                 </div>
                 <div className="border border-white/5 p-3">
-                  <div className="text-gold-light text-xs font-display font-black">KIỂM ĐỊNH</div>
-                  <div className="text-[10px] text-gray-500">Nghiêm ngặt 10 lớp</div>
+                  <div className="text-gold-light text-xs font-display font-black">VẬT LIỆU</div>
+                  <div className="text-[10px] text-gray-500">Tư vấn theo công năng</div>
                 </div>
                 <div className="border border-white/5 p-3">
-                  <div className="text-gold-light text-xs font-display font-black">MÁY MÓC</div>
-                  <div className="text-[10px] text-gray-500">Công nghệ CHLB Đức</div>
+                  <div className="text-gold-light text-xs font-display font-black">THIẾT KẾ</div>
+                  <div className="text-[10px] text-gray-500">Theo file hoặc mẫu thật</div>
                 </div>
                 <div className="border border-white/5 p-3">
-                  <div className="text-gold-light text-xs font-display font-black">SINH HOẠT</div>
-                  <div className="text-[10px] text-gray-500">Sạch, trung hoà các-bon</div>
+                  <div className="text-gold-light text-xs font-display font-black">SỐ LƯỢNG</div>
+                  <div className="text-[10px] text-gray-500">Từ một sản phẩm</div>
                 </div>
               </div>
 
               <button
-                onClick={() => showToast("Thông báo: Hệ thống đăng ký tham quan nhà máy Vĩnh Long tạm thời đóng để hiệu chuẩn robot. Vui lòng quay lại trong quý sau.", "info")}
+                onClick={() => showToast("Vui lòng liên hệ hotline để đặt lịch làm việc tại xưởng.", "info")}
                 className="bg-gold-dark text-black font-display font-bold py-3 px-6 text-xs text-center uppercase tracking-widest hover:bg-gold-light hover:shadow-[0_0_15px_rgba(216,154,43,0.35)] transition-all"
               >
-                Tham Quan Nhà Máy →
+                Liên Hệ Xưởng →
               </button>
             </div>
 
@@ -376,13 +346,13 @@ export default function About() {
               <div className="relative border border-gold-dark/25 p-3 bg-black">
                 <img
                   src={aboutContent.factoryImage || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"}
-                  alt="Nhà máy Voltara"
+                  alt="Không gian làm việc Xưởng In 3D"
                   referrerPolicy="no-referrer"
                   className="w-full h-auto object-cover grayscale opacity-90 brightness-95 group-hover:grayscale-0 transition-all duration-700"
                 />
                 <div className="absolute bottom-5 right-5 bg-black/90 p-3 border border-white/10 text-right">
                   <span className="text-[9.5px] font-mono text-gold-light block font-semibold leading-none mb-1">FACTORY COORDINATES</span>
-                  <span className="text-[10px] font-mono text-gray-400 uppercase leading-none">Vinh Long province, VN</span>
+                  <span className="text-[10px] font-mono text-gray-400 uppercase leading-none">Long Trường, TP.HCM</span>
                 </div>
               </div>
             </div>
@@ -402,16 +372,23 @@ export default function About() {
             </span>
             
             <p className="text-sm sm:text-base text-gray-300 font-sans italic leading-relaxed max-w-2xl mx-auto relative z-10 pt-4">
-              &ldquo;{aboutContent.quoteText || "Voltara không chỉ sản xuất pin sạc, chúng tôi kiến tạo các giải pháp lưu trữ và phân phối..."}&rdquo;
+              &ldquo;{aboutContent.quoteText || "Mỗi ý tưởng đều có thể bắt đầu từ một mẫu thử và trở thành sản phẩm thực tế bằng công nghệ in 3D."}&rdquo;
             </p>
             
             <div className="mt-4 flex flex-col items-center">
               <div className="w-10 h-[1.5px] bg-gold-dark my-4" />
               <span className="text-xs font-display font-extrabold tracking-widest text-gold-light uppercase leading-none">
-                {aboutContent.quoteAuthor || "HỘI ĐỒNG SÁNG LẬP VOLTARA TECHNOLOGY"}
+                {aboutContent.quoteAuthor || "XƯỞNG IN 3D"}
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-gold-dark/20 bg-gold-dark/5 py-14">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 md:flex-row md:items-center">
+          <div><p className="text-xs font-bold uppercase tracking-widest text-gold-light">Giới thiệu – Liên hệ</p><h2 className="mt-2 text-2xl font-black uppercase text-white">Trao đổi trực tiếp với Xưởng In 3D</h2><p className="mt-3 text-sm text-gray-400">{contactSettings.address} · {contactSettings.hotline} · {contactSettings.email}</p></div>
+          <Link to="/lien-he?type=print_3d" className="bg-gold-dark px-7 py-3 text-xs font-black uppercase tracking-widest text-black">Gửi yêu cầu tư vấn</Link>
         </div>
       </section>
 

@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { VoltaraLogo } from "./Header";
+import { SiteLogo } from "./Header";
 import { Mail, Phone, MapPin, Send, Facebook, Youtube, MessageCircle, AlertTriangle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 
@@ -59,9 +59,9 @@ export default function Footer() {
           
           {/* Column 1: Brand Intro */}
           <div className="lg:col-span-4 flex flex-col gap-6" id="footer-col-intro">
-            <VoltaraLogo />
+            <SiteLogo />
             <p className="text-gray-400 text-xs leading-relaxed max-w-sm">
-              Voltara cam kết mang đến những giải pháp pin Lithium và nguồn điện thông minh, giúp nâng cao hiệu suất và chất lượng cuộc sống. Hướng tới thương hiệu toàn cầu đi đầu năng lượng xanh vững bền.
+              Xưởng In 3D nhận thiết kế, tạo mẫu và sản xuất theo yêu cầu cho cá nhân, gia đình và doanh nghiệp. Hỗ trợ từ một sản phẩm độc bản đến các dự án POSM, mô hình và sa bàn.
             </p>
             
             {/* Social Network Icons with Gold Border */}
@@ -99,7 +99,7 @@ export default function Footer() {
             {/* Newsletter form directly built here as instructed in image layout */}
             <div className="mt-4">
               <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-gold-light mb-2">Đăng Ký Nhận Tin</h4>
-              <p className="text-[11px] text-gray-500 mb-2">Nhận thông tin sản phẩm mới, ưu đãi và công nghệ hữu ích từ Voltara.</p>
+              <p className="text-[11px] text-gray-500 mb-2">Nhận thông tin mẫu mới, dự án và kiến thức hữu ích về in 3D.</p>
               <form onSubmit={handleSubscribe} className="flex h-10 w-full max-w-sm border border-white/10 bg-[#0F0F0F] rounded-md overflow-hidden focus-within:border-gold-dark/60 transition-colors">
                 <input
                   type="email"
@@ -126,14 +126,14 @@ export default function Footer() {
           {/* Column 2: Quick Links (Về Voltara) */}
           <div className="lg:col-span-2 flex flex-col gap-4" id="footer-col-about">
             <h4 className="text-[11px] font-display font-semibold uppercase tracking-widest text-[#ECECEC] border-l-2 border-gold-dark pl-2.5">
-              Về Voltara
+              Về Xưởng In 3D
             </h4>
             <div className="flex flex-col gap-2.5 text-xs text-gray-400">
               <Link to="/gioi-thieu" className="hover:text-gold-light transition-colors">Giới thiệu công ty</Link>
               <Link to="/gioi-thieu" className="hover:text-gold-light transition-colors">Tầm nhìn - Sứ mệnh</Link>
               <Link to="/gioi-thieu" className="hover:text-gold-light transition-colors">Giá trị cốt lõi</Link>
-              <Link to="/gioi-thieu" className="hover:text-gold-light transition-colors">Nhà máy sản xuất</Link>
-              <Link to="/kien-thuc" className="hover:text-gold-light transition-colors">Tin tức nội bộ</Link>
+              <Link to="/du-an-da-thuc-hien" className="hover:text-gold-light transition-colors">Dự án đã thực hiện</Link>
+              <Link to="/lien-he" className="hover:text-gold-light transition-colors">Thông tin liên hệ</Link>
             </div>
           </div>
 
@@ -143,12 +143,12 @@ export default function Footer() {
               Sản phẩm
             </h4>
             <div className="flex flex-col gap-2.5 text-xs text-gray-400">
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">Pin máy công cụ</Link>
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">UPS cửa cuốn</Link>
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">Pin xe điện</Link>
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">Ắc quy Lithium</Link>
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">Ắc quy chì axit</Link>
-              <Link to="/san-pham" className="hover:text-gold-light transition-colors">Khối pin OEM/ODM</Link>
+              <Link to="/san-pham/danh-muc/den-do-decor-trang-tri" className="hover:text-gold-light transition-colors">Đèn và đồ decor</Link>
+              <Link to="/san-pham/danh-muc/do-dung-tien-ich-phu-kien" className="hover:text-gold-light transition-colors">Đồ dùng và phụ kiện</Link>
+              <Link to="/san-pham/danh-muc/qua-tang-do-dung-gia-dinh" className="hover:text-gold-light transition-colors">Quà tặng cá nhân hóa</Link>
+              <Link to="/san-pham/danh-muc/mo-hinh-tuong-nhan-vat" className="hover:text-gold-light transition-colors">Mô hình và tượng</Link>
+              <Link to="/san-pham/danh-muc/doanh-nghiep-posm" className="hover:text-gold-light transition-colors">Doanh nghiệp và POSM</Link>
+              <Link to="/san-pham/danh-muc/kien-truc-sa-ban" className="hover:text-gold-light transition-colors">Kiến trúc và sa bàn</Link>
             </div>
           </div>
 
@@ -158,10 +158,10 @@ export default function Footer() {
               Hỗ trợ khách hàng
             </h4>
             <div className="flex flex-col gap-2.5 text-xs text-gray-400">
-              <Link to="/bao-hanh" className="hover:text-gold-light transition-colors">Tra cứu bảo hành</Link>
-              <Link to="/bao-hanh" className="hover:text-gold-light transition-colors">Chính sách bảo hành</Link>
-              <Link to="/kien-thuc" className="hover:text-gold-light transition-colors">Hướng dẫn sử dụng</Link>
-              <Link to="/hoc-vien" className="hover:text-gold-light transition-colors">Học viện Voltara</Link>
+              <Link to="/in-3d-theo-yeu-cau" className="hover:text-gold-light transition-colors">Quy trình đặt in 3D</Link>
+              <Link to="/kien-thuc" className="hover:text-gold-light transition-colors">Kiến thức 3D</Link>
+              <Link to="/lien-he" className="hover:text-gold-light transition-colors">Bảo hành và hỗ trợ</Link>
+              <Link to="/giai-phap" className="hover:text-gold-light transition-colors">Giải pháp doanh nghiệp</Link>
               <Link to="/lien-he" className="hover:text-gold-light transition-colors">Liên hệ hỗ trợ 24/7</Link>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function Footer() {
 
         {/* Brand Copyright */}
         <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-4">
-          <span>&copy; {currentYear} VOLTARA. Tất cả quyền được bảo lưu.</span>
+          <span>&copy; {currentYear} XƯỞNG IN 3D. Tất cả quyền được bảo lưu.</span>
           <div className="flex items-center gap-6">
             <a href="#privacy" className="hover:text-gold-light">Chính sách bảo mật</a>
             <a href="#terms" className="hover:text-gold-light">Điều khoản sử dụng</a>

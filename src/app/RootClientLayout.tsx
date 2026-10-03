@@ -30,7 +30,7 @@ export default function RootClientLayout({
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
         <div className="text-gold-light animate-pulse text-lg font-display tracking-widest uppercase">
-          VOLTARA...
+          XƯỞNG IN 3D...
         </div>
       </div>
     );

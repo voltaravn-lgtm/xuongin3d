@@ -80,10 +80,10 @@ export default function Home() {
 
   const categories = [
     { id: "all", name: "Tất cả sản phẩm" },
-    { id: "pin-may-cong-cu", name: "Pin máy công cụ" },
-    { id: "ups-cua-cuon", name: "UPS cửa cuốn" },
-    { id: "pin-xe-dien", name: "Pin xe điện" },
-    { id: "ac-quy-lithium", name: "Ắc quy lithium" },
+    { id: "den-do-decor-trang-tri", name: "Đèn & decor" },
+    { id: "mo-hinh-tuong-nhan-vat", name: "Mô hình & tượng" },
+    { id: "doanh-nghiep-posm", name: "Doanh nghiệp & POSM" },
+    { id: "kien-truc-sa-ban", name: "Kiến trúc & sa bàn" },
   ];
 
   const visibleProducts = products.filter(product => !product.hidden);
@@ -118,19 +118,10 @@ export default function Home() {
         status: found.status,
         isValid: true
       });
-    } else if (upper.includes("VOLTARA")) {
-      setWarrantyResult({
-        name: "PIN VOLTARA 20V 5.0Ah (Cho máy Makita)",
-        activatedDate: "20/05/2026",
-        warrantyMonths: "12 tháng",
-        expiryDate: "20/05/2027",
-        status: "Đang bảo hành chính hãng (Kích hoạt nhanh)",
-        isValid: true
-      });
     } else {
       setWarrantyResult({
         isValid: false,
-        message: `Không tìm thấy Serial '${upper}'. Hãy kiểm tra lại hoặc thử với mã có sẵn: 'VOLTARA-20V-5AH'.`
+        message: `Không tìm thấy mã '${upper}'. Vui lòng kiểm tra lại hoặc liên hệ xưởng để được hỗ trợ.`
       });
     }
   };
@@ -146,7 +137,7 @@ export default function Home() {
             <motion.img 
               key={currentSlideIndex}
               src={currentSlide.bannerImage} 
-              alt="Voltara Banner Background" 
+              alt="Xưởng In 3D - Thiết kế và in theo yêu cầu" 
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.9 }}
               exit={{ opacity: 0 }}
@@ -194,7 +185,7 @@ export default function Home() {
             <div className="flex items-center gap-2 px-3 py-1 bg-gold-dark/10 border border-gold-dark/25 mb-4 rounded-md select-none">
               <Zap className="w-3.5 h-3.5 text-gold-light animate-bounce" />
               <span className="text-[10px] font-display font-bold text-[#ECECEC] tracking-widest uppercase">
-                THƯƠNG HIỆU PIN THẾ HỆ MỚI
+                THIẾT KẾ VÀ IN 3D THEO YÊU CẦU
               </span>
             </div>
 
@@ -243,18 +234,18 @@ export default function Home() {
 
               <Link
                 id="hero-cta-dealer"
-                to="/dai-ly"
+                to="/in-3d-theo-yeu-cau"
                 className="gold-border hover:bg-gold-dark hover:text-black bg-transparent text-[#ECECEC] font-display font-semibold py-3.5 px-8 text-xs tracking-widest uppercase transition-all duration-300 text-center cursor-pointer"
               >
-                TÌM ĐẠI LÝ
+                IN 3D THEO YÊU CẦU
               </Link>
 
               <Link
                 id="hero-cta-be-dealer"
-                to="/lien-he?type=register_dealer"
+                to="/lien-he?type=print_3d"
                 className="border border-[#ECECEC]/10 hover:border-[#ECECEC]/30 bg-[#ECECEC]/5 hover:bg-[#ECECEC]/10 text-gray-300 font-display font-semibold py-3.5 px-8 text-xs tracking-widest uppercase text-center transition-all duration-300 cursor-pointer whitespace-nowrap"
               >
-                TRỞ THÀNH ĐẠI LÝ
+                NHẬN TƯ VẤN
               </Link>
             </div>
 
@@ -290,7 +281,7 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="text-xs font-display font-bold uppercase tracking-wider text-[#ECECEC] mb-0.5">{homeContent.feature1Title || "Công Nghệ Tiên Tiến"}</h4>
-                <p className="text-[11px] text-gray-500">{homeContent.feature1Desc || "Ứng dụng cell pin Lithium dòng sạc siêu thọ."}</p>
+                <p className="text-[11px] text-gray-500">{homeContent.feature1Desc || "Nhận file, hình ảnh, bản vẽ hoặc mẫu thật."}</p>
               </div>
             </div>
 
@@ -300,7 +291,7 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="text-xs font-display font-bold uppercase tracking-wider text-[#ECECEC] mb-0.5">{homeContent.feature2Title || "Chất Lượng Vượt Trội"}</h4>
-                <p className="text-[11px] text-gray-500">{homeContent.feature2Desc || "Vỏ sợi polycarbonate chống vỡ nứt."}</p>
+                <p className="text-[11px] text-gray-500">{homeContent.feature2Desc || "Tư vấn vật liệu theo nhu cầu sử dụng."}</p>
               </div>
             </div>
 
@@ -320,7 +311,7 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="text-xs font-display font-bold uppercase tracking-wider text-[#ECECEC] mb-0.5">{homeContent.feature4Title || "Hệ Thống Toàn Quốc"}</h4>
-                <p className="text-[11px] text-gray-500">{homeContent.feature4Desc || "Hàng trăm đại lý phân phối rộng khắp cả nước."}</p>
+                <p className="text-[11px] text-gray-500">{homeContent.feature4Desc || "Tư vấn nhanh qua hotline 0822 426 639."}</p>
               </div>
             </div>
           </div>
@@ -333,8 +324,8 @@ export default function Home() {
           
           <SectionTitle
             subtitle="DANH MỤC TIÊU BIỂU"
-            title={homeContent.section2Title || "Sản Phẩm Công Nghệ Voltara"}
-            description={homeContent.section2Desc || "Lõi cell nhập khẩu chất lượng cao, tích hợp bo mạch BMS tự cân bằng thông minh đỉnh cao."}
+            title={homeContent.section2Title || "Sản Phẩm In 3D Theo Nhu Cầu"}
+            description={homeContent.section2Desc || "Đa dạng mẫu mã, vật liệu và kích thước cho cá nhân, gia đình và doanh nghiệp."}
           />
 
 
@@ -381,7 +372,7 @@ export default function Home() {
             <SectionTitle
               subtitle="ƯU ĐÃI ĐANG CHẠY"
               title="Combo Khuyến Mãi"
-              description="Các gói mua kèm được Voltara cấu hình sẵn, hiển thị giá gốc và giá ưu đãi rõ ràng."
+              description="Các gói sản phẩm và chương trình ưu đãi được cấu hình rõ ràng trong trang quản trị."
             />
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -445,27 +436,27 @@ export default function Home() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
-              number="50+"
-              label="TỈNH THÀNH PHỦ SÓNG"
-              description="Màng lưới logistics và phân phối bảo hảnh liên kết chặt chẽ khắp cả nước"
+              number="FDM"
+              label="IN SỢI NHỰA"
+              description="Phù hợp sản phẩm tiện ích, decor, phụ kiện và mô hình kích thước linh hoạt"
               icon={<MapPin className="w-5 h-5" />}
             />
             <StatCard
-              number="200+"
-              label="ĐẠI LÝ ỦY QUYỀN"
-              description="Hỗ trợ kỹ thuật lắp đặt nhanh nhẹn, linh kiện sẵn có đầy kho"
+              number="RESIN"
+              label="IN CHI TIẾT CAO"
+              description="Phù hợp tượng, nhân vật, mô hình và các chi tiết cần bề mặt sắc nét"
               icon={<Award className="w-5 h-5" />}
             />
             <StatCard
-              number="100.000+"
-              label="SẢN PHẨM ĐÃ BÀN GIAO"
-              description="Cung cấp an tâm tuyệt đối, chưa phát hiện trường hợp cháy nổ gây hại"
+              number="1+"
+              label="NHẬN TỪ MỘT SẢN PHẨM"
+              description="Linh hoạt cho mẫu thử, sản phẩm độc bản và đơn hàng số lượng nhỏ"
               icon={<CheckCircle2 className="w-5 h-5" />}
             />
             <StatCard
-              number="3 NĂM"
-              label="BẢO HÀNH CHÍNH HÃNG"
-              description="Bảo hành đổi cũ lấy mới với các dòng lithium ESS cao cấp độc quyền"
+              number="24/7"
+              label="TIẾP NHẬN YÊU CẦU"
+              description="Hỗ trợ trao đổi ý tưởng và thông tin dự án qua hotline hoặc email"
               icon={<Shield className="w-5 h-5" />}
             />
           </div>
@@ -483,27 +474,27 @@ export default function Home() {
               <div className="absolute -inset-3 radial-bg opacity-40 pointer-events-none" />
               <div className="relative bg-[#121212] p-8 gold-border shadow-2xl">
                 <span className="text-xs font-display font-semibold text-gold-light tracking-widest uppercase mb-2 block">
-                  ĐỘC QUYỀN THIẾT KẾ
+                  QUY TRÌNH RÕ RÀNG
                 </span>
                 <h3 className="text-lg font-display font-extrabold text-[#ECECEC] mb-4 uppercase">
-                  Kiểm Định 10 Lướt An Toàn Tiên Tiến
+                  Từ Ý Tưởng Đến Sản Phẩm Thực Tế
                 </h3>
                 <p className="text-xs text-gray-400 leading-relaxed mb-6">
-                  Mỗi pack pin sạc Voltara trước khi lăn bánh khỏi phân xưởng đều trải qua quy trình chạy tải cưỡng bức, kiểm tra điện môi sụt áp, độ khít vỏ kháng nước IP67 và sốc nhiệt nghiêm ngặt.
+                  Mỗi yêu cầu được xem xét dựa trên mục đích sử dụng, kích thước, vật liệu và độ hoàn thiện. Xưởng trao đổi phương án trước khi sản xuất để hạn chế sai lệch và tối ưu chi phí.
                 </p>
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-xs text-gray-300">
                     <CheckCircle2 className="w-4 h-4 text-gold-light shrink-0" />
-                    <span>Lõi cell Lithium hạng A bảo chứng kiểm duyệt</span>
+                    <span>Tiếp nhận file 3D, bản vẽ, hình ảnh hoặc mẫu thật</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-300">
                     <CheckCircle2 className="w-4 h-4 text-gold-light shrink-0" />
-                    <span>Mạch BMS cân bằng áp sai lệch &lt; 0.05V</span>
+                    <span>Tư vấn công nghệ FDM hoặc Resin phù hợp</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-300">
                     <CheckCircle2 className="w-4 h-4 text-gold-light shrink-0" />
-                    <span>Kháng chập cháy đầu dòng xả quá tải đột ngột</span>
+                    <span>Kiểm tra sản phẩm trước khi bàn giao</span>
                   </div>
                 </div>
               </div>
@@ -512,10 +503,10 @@ export default function Home() {
             {/* Right side: Benefits descriptions */}
             <div className="lg:col-span-7 flex flex-col justify-center">
               <span className="inline-block px-3 py-1 gold-border text-[10px] tracking-widest text-[#D89A2B] mb-3 uppercase font-display font-bold bg-[#D89A2B]/5">
-                ƯU THẾ NHÃN HIỆU
+                LỢI THẾ DỊCH VỤ
               </span>
               <h2 className="text-2xl sm:text-3xl font-display font-bold uppercase tracking-wider text-[#ECECEC] glow-text mb-6">
-                Vì Sao Thị Trường Lựa Chọn Pin Voltara?
+                Vì Sao Nên Chọn Xưởng In 3D?
               </h2>
               <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-24 mb-8" />
 
@@ -526,10 +517,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xs font-display font-bold text-[#ECECEC] uppercase tracking-wider mb-1">
-                      Cung Ứng Thần Tốc Toàn Quốc
+                      Linh Hoạt Từ Mẫu Thử Đến Lô Nhỏ
                     </h4>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      Sẵn sàng các loại chân cắm phổ thông Makita, Bosch, Dewalt và hệ tủ điện lưu trữ ESS, hỗ trợ giao vận siêu tốc 24 giờ.
+                      Nhận thực hiện từ một sản phẩm, phù hợp thử nghiệm ý tưởng, cá nhân hóa và sản xuất số lượng nhỏ.
                     </p>
                   </div>
                 </div>
@@ -540,10 +531,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xs font-display font-bold text-[#ECECEC] uppercase tracking-wider mb-1">
-                      Kích Hoạt Bảo Hành Điện Tử Toàn Cầu
+                      Đa Dạng Vật Liệu Và Kiểu Hoàn Thiện
                     </h4>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      Quét mã QR Code in la-ze chống giả trên từng sản phẩm để tra cứu thông tin hoạt động, kích hoạt phiếu sạc tự động.
+                      Tư vấn PLA, PETG, ABS, TPU, Resin và phương án xử lý bề mặt theo công năng thực tế.
                     </p>
                   </div>
                 </div>
@@ -554,10 +545,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xs font-display font-bold text-[#ECECEC] uppercase tracking-wider mb-1">
-                      Đội Ngũ Ý Chí Kỹ Thuật Trực Chiến
+                      Hỗ Trợ Thiết Kế Theo Yêu Cầu
                     </h4>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      Đáp ứng giải quyết thiết kế gia công OEM phụ tải máy nông nghiệp robot tự hành một cách chuẩn xác theo tiến độ dự án.
+                      Hỗ trợ dựng mới hoặc chỉnh sửa file để sản phẩm phù hợp kích thước, cách lắp đặt và mục đích sử dụng.
                     </p>
                   </div>
                 </div>
@@ -578,10 +569,10 @@ export default function Home() {
 
             <div className="text-center mb-6">
               <h3 className="text-sm font-display font-bold uppercase text-[#ECECEC] glow-text tracking-widest">
-                Tra Cứu Nhanh Thông Tin Thiết Bị Voltara
+                Tra Cứu Thông Tin Bảo Hành Sản Phẩm
               </h3>
               <p className="text-[11px] text-gray-500 mt-1">
-                Nhập số Serial in la-ze sau thân pin để xác định trạng thái bảo hành điện tử chính quy.
+                Nhập mã sản phẩm hoặc mã bảo hành được cung cấp khi bàn giao.
               </p>
             </div>
 
@@ -590,7 +581,7 @@ export default function Home() {
                 type="text"
                 value={warrantySerial}
                 onChange={(e) => setWarrantySerial(e.target.value)}
-                placeholder="Ví dụ: VOLTARA-20V-MAX-50A"
+                placeholder="Nhập mã sản phẩm hoặc mã bảo hành"
                 className="flex-1 bg-[#050505] text-[#ECECEC] border border-[#D89A2B]/20 rounded-md px-4 py-3 placeholder-gray-600 text-xs focus:outline-none focus:border-gold-light transition-colors uppercase font-mono"
               />
               <button
@@ -635,8 +626,8 @@ export default function Home() {
             )}
             
             <div className="text-center mt-4">
-              <Link to="/bao-hanh" className="text-[10px] text-gray-500 hover:text-gold-light underline uppercase tracking-wider">
-                Xem Điều Kiện Bảo Hành Hoàn Chỉnh →
+              <Link to="/lien-he" className="text-[10px] text-gray-500 hover:text-gold-light underline uppercase tracking-wider">
+                Liên Hệ Hỗ Trợ →
               </Link>
             </div>
           </div>
@@ -649,18 +640,18 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
             <div>
               <h3 className="text-lg sm:text-xl font-display font-black uppercase text-[#ECECEC] glow-text tracking-wider mb-2">
-                BẠN MUỐN TRỞ THÀNH ĐẠI LÝ ỦY QUYỀN?
+                BẠN CÓ Ý TƯỞNG CẦN HIỆN THỰC HÓA?
               </h3>
               <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
-                Tham gia cùng Voltara dẫn đầu công nghệ pin Lithium tại Việt Nam. Chúng tôi cung ứng mức chiết khấu đại lý cực cao, bảo hiểm trách nhiệm sản phẩm an tâm, biển hiệu quảng bá miễn phí 100%.
+                Gửi file 3D, hình ảnh, bản vẽ hoặc mô tả nhu cầu. Xưởng sẽ tư vấn vật liệu, công nghệ in và phương án thực hiện phù hợp.
               </p>
             </div>
             
             <Link
-              to="/lien-he?type=register_dealer"
+              to="/in-3d-theo-yeu-cau"
               className="gold-gradient-bg text-black font-display font-bold px-8 py-3.5 text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all text-center shrink-0 duration-300 shadow-[0_0_20px_rgba(216,154,43,0.2)] cursor-pointer"
             >
-              Đăng Ký Làm Đại Lý
+              Gửi Yêu Cầu In 3D
             </Link>
           </div>
         </div>

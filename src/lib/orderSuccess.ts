@@ -1,4 +1,4 @@
-export const ORDER_SUCCESS_EVENT = "voltara:order-success";
+export const ORDER_SUCCESS_EVENT = "xuongin3d:order-success";
 
 export function announceOrderSuccess(source: "product" | "cart" | "dealer" | "landing") {
   if (typeof window === "undefined") return;

@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 
   if (!product) {
     return buildMetadata({
-      title: "Không tìm thấy sản phẩm - Voltara",
+      title: "Không tìm thấy sản phẩm - Xưởng In 3D",
       path: "/san-pham",
       noIndex: true,
     });
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const description = getProductDescriptionExcerpt(product.description, product.name);
 
   return buildMetadata({
-    title: `${product.name} - Voltara`,
+    title: `${product.name} - Xưởng In 3D`,
     description,
     path: `/san-pham/${getProductSlug(product)}`,
     image: product.image,
@@ -75,7 +75,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     description: plainDescription,
     brand: {
       "@type": "Brand",
-      name: product.brand || "Voltara",
+      name: product.brand || "Xưởng In 3D",
     },
     sku: product.id,
     category: product.category,

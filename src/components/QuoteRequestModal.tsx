@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Send, Battery, ShieldCheck, MapPin, Phone, User, FileText } from "lucide-react";
+import { X, Send, Box, ShieldCheck, MapPin, Phone, User, FileText } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { QuoteRequest } from "../types";
 
@@ -23,7 +23,7 @@ export default function QuoteRequestModal({
     province: "",
     address: "",
     productName: prepopulatedProduct,
-    batteryType: "Xe Máy Điện / Xe Đạp",
+    batteryType: "Chưa xác định vật liệu",
     voltage: "",
     capacity: "",
     notes: "",
@@ -78,7 +78,7 @@ export default function QuoteRequestModal({
         province: "",
         address: "",
         productName: prepopulatedProduct,
-        batteryType: "Xe Máy Điện / Xe Đạp",
+        batteryType: "Chưa xác định vật liệu",
         voltage: "",
         capacity: "",
         notes: "",
@@ -102,9 +102,9 @@ export default function QuoteRequestModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <Battery className="w-5 h-5 text-gold-light animate-bounce" />
+            <Box className="w-5 h-5 text-gold-light animate-bounce" />
             <h3 className="font-display font-black text-sm uppercase tracking-widest text-white">
-              Khảo Sát & Nhận Báo Giá Premium
+              Yêu Cầu Tư Vấn & Báo Giá
             </h3>
           </div>
           <button
@@ -126,7 +126,7 @@ export default function QuoteRequestModal({
                 GỬI YÊU CẦU THÀNH CÔNG!
               </h4>
               <p className="text-xs text-gray-400 max-w-sm leading-relaxed px-4">
-                Thông tin báo giá của dòng pin <strong className="text-gold-light">"{form.productName}"</strong> đã được chuyển đến bộ phận dự án đại lý của hãng Voltara. Chúng tôi sẽ phản hồi trong giây lát!
+                Thông tin báo giá sản phẩm <strong className="text-gold-light">"{form.productName}"</strong> đã được chuyển tới Xưởng In 3D. Chúng tôi sẽ phản hồi sớm nhất có thể.
               </p>
             </div>
           ) : (
@@ -141,7 +141,7 @@ export default function QuoteRequestModal({
                     value={form.productName}
                     onChange={(e) => setForm({ ...form, productName: e.target.value })}
                     className="w-full bg-transparent text-white font-display font-bold text-xs uppercase tracking-wide focus:outline-none focus:border-b focus:border-gold-dark pb-0.5"
-                    placeholder="Tên dòng pin Lithium..."
+                    placeholder="Tên sản phẩm hoặc ý tưởng cần thực hiện..."
                   />
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function QuoteRequestModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">
-                    Tỉnh Thành Đại Lý
+                    Tỉnh / Thành
                   </label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -216,17 +216,19 @@ export default function QuoteRequestModal({
 
                 <div>
                   <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">
-                    Mục đích sử dụng
+                    Vật liệu mong muốn
                   </label>
                   <select
                     value={form.batteryType}
                     onChange={(e) => setForm({ ...form, batteryType: e.target.value })}
                     className="w-full bg-[#141414] border border-white/10 focus:border-gold-dark px-3 py-2 text-xs text-white focus:outline-none rounded-md"
                   >
-                    <option value="Xe Máy Điện / Xe Đạp">Xe Máy Điện / Xe Đạp</option>
-                    <option value="Ắc quy khởi động ô tô">Ắc quy khởi động ô tô</option>
-                    <option value="Pin máy khoan / Thiết bị">Pin máy cầm tay dã ngoại</option>
-                    <option value="Bộ điện sạc dự phòng UPS / Solar">Bộ điện UPS / Kích điện Solar</option>
+                    <option value="Chưa xác định vật liệu">Cần xưởng tư vấn</option>
+                    <option value="PLA">PLA</option>
+                    <option value="PETG">PETG</option>
+                    <option value="ABS">ABS</option>
+                    <option value="TPU">TPU dẻo</option>
+                    <option value="Resin">Resin</option>
                   </select>
                 </div>
               </div>
@@ -235,7 +237,7 @@ export default function QuoteRequestModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">
-                    Điện áp yêu cầu (V)
+                    Kích thước dự kiến
                   </label>
                   <input
                     type="text"
@@ -248,7 +250,7 @@ export default function QuoteRequestModal({
 
                 <div>
                   <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">
-                    Dung lượng (Ah)
+                    Số lượng dự kiến
                   </label>
                   <input
                     type="text"
@@ -262,13 +264,13 @@ export default function QuoteRequestModal({
 
               <div>
                 <label className="block text-[10px] font-mono uppercase text-gray-400 mb-1">
-                  Yêu cầu kỹ thuật hoặc Địa chỉ cụ thể
+                  Mô tả thêm về yêu cầu
                 </label>
                 <textarea
                   rows={2}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Ví dụ: Cần tích hợp sạc nhanh, mạch BMS thông minh chống nóng,..."
+                  placeholder="Mục đích sử dụng, màu sắc, thời gian cần nhận hoặc đường dẫn file 3D..."
                   className="w-full bg-[#141414] border border-white/10 focus:border-gold-dark px-3 py-2 text-xs text-white focus:outline-none resize-none rounded-md"
                 />
               </div>

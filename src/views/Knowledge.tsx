@@ -10,9 +10,10 @@ import { ARTICLES_DATA } from "../data";
 import { SectionTitle, ArticleCard } from "../components/Cards";
 import { useApp } from "../context/AppContext";
 import { getMenuBanner } from "../lib/menuBanners";
+import PageHero from "../components/PageHero";
 
 export default function Knowledge() {
-  const { menuItems } = useApp();
+  const { menuItems, contactSettings } = useApp();
   const bannerImage = getMenuBanner(menuItems, "/kien-thuc", "/images/kien-thuc.webp");
   const [searchParams, setSearchParams] = useSearchParams();
   const postIdFromUrl = searchParams.get("postId");
@@ -34,12 +35,10 @@ export default function Knowledge() {
 
   // Handle category count list matching Photo 5 right sidebar list
   const categoryCounts = [
-    { name: "Tất cả bài viết", count: 128 },
-    { name: "Kiến thức pin", count: 36 },
-    { name: "Hướng dẫn sử dụng", count: 28 },
-    { name: "Công nghệ", count: 24 },
-    { name: "Bảo hành & bảo trì", count: 18 },
-    { name: "Tin tức & sự kiện", count: 22 }
+    { name: "Tất cả bài viết", count: ARTICLES_DATA.length },
+    { name: "Vật liệu in 3D", count: ARTICLES_DATA.filter(a => a.category === "Vật liệu in 3D").length },
+    { name: "Hướng dẫn", count: ARTICLES_DATA.filter(a => a.category === "Hướng dẫn").length },
+    { name: "Công nghệ in 3D", count: ARTICLES_DATA.filter(a => a.category === "Công nghệ in 3D").length },
   ];
 
   // Filtering articles
@@ -82,45 +81,14 @@ export default function Knowledge() {
 
   return (
     <div id="knowledge-page" className="pb-20 relative bg-[#050505] text-left">
-      {/* 1. HERO BANNER - FULL WIDTH */}
-      <section className="relative min-h-[45vh] lg:min-h-[55vh] flex items-center overflow-hidden bg-black pt-16 lg:pt-24 pb-16 lg:pb-24 mb-12">
-        {/* Full-screen Background Banner Image */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img 
-            src={bannerImage} 
-            alt="Voltara Knowledge Banner Background" 
-            className="w-full h-full object-cover object-center transform scale-100 opacity-80"
-            referrerPolicy="no-referrer"
-          />
-          {/* Overlay to ensure maximum text readability and aesthetic integration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 lg:from-black/95 lg:via-black/75 lg:to-transparent/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          {/* Breadcrumb navigation */}
-          <div className="flex items-center gap-2 text-xs font-mono tracking-wider text-gray-400 mb-6 font-medium">
-            <Link to="/" className="hover:text-gold-light pointer-events-auto transition-colors">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-gold-dark font-black">Kiến thức</span>
-          </div>
-
-          <div className="max-w-3xl flex flex-col items-start text-left">
-            <span className="text-xs font-display font-black tracking-[0.25em] text-gold-light uppercase mb-2">
-              CẨM NANG CÔNG NGHỆ
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold leading-tight text-white uppercase mb-6 glow-text tracking-tight">
-              KIẾN THỨC VOLTARA
-            </h1>
-            
-            <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-28 mb-6" />
-
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-2xl backdrop-blur-[1px]">
-              Cập nhật tin tức, xu hướng, phân tích kỹ thuật sụt áp, hướng dẫn nạp sạc an toàn và công nghệ màng pin Lithium sạch mới nhất.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={bannerImage}
+        imageAlt="Kiến thức in 3D"
+        breadcrumb="Kiến thức 3D"
+        eyebrow="Cẩm nang công nghệ"
+        title="Kiến thức 3D"
+        description="Hướng dẫn chọn vật liệu, chuẩn bị file, sử dụng sản phẩm và cập nhật các ứng dụng mới của công nghệ in 3D."
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -129,12 +97,11 @@ export default function Knowledge() {
           
           {/* Quick tab headers */}
           <div className="flex flex-wrap gap-1.5 font-display text-[11px] font-bold">
-            {["Tất cả", "Kiến thức pin", "Hướng dẫn sử dụng", "Công nghệ", "Mạng lưới & Đại lý", "Tin tức & sự kiện"].map((cat) => (
+            {["Tất cả", "Vật liệu in 3D", "Hướng dẫn", "Công nghệ in 3D"].map((cat) => (
               <button
                 key={cat}
                 onClick={() => {
                   if (cat === "Tất cả") setActiveCategory("Tất cả");
-                  else if (cat === "Mạng lưới & Đại lý") setActiveCategory("Tin tức & sự kiện");
                   else setActiveCategory(cat);
                 }}
                 className={`px-4 py-2 hover:bg-white/5 transition-all uppercase tracking-wider ${
@@ -299,9 +266,9 @@ export default function Knowledge() {
             <div className="border border-gold-dark/20 bg-gold-dark/5 p-5 text-center">
               <h4 className="text-[11px] font-display font-bold text-white uppercase tracking-wider mb-1">CẦN TƯ VẤN THÊM?</h4>
               <p className="text-[10px] text-gray-500 mb-4 font-sans leading-relaxed">
-                Đội ngũ kỹ thuật của Voltara luôn sẵn sàng trả lời lắp đặt sạc, liên kết màng lưới xe điện.
+                Xưởng sẵn sàng tư vấn vật liệu, công nghệ và phương án thực hiện cho ý tưởng của bạn.
               </p>
-              <a href="tel:19001234" className="w-full inline-flex items-center justify-center gap-2 bg-gold-dark text-black font-display font-bold text-xs py-3 shadow-[0_0_10px_rgba(216,154,43,0.3)] hover:bg-gold-light transition-all">
+              <a href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`} className="w-full inline-flex items-center justify-center gap-2 bg-gold-dark text-black font-display font-bold text-xs py-3 shadow-[0_0_10px_rgba(216,154,43,0.3)] hover:bg-gold-light transition-all">
                 <span>LIÊN HỆ NGAY</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
@@ -321,11 +288,11 @@ export default function Knowledge() {
             </div>
             
             <h3 className="text-sm sm:text-base font-display font-extrabold uppercase text-white tracking-widest">
-              KHÁM PHÁ THÊM KIẾN THỨC CÙNG VOLTARA
+              KHÁM PHÁ THÊM KIẾN THỨC IN 3D
             </h3>
             
             <p className="text-xs text-gray-500 leading-relaxed">
-              Đăng ký nhận bản tin để cập nhật những công bố khoa học mới nhất về dung lượng ion sạc Lithium, thông báo dự án hoàn thành, và cẩm nang duy trì cell pin.
+              Đăng ký nhận bản tin để cập nhật mẫu mới, hướng dẫn vật liệu và ứng dụng in 3D.
             </p>
 
             <form onSubmit={handleSubscribe} className="flex h-12 w-full max-w-md mx-auto border border-white/10 bg-black focus-within:border-gold-light transition-colors mt-6">
@@ -346,7 +313,7 @@ export default function Knowledge() {
             </form>
             
             {subbed && (
-              <p className="text-[11px] text-emerald-400 mt-2 font-medium">Bản tin đã đăng ký kích hoạt thành công! Voltara cam kết bảo mật thông tin và không gửi spam.</p>
+              <p className="text-[11px] text-emerald-400 mt-2 font-medium">Đăng ký nhận bản tin thành công. Xưởng cam kết bảo mật thông tin và không gửi spam.</p>
             )}
           </div>
         </div>
@@ -400,7 +367,7 @@ export default function Knowledge() {
               </div>
 
               <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500">
-                <span>&copy; Ban Biên Tập Khoa Học Voltara</span>
+                <span>&copy; Xưởng In 3D</span>
                 <button
                   onClick={handleClosePost}
                   className="w-full sm:w-auto text-center border border-white/10 hover:border-gold-light py-2 px-6 font-display font-bold text-gold-light hover:text-white text-xs uppercase"

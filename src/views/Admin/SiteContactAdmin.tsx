@@ -70,7 +70,7 @@ export default function SiteContactAdmin() {
             value={form.companyName}
             onChange={(e) => updateField("companyName", e.target.value)}
             className={fieldClass}
-            placeholder="Voltara Technology"
+            placeholder="Xưởng In 3D"
           />
         </label>
 
@@ -97,7 +97,7 @@ export default function SiteContactAdmin() {
               value={form.address}
               onChange={(e) => updateField("address", e.target.value)}
               className={`${fieldClass} pl-9`}
-              placeholder="123 Đường Năng Lượng, KCN Hòa Phú..."
+              placeholder="71/1E Võ Văn Hát, Long Trường, TP.HCM"
             />
           </div>
         </label>
@@ -111,7 +111,7 @@ export default function SiteContactAdmin() {
               value={form.email}
               onChange={(e) => updateField("email", e.target.value)}
               className={`${fieldClass} pl-9`}
-              placeholder="info@voltara.vn"
+              placeholder="xuongin3d@gmail.com"
             />
           </div>
         </label>
@@ -164,7 +164,7 @@ export default function SiteContactAdmin() {
                   value={form[field]}
                   onChange={(e) => updateField(field, e.target.value)}
                   className={`${fieldClass} pl-9 font-mono`}
-                  placeholder={`https://${label.toLowerCase()}.com/voltara`}
+                  placeholder={`https://${label.toLowerCase()}.com/xuongin3d`}
                 />
               </div>
             </label>

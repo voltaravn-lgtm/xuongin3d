@@ -3,9 +3,9 @@ import { Metadata } from "next";
 import { buildMetadata } from "../../lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Kiến thức Voltara - Pin Lithium và lưu trữ năng lượng",
+  title: "Kiến thức 3D - Vật liệu, công nghệ và hướng dẫn",
   description:
-    "Bài viết kiến thức về pin Lithium, an toàn điện, bảo hành, vận hành UPS và xu hướng lưu trữ năng lượng từ Voltara.",
+    "Kiến thức về vật liệu PLA, PETG, ABS, TPU, Resin, công nghệ FDM và hướng dẫn đặt in 3D theo yêu cầu.",
   path: "/kien-thuc",
   image: "/images/kien-thuc.webp",
 });

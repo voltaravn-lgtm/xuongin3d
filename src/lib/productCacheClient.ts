@@ -12,7 +12,7 @@ export async function revalidateProductCache() {
       cache: "no-store",
     });
     if (response.ok) {
-      localStorage.removeItem("voltara_products_last_firestore_sync_v2");
+      localStorage.removeItem("xuongin3d_products_last_firestore_sync_v2");
     }
     return response.ok;
   } catch (error) {
