@@ -4,45 +4,43 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { Search, Eye, Clock, Calendar, ArrowRight, X, Phone, Check, Mail, Send, Sparkles } from "lucide-react";
-import { ARTICLES_DATA } from "../data";
+import { useSearchParams } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import { Search, Eye, Clock, Calendar, ArrowRight, Sparkles } from "lucide-react";
 import { SectionTitle, ArticleCard } from "../components/Cards";
 import { useApp } from "../context/AppContext";
 import { getMenuBanner } from "../lib/menuBanners";
 import PageHero from "../components/PageHero";
 
 export default function Knowledge() {
-  const { menuItems, contactSettings } = useApp();
+  const { menuItems, contactSettings, articles } = useApp();
   const bannerImage = getMenuBanner(menuItems, "/kien-thuc", "/images/kien-thuc.webp");
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const router = useRouter();
   const postIdFromUrl = searchParams.get("postId");
 
   const [activeCategory, setActiveCategory] = useState("Tất cả");
   const [searchQuery, setSearchQuery] = useState("");
-  const [readingPost, setReadingPost] = useState<any>(null);
   const [emailSub, setEmailSub] = useState("");
   const [subbed, setSubbed] = useState(false);
 
   useEffect(() => {
-    if (postIdFromUrl) {
-      const post = ARTICLES_DATA.find(a => a.id === postIdFromUrl);
-      if (post) {
-        setReadingPost(post);
-      }
+    if (postIdFromUrl && articles.some((article) => article.id === postIdFromUrl)) {
+      router.replace(`/kien-thuc/${postIdFromUrl}`);
     }
-  }, [postIdFromUrl]);
+  }, [articles, postIdFromUrl, router]);
 
   // Handle category count list matching Photo 5 right sidebar list
   const categoryCounts = [
-    { name: "Tất cả bài viết", count: ARTICLES_DATA.length },
-    { name: "Vật liệu in 3D", count: ARTICLES_DATA.filter(a => a.category === "Vật liệu in 3D").length },
-    { name: "Hướng dẫn", count: ARTICLES_DATA.filter(a => a.category === "Hướng dẫn").length },
-    { name: "Công nghệ in 3D", count: ARTICLES_DATA.filter(a => a.category === "Công nghệ in 3D").length },
+    { name: "Tất cả bài viết", count: articles.length },
+    { name: "Vật liệu in 3D", count: articles.filter(a => a.category === "Vật liệu in 3D").length },
+    { name: "Hướng dẫn", count: articles.filter(a => a.category === "Hướng dẫn").length },
+    { name: "Công nghệ in 3D", count: articles.filter(a => a.category === "Công nghệ in 3D").length },
+    { name: "Ứng dụng in 3D", count: articles.filter(a => a.category === "Ứng dụng in 3D").length },
   ];
 
   // Filtering articles
-  const filteredArticles = ARTICLES_DATA.filter(post => {
+  const filteredArticles = articles.filter(post => {
     const matchesCategory = activeCategory === "Tất cả" || activeCategory === "Tất cả bài viết" || post.category === activeCategory;
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           post.brief.toLowerCase().includes(searchQuery.toLowerCase());
@@ -50,24 +48,20 @@ export default function Knowledge() {
   });
 
   // Featured article (first item that is marked featured)
-  const featuredArticle = ARTICLES_DATA.find(a => a.featured) || ARTICLES_DATA[0];
+  const featuredArticle = articles.find(a => a.featured) || articles[0];
 
   // Rest of articles
-  const secondaryArticles = filteredArticles.filter(a => a.id !== featuredArticle.id);
+  const secondaryArticles = featuredArticle
+    ? filteredArticles.filter(a => a.id !== featuredArticle.id)
+    : filteredArticles;
 
   // Top viewed articles matching Photo 5 right sidebar
-  const popularArticles = [...ARTICLES_DATA]
+  const popularArticles = [...articles]
     .sort((a, b) => b.views - a.views)
     .slice(0, 5);
 
   const handleOpenPost = (post: any) => {
-    setReadingPost(post);
-    setSearchParams({ postId: post.id });
-  };
-
-  const handleClosePost = () => {
-    setReadingPost(null);
-    setSearchParams({});
+    router.push(`/kien-thuc/${post.id}`);
   };
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -97,7 +91,7 @@ export default function Knowledge() {
           
           {/* Quick tab headers */}
           <div className="flex flex-wrap gap-1.5 font-display text-[11px] font-bold">
-            {["Tất cả", "Vật liệu in 3D", "Hướng dẫn", "Công nghệ in 3D"].map((cat) => (
+            {["Tất cả", "Vật liệu in 3D", "Hướng dẫn", "Công nghệ in 3D", "Ứng dụng in 3D"].map((cat) => (
               <button
                 key={cat}
                 onClick={() => {
@@ -136,7 +130,7 @@ export default function Knowledge() {
           <div className="lg:col-span-8 space-y-12">
             
             {/* Massive Featured Article layout on top block (Only shows when searching is basic) */}
-            {!searchQuery && activeCategory === "Tất cả" && (
+            {!searchQuery && activeCategory === "Tất cả" && featuredArticle && (
               <div
                 id="featured-large-article"
                 onClick={() => handleOpenPost(featuredArticle)}
@@ -319,68 +313,6 @@ export default function Knowledge() {
         </div>
 
       </div>
-
-      {/* 5. IMMERSIVE READING MODAL FOR ARTICLE DETAIL POPUP */}
-      {readingPost && (
-        <div id="article-detail-modal" className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-gold-dark/20 max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-xl relative">
-            
-            {/* Close modal */}
-            <button
-              onClick={handleClosePost}
-              className="absolute top-4 right-4 p-2 bg-black border border-white/10 text-gray-400 hover:text-white hover:bg-gold-dark hover:border-transparent transition-all z-10"
-              title="Đóng bài viết"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="p-6 md:p-8 space-y-6 text-left">
-              
-              <div className="relative aspect-[16/8] w-full bg-black overflow-hidden border border-white/5">
-                <img
-                  src={readingPost.image}
-                  alt={readingPost.title}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover filter brightness-75"
-                />
-                <span className="absolute top-3 left-3 bg-gold-dark text-black text-[9px] font-display font-bold px-3 py-1 uppercase tracking-wider">
-                  {readingPost.category}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-[10.5px] text-gray-500 font-display">
-                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> <span>{readingPost.date}</span></span>
-                <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> <span>{readingPost.readTime}</span></span>
-                <span>•</span>
-                <span>Lượt xem: <strong className="text-gray-300 font-mono">{readingPost.views}</strong></span>
-              </div>
-
-              <h2 className="text-base sm:text-lg md:text-xl font-display font-black text-white uppercase leading-normal tracking-wide">
-                {readingPost.title}
-              </h2>
-
-              <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-24" />
-
-              {/* Formatted body text representing rich details */}
-              <div className="prose prose-invert max-w-none text-xs text-gray-300 leading-relaxed whitespace-pre-line space-y-4 font-sans">
-                {readingPost.content}
-              </div>
-
-              <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500">
-                <span>&copy; Xưởng In 3D</span>
-                <button
-                  onClick={handleClosePost}
-                  className="w-full sm:w-auto text-center border border-white/10 hover:border-gold-light py-2 px-6 font-display font-bold text-gold-light hover:text-white text-xs uppercase"
-                >
-                  Quay lại mục lục tin tức
-                </button>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

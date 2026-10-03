@@ -126,7 +126,7 @@ export default function QuotesAdmin() {
           QUẢN LÝ YÊU CẦU BÁO GIÁ
         </h2>
         <p className="text-xs text-gray-400">
-          Tiếp nhận và quản lý thông tin đăng ký nhận bảng giá đại lý / pin custom của khách hàng Voltara.
+          Tiếp nhận và quản lý yêu cầu báo giá sản phẩm, thiết kế file và dự án in 3D của khách hàng.
         </p>
       </div>
 
@@ -184,7 +184,7 @@ export default function QuotesAdmin() {
           <Search className="absolute left-3 top-2.5 w-4.5 h-4.5 text-gray-500" />
           <input
             type="text"
-            placeholder="Tìm theo tên khách, sđt, địa chỉ, hoặc tên pin Lithium..."
+            placeholder="Tìm theo tên khách, số điện thoại, địa chỉ hoặc nội dung yêu cầu..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#121212] border border-white/10 px-3 py-2 pl-10 text-xs text-white focus:outline-none focus:border-gold-dark font-sans"

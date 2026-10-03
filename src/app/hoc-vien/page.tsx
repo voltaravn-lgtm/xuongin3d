@@ -1,7 +1,5 @@
-'use client';
-
-import Academy from '../../views/Academy';
+import { permanentRedirect } from 'next/navigation';
 
 export default function AcademyPage() {
-  return <Academy />;
+  permanentRedirect('/kien-thuc');
 }

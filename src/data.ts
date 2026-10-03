@@ -84,9 +84,93 @@ export const PROJECTS_DATA: Project[] = [
 ];
 
 export const ARTICLES_DATA: Article[] = [
-  { id: "chon-vat-lieu-in-3d", title: "Cách chọn vật liệu phù hợp cho sản phẩm in 3D", brief: "Phân biệt PLA, PETG, ABS, TPU và Resin theo môi trường sử dụng.", content: "Mỗi vật liệu có ưu điểm riêng về độ cứng, khả năng chịu nhiệt, độ dẻo và chất lượng bề mặt. Hãy bắt đầu từ công năng, điều kiện sử dụng và yêu cầu thẩm mỹ của sản phẩm.", date: "01/10/2026", readTime: "5 phút", category: "Vật liệu in 3D", image: "/images/kien-thuc.webp", featured: true, views: 0 },
-  { id: "quy-trinh-dat-in-3d", title: "Quy trình đặt in 3D theo yêu cầu", brief: "Những thông tin cần chuẩn bị để nhận tư vấn và báo giá nhanh.", content: "Khách hàng có thể gửi file 3D, bản vẽ, ảnh tham khảo hoặc mẫu thật. Xưởng sẽ tư vấn kích thước, vật liệu, độ hoàn thiện và thời gian thực hiện trước khi xác nhận.", date: "01/10/2026", readTime: "4 phút", category: "Hướng dẫn", image: "/images/kien-thuc.webp", views: 0 },
-  { id: "fdm-va-resin", title: "Nên chọn công nghệ FDM hay Resin?", brief: "So sánh nhanh hai công nghệ in 3D phổ biến.", content: "FDM phù hợp nhiều sản phẩm kích thước lớn và chi phí hợp lý. Resin tạo chi tiết bề mặt tốt, phù hợp tượng, mô hình và các chi tiết nhỏ.", date: "01/10/2026", readTime: "6 phút", category: "Công nghệ in 3D", image: "/images/kien-thuc.webp", views: 0 },
+  {
+    id: "chon-vat-lieu-in-3d",
+    title: "Cách chọn vật liệu phù hợp cho sản phẩm in 3D",
+    brief: "Phân biệt PLA, PETG, ABS, TPU và Resin theo công năng, môi trường sử dụng và yêu cầu hoàn thiện.",
+    content: `Chọn đúng vật liệu quyết định trực tiếp đến độ bền, vẻ ngoài và chi phí của sản phẩm in 3D.
+
+PLA dễ in, bề mặt đẹp và phù hợp với mô hình trưng bày, đồ decor hoặc sản phẩm sử dụng trong nhà. PETG bền hơn, chịu ẩm tốt và thích hợp cho phụ kiện, hộp bảo vệ hay đồ dùng thường xuyên tiếp xúc với môi trường. ABS chịu nhiệt khá nhưng cần điều kiện in được kiểm soát tốt. TPU có độ đàn hồi, phù hợp với đệm, vỏ bảo vệ và chi tiết cần uốn cong. Resin cho độ chi tiết cao, thường được chọn cho tượng, nhân vật và mô hình kích thước nhỏ.
+
+Trước khi chọn vật liệu, bạn nên xác định sản phẩm đặt trong nhà hay ngoài trời, có chịu lực hoặc chịu nhiệt không, cần cứng hay dẻo và mức độ chi tiết mong muốn. Nếu chưa chắc chắn, hãy gửi mục đích sử dụng cho Xưởng In 3D để được đề xuất phương án phù hợp.`,
+    date: "03/10/2026", readTime: "6 phút", category: "Vật liệu in 3D", image: "/images/kien-thuc.webp", featured: true, views: 128,
+  },
+  {
+    id: "quy-trinh-dat-in-3d",
+    title: "Quy trình đặt in 3D theo yêu cầu từ ý tưởng đến sản phẩm",
+    brief: "Các bước và thông tin cần chuẩn bị để xưởng tư vấn, báo giá và sản xuất nhanh chóng.",
+    content: `Bước 1 – Gửi yêu cầu: Bạn có thể gửi file 3D, bản vẽ, hình ảnh tham khảo, kích thước hoặc mẫu thật. Hãy mô tả rõ mục đích sử dụng và số lượng cần làm.
+
+Bước 2 – Tư vấn phương án: Xưởng kiểm tra khả năng sản xuất, đề xuất công nghệ, vật liệu, màu sắc, độ hoàn thiện và cách chia chi tiết nếu cần.
+
+Bước 3 – Báo giá và duyệt mẫu: Chi phí được tính dựa trên kích thước, lượng vật liệu, thời gian máy, độ khó và công đoạn hoàn thiện. Với dự án mới, khách hàng có thể duyệt một mẫu trước khi làm số lượng.
+
+Bước 4 – In và hoàn thiện: Sản phẩm được in, làm sạch, lắp ráp, xử lý bề mặt hoặc sơn theo phương án đã thống nhất.
+
+Bước 5 – Kiểm tra và bàn giao: Xưởng kiểm tra kích thước, hình thức và đóng gói trước khi giao.`,
+    date: "02/10/2026", readTime: "5 phút", category: "Hướng dẫn", image: "/images/in-3d-theo-yeu-cau.webp", views: 96,
+  },
+  {
+    id: "fdm-va-resin",
+    title: "Nên chọn công nghệ in FDM hay Resin?",
+    brief: "So sánh hai công nghệ in 3D phổ biến để chọn đúng phương án cho từng loại sản phẩm.",
+    content: `FDM tạo sản phẩm bằng cách đùn từng lớp nhựa nhiệt dẻo. Công nghệ này phù hợp với chi tiết có kích thước vừa và lớn, đồ dùng, phụ kiện kỹ thuật, mẫu thử và các đơn hàng cần tối ưu chi phí.
+
+Resin sử dụng nhựa quang hóa và ánh sáng để tạo hình. Ưu điểm nổi bật là bề mặt mịn, thể hiện tốt chi tiết nhỏ, phù hợp với tượng, nhân vật, trang sức mẫu và mô hình cần độ sắc nét cao.
+
+Không có công nghệ nào tốt hơn trong mọi trường hợp. FDM thường là lựa chọn thực tế cho sản phẩm cần độ bền và kích thước lớn; Resin phù hợp khi chi tiết và thẩm mỹ là ưu tiên. Xưởng sẽ cân đối thêm số lượng, thời gian và ngân sách để tư vấn chính xác.`,
+    date: "01/10/2026", readTime: "6 phút", category: "Công nghệ in 3D", image: "/images/giai-phap.webp", views: 174,
+  },
+  {
+    id: "chuan-bi-file-in-3d",
+    title: "Chuẩn bị file như thế nào trước khi gửi in 3D?",
+    brief: "Checklist cơ bản giúp hạn chế lỗi file, sai kích thước và rút ngắn thời gian xử lý đơn hàng.",
+    content: `Các định dạng thường dùng để in 3D là STL, OBJ và 3MF. Nếu cần chỉnh sửa thiết kế, bạn nên gửi thêm file gốc từ phần mềm CAD hoặc thiết kế 3D.
+
+Trước khi gửi, hãy kiểm tra đơn vị kích thước là mm, bề mặt mô hình đã kín, không có phần hình học bị lỗi và các chi tiết nhỏ đủ độ dày để sản xuất. Với sản phẩm lắp ráp, cần ghi rõ dung sai mong muốn và vị trí tiếp xúc giữa các bộ phận.
+
+Nếu bạn chỉ có ảnh, bản vẽ tay hoặc mẫu thật, Xưởng In 3D vẫn có thể hỗ trợ dựng file. Thời gian và chi phí thiết kế sẽ được báo riêng sau khi xem mức độ phức tạp.`,
+    date: "30/09/2026", readTime: "5 phút", category: "Hướng dẫn", image: "/images/san-pham.webp", views: 83,
+  },
+  {
+    id: "bao-gia-in-3d-duoc-tinh-the-nao",
+    title: "Giá in 3D được tính như thế nào?",
+    brief: "Tìm hiểu các yếu tố ảnh hưởng đến báo giá: kích thước, vật liệu, thời gian máy và mức độ hoàn thiện.",
+    content: `Báo giá in 3D không chỉ phụ thuộc vào kích thước bên ngoài. Hai sản phẩm có cùng chiều cao vẫn có thể chênh lệch đáng kể nếu mật độ ruột, độ dày thành, vật liệu và thời gian máy khác nhau.
+
+Các yếu tố chính gồm lượng vật liệu sử dụng, thời gian in, công nghệ, độ phân giải, số lượng chi tiết hỗ trợ và tỷ lệ sản phẩm lỗi cần dự phòng. Những công đoạn sau in như chà nhám, ghép nối, sơn màu hoặc đóng gói cũng được tính theo yêu cầu thực tế.
+
+Để nhận báo giá sát nhất, bạn nên gửi file cùng kích thước, số lượng, màu sắc, mục đích sử dụng và thời hạn cần hàng. Xưởng sẽ tối ưu cách đặt mẫu và cấu trúc in để cân bằng chất lượng với ngân sách.`,
+    date: "29/09/2026", readTime: "5 phút", category: "Hướng dẫn", image: "/images/du-an-da-thuc-hien.webp", views: 141,
+  },
+  {
+    id: "ung-dung-in-3d-cho-doanh-nghiep",
+    title: "5 ứng dụng thiết thực của in 3D cho doanh nghiệp",
+    brief: "Từ tạo mẫu nhanh, đồ gá đến POSM và quà tặng cá nhân hóa cho các chiến dịch thương hiệu.",
+    content: `1. Tạo mẫu nhanh giúp đội ngũ kiểm tra hình dáng và trải nghiệm sản phẩm trước khi đầu tư khuôn.
+
+2. Đồ gá và phụ kiện kỹ thuật hỗ trợ thao tác, lắp ráp hoặc thay thế những chi tiết khó mua sẵn.
+
+3. Mô hình sản phẩm giúp việc thuyết trình, trưng bày và đào tạo trở nên trực quan hơn.
+
+4. POSM, logo nổi và vật phẩm trang trí tạo điểm nhấn cho cửa hàng, sự kiện hoặc chiến dịch ra mắt.
+
+5. Quà tặng cá nhân hóa theo tên, logo hoặc thông điệp phù hợp với lô nhỏ và chương trình dành riêng cho khách hàng.
+
+Ưu thế của in 3D là linh hoạt khi cần số lượng ít, thay đổi thiết kế nhanh và thử nghiệm nhiều phiên bản.`,
+    date: "28/09/2026", readTime: "7 phút", category: "Ứng dụng in 3D", image: "/images/du-an-da-thuc-hien.webp", views: 112,
+  },
+  {
+    id: "bao-quan-san-pham-in-3d",
+    title: "Cách sử dụng và bảo quản sản phẩm in 3D bền lâu",
+    brief: "Một số lưu ý đơn giản về nhiệt độ, ánh nắng, vệ sinh và tải trọng của sản phẩm.",
+    content: `Sản phẩm in 3D nên được sử dụng đúng với vật liệu và công năng đã tư vấn. PLA phù hợp trong nhà nhưng không nên để lâu dưới nắng gắt hoặc gần nguồn nhiệt cao. PETG chịu ẩm và nhiệt tốt hơn, tuy nhiên vẫn cần tránh tải trọng vượt quá thiết kế.
+
+Khi vệ sinh, nên dùng khăn mềm, nước sạch hoặc dung dịch dịu nhẹ. Không sử dụng dung môi mạnh nếu chưa biết khả năng tương thích của vật liệu. Với mô hình sơn hoàn thiện, tránh cọ xát mạnh và nên trưng bày ở nơi khô ráo.
+
+Nếu sản phẩm có khớp lắp, hãy thao tác đúng hướng và liên hệ xưởng khi cần thay thế một bộ phận. Lưu lại file thiết kế giúp việc tái sản xuất sau này nhanh và đồng nhất hơn.`,
+    date: "27/09/2026", readTime: "4 phút", category: "Hướng dẫn", image: "/images/kien-thuc.webp", views: 67,
+  },
 ];
 
 export const COURSES_DATA: Course[] = [];

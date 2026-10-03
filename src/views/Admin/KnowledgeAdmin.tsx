@@ -15,17 +15,17 @@ export default function KnowledgeAdmin() {
     title: "",
     brief: "",
     content: "",
-    category: "Kiến thức pin",
-    image: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600",
+    category: "Hướng dẫn",
+    image: "/images/kien-thuc.webp",
     readTime: "5 phút đọc"
   });
 
   const categories = [
-    "Kiến thức pin",
-    "Tin tức & sự kiện",
-    "Tin tức nội bộ",
-    "Tầm nhìn - Sứ mệnh",
-    "Giá trị cốt lõi"
+    "Vật liệu in 3D",
+    "Hướng dẫn",
+    "Công nghệ in 3D",
+    "Ứng dụng in 3D",
+    "Tin tức & sự kiện"
   ];
 
   const handleOpenAdd = () => {
@@ -35,8 +35,8 @@ export default function KnowledgeAdmin() {
       title: "",
       brief: "",
       content: "",
-      category: "Kiến thức pin",
-      image: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600",
+      category: "Hướng dẫn",
+      image: "/images/kien-thuc.webp",
       readTime: "5 phút đọc"
     });
     setIsModalOpen(true);
@@ -68,7 +68,7 @@ export default function KnowledgeAdmin() {
     addArticle(copiedArt);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.id || !form.title) {
       showToast("Vui lòng điền mã ID và Tiêu đề!", "warning");
@@ -84,14 +84,17 @@ export default function KnowledgeAdmin() {
       image: form.image,
       readTime: form.readTime,
       date: editingArticle ? editingArticle.date : new Date().toLocaleDateString("vi-VN"),
-      views: editingArticle ? editingArticle.views : 0
+      views: editingArticle ? editingArticle.views : 0,
+      featured: editingArticle?.featured || false,
     };
 
     if (editingArticle) {
-      updateArticle(payload);
+      const saved = await updateArticle(payload);
+      if (!saved) return;
       showToast("Đã cập nhật bài viết thành công!", "success");
     } else {
-      addArticle(payload);
+      const saved = await addArticle(payload);
+      if (!saved) return;
       showToast("Đã tạo bài viết mới thành công!", "success");
     }
     setIsModalOpen(false);
@@ -132,7 +135,7 @@ export default function KnowledgeAdmin() {
             <FileText className="w-5 h-5" />
             QUẢN TRÌ KIẾN THỨC & TIN TỨC ({articles.length})
           </h2>
-          <p className="text-xs text-gray-400">Thiết lập các bài viết chia sẻ công nghệ pin Lithium, tin tức nhà máy và hướng dẫn kỹ thuật.</p>
+          <p className="text-xs text-gray-400">Thiết lập bài viết về vật liệu, công nghệ in 3D, chuẩn bị file và hướng dẫn sử dụng sản phẩm.</p>
         </div>
         <button
           onClick={handleOpenAdd}
@@ -224,7 +227,7 @@ export default function KnowledgeAdmin() {
                     value={form.id}
                     onChange={(e) => setForm({ ...form, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
                     className="w-full bg-black text-white border border-white/10 px-3 py-2 text-xs focus:outline-none focus:border-gold-light disabled:opacity-40"
-                    placeholder="vi-du-tin-tuc-voltara"
+                    placeholder="vi-du-kien-thuc-in-3d"
                   />
                 </div>
                 <div className="space-y-1">

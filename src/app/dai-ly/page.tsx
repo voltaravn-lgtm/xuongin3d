@@ -1,7 +1,5 @@
-'use client';
-
-import Dealer from '../../views/Dealer';
+import { permanentRedirect } from 'next/navigation';
 
 export default function DealerPage() {
-  return <Dealer />;
+  permanentRedirect('/giai-phap');
 }

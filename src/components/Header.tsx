@@ -340,10 +340,10 @@ export default function Header() {
           <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
             <Link
               id="mobile-drawer-cta"
-              to="/dai-ly"
+              to="/in-3d-theo-yeu-cau"
               className="w-full text-center bg-gradient-to-r from-gold-dark to-gold-light text-black font-display font-semibold py-3 text-xs tracking-widest uppercase hover:opacity-90 active:scale-95 transition-all"
             >
-              Tìm Đại Lý Hệ Thống
+              Gửi Yêu Cầu In 3D
             </Link>
             
             <Link

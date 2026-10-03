@@ -27,7 +27,7 @@ export default function About() {
         className="mb-0"
       >
         <button
-          onClick={() => document.getElementById("voltara-factory-section")?.scrollIntoView({ behavior: "smooth" })}
+          onClick={() => document.getElementById("xuong-in-3d-process-section")?.scrollIntoView({ behavior: "smooth" })}
           className="inline-flex items-center gap-2 border border-[#D89A2B]/40 px-5 py-3 text-xs font-semibold uppercase tracking-widest text-[#ECECEC] transition-all hover:border-gold-light hover:bg-gold-dark hover:text-black"
         >
           <span>Tìm hiểu quy trình làm việc</span>
@@ -173,7 +173,7 @@ export default function About() {
                       {aboutContent.coreValue3Title || "HỢP TÁC"}
                     </h4>
                     <p className="text-[10px] text-gray-400 font-light leading-snug">
-                      {aboutContent.coreValue3Desc || "Đồng hành trọn vẹn thịnh vượng cùng đại lý ủy quyền."}
+                      {aboutContent.coreValue3Desc || "Đồng hành từ tiếp nhận ý tưởng đến hoàn thiện và bàn giao sản phẩm."}
                     </p>
                   </div>
 
@@ -212,7 +212,7 @@ export default function About() {
                     </span>
                   </div>
                   <div className="text-[10px] text-gray-400 uppercase font-display font-bold tracking-wider leading-tight mt-1.5">
-                    {aboutContent.stat1Label || "Đại lý toàn quốc"}
+                    {aboutContent.stat1Label || "Công nghệ in"}
                   </div>
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function About() {
       </section>
 
       {/* 3. MODERN FACTORY CAPABILITIES BLOCK (MATCHING PHOTO 2 BOTTOM) */}
-      <section className="py-20 bg-[#050505]" id="voltara-factory-section">
+      <section className="py-20 bg-[#050505]" id="xuong-in-3d-process-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           

@@ -41,7 +41,7 @@ export default function VisualBuilderCanvas({ page, mode, selectedBlockId, previ
     </div>
     <div className="min-h-0 flex-1 overflow-auto p-4">
       <div style={landingDesignStyle(page)} data-button-style={page.design?.buttonStyle || 'solid'} className={`landing-root mx-auto min-h-full max-w-full overflow-hidden border border-white/10 shadow-2xl transition-all ${frame}`}>
-        {!page.layout.hideHeader && <div className="flex h-14 items-center justify-between border-b border-white/10 bg-black px-5 text-white"><b className="text-xs tracking-[.2em] text-gold-light">VOLTARA</b><span className="text-[9px] uppercase text-gray-500">Landing Header</span></div>}
+        {!page.layout.hideHeader && <div className="flex h-14 items-center justify-between border-b border-white/10 bg-black px-5 text-white"><b className="text-xs tracking-[.2em] text-gold-light">XƯỞNG IN 3D</b><span className="text-[9px] uppercase text-gray-500">Landing Header</span></div>}
         {visibleBlocks.map((block, index) => {
           const registry = getLandingBlockRegistry(block.type);
           const Renderer = registry.Renderer;
@@ -67,7 +67,7 @@ export default function VisualBuilderCanvas({ page, mode, selectedBlockId, previ
           </div>;
         })}
         {!visibleBlocks.length && <div className="flex min-h-80 items-center justify-center text-xs uppercase text-gray-600">Không có section phù hợp</div>}
-        {!page.layout.hideFooter && <div className="border-t border-white/10 bg-black px-5 py-8 text-center text-[9px] uppercase text-gray-600">Landing Footer · Voltara</div>}
+        {!page.layout.hideFooter && <div className="border-t border-white/10 bg-black px-5 py-8 text-center text-[9px] uppercase text-gray-600">Landing Footer · Xưởng In 3D</div>}
         {page.layout.stickyMobileCta && mode === 'mobile' && <div className="sticky bottom-0 border-t border-white/10 bg-black/95 p-3"><a href="#dat-hang" className="landing-button block w-full py-3 text-center text-xs font-black uppercase">{page.productOverrides?.ctaLabel || 'Đặt hàng ngay'}</a></div>}
       </div>
     </div>

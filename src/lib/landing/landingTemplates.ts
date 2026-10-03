@@ -35,8 +35,8 @@ export const LANDING_TEMPLATES: LandingTemplateDefinition[] = [
   {
     templateId: "dealer-recruitment",
     templateVersion: 1,
-    name: "Tuyển đại lý phân phối",
-    description: "Landing B2B thu lead đại lý với quyền lợi, chính sách hợp tác, bằng chứng và form sàng lọc.",
+    name: "Tư vấn dự án doanh nghiệp",
+    description: "Landing B2B tiếp nhận nhu cầu tạo mẫu, POSM, quà tặng và sản xuất in 3D theo dự án.",
     blockTypes: ["hero", "benefits", "features", "reviews", "faq", "order-form", "contact-button"],
     layout: dealerLayout,
     productRequired: false,
@@ -106,29 +106,29 @@ export function createBlocksFromTemplate(template: LandingTemplateDefinition, pr
     const block = createDefaultLandingBlock(type);
     if (template.templateId === "dealer-recruitment") {
       switch (block.type) {
-        case "hero": return { ...block, layout: "overlay", eyebrow: "CƠ HỘI HỢP TÁC CÙNG VOLTARA", title: "Trở thành đại lý phân phối Voltara tại khu vực của bạn", description: "Mở rộng danh mục sản phẩm năng lượng và thiết bị công cụ với chính sách hợp tác rõ ràng, hỗ trợ bán hàng và đồng hành phát triển thị trường.", backgroundImage: "/images/dai-ly.webp", ctaLabel: "Nhận chính sách đại lý", ctaTarget: "#dat-hang", style: { ...block.style, textColor: "#ffffff", paddingTop: 0, paddingBottom: 0 } };
-        case "benefits": return { ...block, title: "Quyền lợi dành cho đại lý", items: [
-          { id: "dealer-benefit-margin", title: "Chính sách giá cạnh tranh", description: "Chiết khấu theo cấp độ và sản lượng kinh doanh." },
-          { id: "dealer-benefit-area", title: "Hỗ trợ theo khu vực", description: "Cùng xây dựng thị trường và hạn chế cạnh tranh nội bộ." },
-          { id: "dealer-benefit-marketing", title: "Đồng hành marketing", description: "Cung cấp nội dung, hình ảnh và tư vấn triển khai bán hàng." },
+        case "hero": return { ...block, layout: "overlay", eyebrow: "GIẢI PHÁP IN 3D CHO DOANH NGHIỆP", title: "Hiện thực hóa ý tưởng và dự án bằng công nghệ in 3D", description: "Tư vấn tạo mẫu nhanh, POSM, quà tặng, mô hình trình diễn và chi tiết tùy chỉnh với số lượng linh hoạt.", backgroundImage: "/images/giai-phap.webp", ctaLabel: "Gửi yêu cầu tư vấn", ctaTarget: "#dat-hang", style: { ...block.style, textColor: "#ffffff", paddingTop: 0, paddingBottom: 0 } };
+        case "benefits": return { ...block, title: "Lợi ích dành cho doanh nghiệp", items: [
+          { id: "dealer-benefit-margin", title: "Tạo mẫu nhanh", description: "Rút ngắn thời gian từ bản vẽ đến sản phẩm có thể kiểm tra thực tế." },
+          { id: "dealer-benefit-area", title: "Số lượng linh hoạt", description: "Thực hiện từ mẫu thử đến các lô sản phẩm theo từng giai đoạn." },
+          { id: "dealer-benefit-marketing", title: "Thiết kế theo nhận diện", description: "Tùy chỉnh hình dáng, màu sắc, logo và cách hoàn thiện theo thương hiệu." },
         ] };
-        case "features": return { ...block, title: "Quy trình hợp tác minh bạch", items: [
-          { id: "dealer-step-1", title: "1. Đăng ký", description: "Để lại thông tin và khu vực mong muốn kinh doanh." },
-          { id: "dealer-step-2", title: "2. Tư vấn", description: "Đội ngũ Voltara trao đổi nhu cầu và chính sách phù hợp." },
-          { id: "dealer-step-3", title: "3. Kích hoạt", description: "Thống nhất kế hoạch nhập hàng và bắt đầu triển khai." },
+        case "features": return { ...block, title: "Quy trình triển khai rõ ràng", items: [
+          { id: "dealer-step-1", title: "1. Tiếp nhận", description: "Gửi file, bản vẽ, hình ảnh tham khảo hoặc mẫu thật." },
+          { id: "dealer-step-2", title: "2. Tư vấn", description: "Xưởng In 3D đề xuất công nghệ, vật liệu và phương án hoàn thiện." },
+          { id: "dealer-step-3", title: "3. Sản xuất", description: "Duyệt mẫu, sản xuất, kiểm tra và bàn giao theo tiến độ." },
         ] };
-        case "reviews": return { ...block, title: "Đối tác nói gì về Voltara", items: [
-          { id: "dealer-review-sample-1", name: "Đại lý ngành công cụ · Nội dung mẫu", content: "Chính sách hợp tác rõ ràng, đội ngũ hỗ trợ phản hồi nhanh và tài liệu sản phẩm dễ triển khai cho khách hàng.", rating: 5 },
-          { id: "dealer-review-sample-2", name: "Cửa hàng thiết bị · Nội dung mẫu", content: "Danh mục sản phẩm có định hướng rõ, phù hợp để mở rộng nhóm khách hàng cần giải pháp pin và lưu trữ năng lượng.", rating: 5 },
-          { id: "dealer-review-sample-3", name: "Đối tác phân phối · Nội dung mẫu", content: "Quy trình tư vấn minh bạch giúp chúng tôi dễ lựa chọn phương án nhập hàng theo quy mô kinh doanh.", rating: 5 },
+        case "reviews": return { ...block, title: "Phản hồi dự án mẫu", items: [
+          { id: "dealer-review-sample-1", name: "Khách hàng doanh nghiệp · Nội dung mẫu", content: "Quy trình tiếp nhận rõ ràng và phản hồi nhanh trong giai đoạn duyệt mẫu.", rating: 5 },
+          { id: "dealer-review-sample-2", name: "Đơn vị sự kiện · Nội dung mẫu", content: "Sản phẩm được tùy chỉnh theo nhận diện và bàn giao theo tiến độ thống nhất.", rating: 5 },
+          { id: "dealer-review-sample-3", name: "Đội ngũ thiết kế · Nội dung mẫu", content: "Mẫu in giúp kiểm tra trực quan kích thước và hình dáng trước khi triển khai.", rating: 5 },
         ] };
         case "faq": return { ...block, title: "Câu hỏi thường gặp", items: [
-          { id: "dealer-faq-capital", question: "Cần vốn ban đầu bao nhiêu?", answer: "Mức nhập hàng phụ thuộc khu vực, mô hình kinh doanh và nhóm sản phẩm. Voltara sẽ tư vấn phương án phù hợp sau khi nhận đăng ký." },
-          { id: "dealer-faq-support", question: "Đại lý được hỗ trợ những gì?", answer: "Chính sách cụ thể có thể gồm tài liệu bán hàng, nội dung truyền thông, đào tạo sản phẩm và hỗ trợ triển khai theo từng chương trình." },
-          { id: "dealer-faq-area", question: "Khu vực của tôi đã có đại lý chưa?", answer: "Đội ngũ phụ trách sẽ kiểm tra tình trạng khu vực và phản hồi khi liên hệ tư vấn." },
+          { id: "dealer-faq-capital", question: "Có nhận làm một mẫu thử không?", answer: "Có. Xưởng tiếp nhận từ một sản phẩm mẫu và tư vấn phương án phù hợp trước khi sản xuất số lượng." },
+          { id: "dealer-faq-support", question: "Xưởng có hỗ trợ thiết kế file không?", answer: "Có thể hỗ trợ dựng hoặc tối ưu file tùy theo dữ liệu, hình ảnh và yêu cầu kỹ thuật của dự án." },
+          { id: "dealer-faq-area", question: "Thời gian thực hiện bao lâu?", answer: "Thời gian phụ thuộc kích thước, vật liệu, số lượng và mức độ hoàn thiện; xưởng sẽ xác nhận khi báo giá." },
         ] };
-        case "order-form": return { ...block, title: "Đăng ký nhận chính sách đại lý", description: "Hoàn tất thông tin bên dưới, đội ngũ Voltara sẽ liên hệ trong thời gian sớm nhất.", formType: "consultation", submitLabel: "Gửi đăng ký đại lý", successMessage: "Cảm ơn bạn đã quan tâm. Voltara sẽ sớm liên hệ để trao đổi chính sách hợp tác.", productIds: [], requireAddress: false, showAddress: true, showNote: true, showQuantity: false, showBusinessName: true, showBusinessType: true, showEstimatedVolume: true };
-        case "contact-button": return { ...block, channel: "zalo", label: "Tư vấn đại lý", fixedOnMobile: true };
+        case "order-form": return { ...block, title: "Đăng ký tư vấn dự án", description: "Hoàn tất thông tin bên dưới, Xưởng In 3D sẽ liên hệ trong thời gian sớm nhất.", formType: "consultation", submitLabel: "Gửi yêu cầu tư vấn", successMessage: "Cảm ơn bạn đã quan tâm. Xưởng In 3D sẽ sớm liên hệ để trao đổi phương án.", productIds: [], requireAddress: false, showAddress: true, showNote: true, showQuantity: false, showBusinessName: true, showBusinessType: true, showEstimatedVolume: true };
+        case "contact-button": return { ...block, channel: "zalo", label: "Tư vấn dự án", fixedOnMobile: true };
         default: return block;
       }
     }
@@ -140,13 +140,13 @@ export function createBlocksFromTemplate(template: LandingTemplateDefinition, pr
       case "reviews": return product ? { ...block, items: [
         { id: "product-review-sample-1", name: "Khách hàng đã mua · Nội dung mẫu", content: `${product.name} có thông tin rõ ràng, đóng gói cẩn thận và đội ngũ tư vấn hỗ trợ nhanh.`, rating: 5 },
         { id: "product-review-sample-2", name: "Khách hàng sử dụng · Nội dung mẫu", content: "Sản phẩm dễ sử dụng, hoàn thiện chắc chắn và đáp ứng tốt nhu cầu công việc thực tế.", rating: 5 },
-        { id: "product-review-sample-3", name: "Khách hàng Voltara · Nội dung mẫu", content: "Tôi hài lòng với quá trình tư vấn, hướng dẫn sử dụng và chính sách hỗ trợ sau mua.", rating: 5 },
+        { id: "product-review-sample-3", name: "Khách hàng Xưởng In 3D · Nội dung mẫu", content: "Tôi hài lòng với quá trình tư vấn, hoàn thiện sản phẩm và hỗ trợ sau bàn giao.", rating: 5 },
       ] } : block;
       case "faq": return product ? { ...block, items: [
-        { id: "product-faq-fit", question: `${product.name} phù hợp với nhu cầu nào?`, answer: "Bạn nên đối chiếu mục đích sử dụng với thông số kỹ thuật trên trang. Nếu chưa chắc chắn, hãy để lại số điện thoại để đội ngũ Voltara tư vấn cấu hình phù hợp." },
-        { id: "product-faq-warranty", question: "Sản phẩm được bảo hành như thế nào?", answer: "Thời hạn và điều kiện bảo hành áp dụng theo chính sách được công bố cho từng sản phẩm. Voltara sẽ xác nhận đầy đủ khi tư vấn hoặc xác nhận đơn hàng." },
+        { id: "product-faq-fit", question: `${product.name} phù hợp với nhu cầu nào?`, answer: "Bạn nên cung cấp mục đích sử dụng, kích thước và môi trường làm việc để Xưởng In 3D tư vấn vật liệu phù hợp." },
+        { id: "product-faq-warranty", question: "Sản phẩm được hỗ trợ như thế nào?", answer: "Điều kiện hỗ trợ được xác nhận theo vật liệu, kết cấu và yêu cầu sử dụng của từng sản phẩm." },
         { id: "product-faq-order", question: "Tôi có được tư vấn trước khi đặt hàng không?", answer: "Có. Bạn có thể gửi form hoặc liên hệ kênh hỗ trợ trên trang để được tư vấn về thông số, khả năng tương thích và nhu cầu sử dụng." },
-        { id: "product-faq-delivery", question: "Thời gian giao hàng dự kiến bao lâu?", answer: "Thời gian giao hàng phụ thuộc khu vực và tình trạng sản phẩm. Đội ngũ Voltara sẽ thông báo thời gian dự kiến khi xác nhận đơn." },
+        { id: "product-faq-delivery", question: "Thời gian giao hàng dự kiến bao lâu?", answer: "Thời gian phụ thuộc kích thước, vật liệu, số lượng và mức độ hoàn thiện. Xưởng sẽ thông báo khi xác nhận đơn." },
       ] } : block;
       case "order-form": return { ...block, productIds: product ? [product.id] : [] };
       case "contact-button": return template.templateId === "shopee-redirect"
@@ -181,20 +181,20 @@ export function createStandaloneLandingTemplateData(template: LandingTemplateDef
 }
 
 export function materializeLandingTemplateDefaults(page: LandingPage): LandingPage {
-  const productName = page.productOverrides?.title || page.seo.title || page.name.replace(/^Landing\s*-\s*/i, '') || 'Sản phẩm Voltara';
+  const productName = page.productOverrides?.title || page.seo.title || page.name.replace(/^Landing\s*-\s*/i, '') || 'Sản phẩm Xưởng In 3D';
   let changed = false;
   const blocks = page.blocks.map((block): LandingBlock => {
     if (block.type === 'hero' && page.templateId === 'dealer-recruitment' && !block.image && !block.backgroundImage) {
       changed = true;
-      return { ...block, layout: 'overlay', backgroundImage: '/images/dai-ly.webp', style: { ...block.style, textColor: '#ffffff', paddingTop: 0, paddingBottom: 0 } };
+      return { ...block, layout: 'overlay', backgroundImage: '/images/giai-phap.webp', style: { ...block.style, textColor: '#ffffff', paddingTop: 0, paddingBottom: 0 } };
     }
     if (block.type === 'reviews' && !block.items.length) {
       if (page.templateId === 'dealer-recruitment') {
         changed = true;
         return { ...block, items: [
-          { id: 'dealer-review-editable-1', name: 'Đại lý ngành công cụ · Nội dung mẫu', content: 'Chính sách hợp tác rõ ràng, đội ngũ hỗ trợ phản hồi nhanh và tài liệu sản phẩm dễ triển khai cho khách hàng.', rating: 5 },
-          { id: 'dealer-review-editable-2', name: 'Cửa hàng thiết bị · Nội dung mẫu', content: 'Danh mục sản phẩm có định hướng rõ, phù hợp để mở rộng nhóm khách hàng cần giải pháp pin và lưu trữ năng lượng.', rating: 5 },
-          { id: 'dealer-review-editable-3', name: 'Đối tác phân phối · Nội dung mẫu', content: 'Quy trình tư vấn minh bạch giúp chúng tôi dễ lựa chọn phương án nhập hàng theo quy mô kinh doanh.', rating: 5 },
+          { id: 'dealer-review-editable-1', name: 'Khách hàng doanh nghiệp · Nội dung mẫu', content: 'Quy trình tiếp nhận rõ ràng và phản hồi nhanh trong giai đoạn duyệt mẫu.', rating: 5 },
+          { id: 'dealer-review-editable-2', name: 'Đơn vị sự kiện · Nội dung mẫu', content: 'Sản phẩm được tùy chỉnh theo nhận diện và bàn giao theo tiến độ thống nhất.', rating: 5 },
+          { id: 'dealer-review-editable-3', name: 'Đội ngũ thiết kế · Nội dung mẫu', content: 'Mẫu in giúp kiểm tra trực quan kích thước và hình dáng trước khi triển khai.', rating: 5 },
         ] };
       }
       if (page.primaryProductId) {
@@ -202,17 +202,17 @@ export function materializeLandingTemplateDefaults(page: LandingPage): LandingPa
         return { ...block, items: [
           { id: 'product-review-editable-1', name: 'Khách hàng đã mua · Nội dung mẫu', content: `${productName} có thông tin rõ ràng, đóng gói cẩn thận và đội ngũ tư vấn hỗ trợ nhanh.`, rating: 5 },
           { id: 'product-review-editable-2', name: 'Khách hàng sử dụng · Nội dung mẫu', content: 'Sản phẩm dễ sử dụng, hoàn thiện chắc chắn và đáp ứng tốt nhu cầu công việc thực tế.', rating: 5 },
-          { id: 'product-review-editable-3', name: 'Khách hàng Voltara · Nội dung mẫu', content: 'Tôi hài lòng với quá trình tư vấn, hướng dẫn sử dụng và chính sách hỗ trợ sau mua.', rating: 5 },
+          { id: 'product-review-editable-3', name: 'Khách hàng Xưởng In 3D · Nội dung mẫu', content: 'Tôi hài lòng với quá trình tư vấn, hoàn thiện sản phẩm và hỗ trợ sau bàn giao.', rating: 5 },
         ] };
       }
     }
     if (block.type === 'faq' && !block.items.length && page.primaryProductId) {
       changed = true;
       return { ...block, items: [
-        { id: 'product-faq-editable-fit', question: `${productName} phù hợp với nhu cầu nào?`, answer: 'Bạn nên đối chiếu mục đích sử dụng với thông số kỹ thuật trên trang. Nếu chưa chắc chắn, hãy để lại số điện thoại để đội ngũ Voltara tư vấn cấu hình phù hợp.' },
-        { id: 'product-faq-editable-warranty', question: 'Sản phẩm được bảo hành như thế nào?', answer: 'Thời hạn và điều kiện bảo hành áp dụng theo chính sách được công bố cho từng sản phẩm. Voltara sẽ xác nhận đầy đủ khi tư vấn hoặc xác nhận đơn hàng.' },
+        { id: 'product-faq-editable-fit', question: `${productName} phù hợp với nhu cầu nào?`, answer: 'Hãy cung cấp mục đích sử dụng, kích thước và môi trường làm việc để Xưởng In 3D tư vấn vật liệu phù hợp.' },
+        { id: 'product-faq-editable-warranty', question: 'Sản phẩm được hỗ trợ như thế nào?', answer: 'Điều kiện hỗ trợ được xác nhận theo vật liệu, kết cấu và yêu cầu sử dụng của từng sản phẩm.' },
         { id: 'product-faq-editable-order', question: 'Tôi có được tư vấn trước khi đặt hàng không?', answer: 'Có. Bạn có thể gửi form hoặc liên hệ kênh hỗ trợ trên trang để được tư vấn về thông số, khả năng tương thích và nhu cầu sử dụng.' },
-        { id: 'product-faq-editable-delivery', question: 'Thời gian giao hàng dự kiến bao lâu?', answer: 'Thời gian giao hàng phụ thuộc khu vực và tình trạng sản phẩm. Đội ngũ Voltara sẽ thông báo thời gian dự kiến khi xác nhận đơn.' },
+        { id: 'product-faq-editable-delivery', question: 'Thời gian giao hàng dự kiến bao lâu?', answer: 'Thời gian phụ thuộc kích thước, vật liệu, số lượng và mức độ hoàn thiện. Xưởng sẽ thông báo khi xác nhận đơn.' },
       ] };
     }
     return block;

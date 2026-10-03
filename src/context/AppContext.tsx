@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { deleteDoc, doc, getDoc, setDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import { Product, ProductVariant, ProductCombo, SalesProgram, Solution, Article, Branch, Dealer, HomeContent, AboutContent, Job, ContactSubmission, WarrantyRecord, ToastMessage, QuoteRequest, Course, CartItem } from "../types";
 import { getProductSlug } from "../lib/productRoutes";
 import { PRODUCTS_DATA, SOLUTIONS_DATA, ARTICLES_DATA, BRANCHES_DATA, DEALERS_DATA, JOBS_DATA, COURSES_DATA } from "../data";
@@ -188,9 +188,9 @@ interface AppContextType {
   deleteMenuItem: (index: number) => void;
 
   // Articles Modifiers
-  addArticle: (art: Article) => void;
-  updateArticle: (art: Article) => void;
-  deleteArticle: (id: string) => void;
+  addArticle: (art: Article) => Promise<boolean>;
+  updateArticle: (art: Article) => Promise<boolean>;
+  deleteArticle: (id: string) => Promise<boolean>;
 
   // Jobs Modifiers
   addJob: (jb: Job) => void;
@@ -459,7 +459,41 @@ const defaultAboutContent: AboutContent = {
 const defaultWarranties: WarrantyRecord[] = [];
 const defaultQuoteRequests: QuoteRequest[] = [];
 
+const LEGACY_CACHE_CLEANUP_KEY = "xuongin3d_legacy_voltara_cleanup_v1";
+const LEGACY_CONTENT_CACHE_KEYS = [
+  "xuongin3d_products",
+  "xuongin3d_solutions",
+  "xuongin3d_articles",
+  "xuongin3d_branches",
+  "xuongin3d_dealers",
+  "xuongin3d_hero_settings",
+  "xuongin3d_home_content",
+  "xuongin3d_about_content",
+  "xuongin3d_jobs",
+  "xuongin3d_warranties",
+  "xuongin3d_academy_courses",
+  "xuongin3d_sales_programs",
+  "xuongin3d_cart_items",
+  "xuongin3d_promo_overlay_settings",
+];
+
+function clearLegacyVoltaraCache() {
+  if (typeof window === "undefined") return;
+
+  const cachedProducts = localStorage.getItem("xuongin3d_products") || "";
+  const containsLegacyCatalog = /voltara|pin lithium|lifepo4|ắc quy|bộ lưu điện|makita|dewalt|milwaukee|bosch/i.test(cachedProducts);
+
+  if (containsLegacyCatalog) {
+    LEGACY_CONTENT_CACHE_KEYS.forEach((key) => localStorage.removeItem(key));
+  }
+
+  if (containsLegacyCatalog || !localStorage.getItem(LEGACY_CACHE_CLEANUP_KEY)) {
+    localStorage.setItem(LEGACY_CACHE_CLEANUP_KEY, new Date().toISOString());
+  }
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  clearLegacyVoltaraCache();
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin") ?? false;
 
@@ -489,7 +523,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load or Initialize Articles
   const [articles, setArticles] = useState<Article[]>(() => {
     const saved = localStorage.getItem("xuongin3d_articles");
-    return saved ? JSON.parse(saved) : ARTICLES_DATA;
+    const seedVersion = "2026-10-03-articles-v3";
+    const currentSeedVersion = localStorage.getItem("xuongin3d_articles_seed_version");
+
+    if (!saved) {
+      localStorage.setItem("xuongin3d_articles_seed_version", seedVersion);
+      return ARTICLES_DATA;
+    }
+
+    const savedArticles = JSON.parse(saved) as Article[];
+    if (currentSeedVersion === seedVersion) return savedArticles;
+
+    const seedIds = new Set(ARTICLES_DATA.map((article) => article.id));
+    const customArticles = savedArticles.filter((article) => !seedIds.has(article.id));
+    localStorage.setItem("xuongin3d_articles_seed_version", seedVersion);
+    return [...ARTICLES_DATA, ...customArticles];
   });
 
   // Load or Initialize Branches
@@ -630,6 +678,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCanReadAdminData(isAdminEmail(currentUser?.email));
     });
   }, []);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return undefined;
+
+    let cancelled = false;
+
+    const syncArticlesWithFirestore = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "articles"));
+        if (cancelled) return;
+
+        if (!snapshot.empty) {
+          const remoteArticles = snapshot.docs.map((articleDoc) => articleDoc.data() as Article);
+          setArticles(remoteArticles);
+          return;
+        }
+
+        if (canReadAdminData && articles.length > 0) {
+          const batch = writeBatch(db);
+          articles.forEach((article) => {
+            batch.set(doc(db, "articles", article.id), omitUndefinedValues(article));
+          });
+          await batch.commit();
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Could not synchronize articles with Firestore:", error);
+        }
+      }
+    };
+
+    syncArticlesWithFirestore();
+    return () => { cancelled = true; };
+  }, [canReadAdminData]);
 
   useEffect(() => {
     if (!isFirebaseConfigured) return undefined;
@@ -946,22 +1028,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Article (Knowledge) Helper Operations
-  const addArticle = (art: Article) => {
-    setArticles(prev => {
-      if (prev.some(a => a.id === art.id)) {
-        showToast("Mã ID bài viết đã tồn tại!", "error");
-        return prev;
+  const addArticle = async (art: Article) => {
+    if (articles.some(a => a.id === art.id)) {
+      showToast("Mã ID bài viết đã tồn tại!", "error");
+      return false;
+    }
+
+    if (isFirebaseConfigured) {
+      try {
+        await setDoc(doc(db, "articles", art.id), omitUndefinedValues(art));
+      } catch (error) {
+        console.error("Could not add article to Firestore:", error);
+        showToast("Không thể thêm bài viết lên Firebase.", "error");
+        return false;
       }
+    }
+
+    setArticles(prev => {
       return [art, ...prev];
     });
+    return true;
   };
 
-  const updateArticle = (art: Article) => {
+  const updateArticle = async (art: Article) => {
+    if (isFirebaseConfigured) {
+      try {
+        await setDoc(doc(db, "articles", art.id), omitUndefinedValues(art), { merge: true });
+      } catch (error) {
+        console.error("Could not update article in Firestore:", error);
+        showToast("Không thể cập nhật bài viết trên Firebase.", "error");
+        return false;
+      }
+    }
+
     setArticles(prev => prev.map(a => a.id === art.id ? art : a));
+    return true;
   };
 
-  const deleteArticle = (id: string) => {
+  const deleteArticle = async (id: string) => {
+    if (isFirebaseConfigured) {
+      try {
+        await deleteDoc(doc(db, "articles", id));
+      } catch (error) {
+        console.error("Could not delete article from Firestore:", error);
+        showToast("Không thể xóa bài viết trên Firebase.", "error");
+        return false;
+      }
+    }
+
     setArticles(prev => prev.filter(a => a.id !== id));
+    return true;
   };
 
   // Job (Recruitment) Helper Operations

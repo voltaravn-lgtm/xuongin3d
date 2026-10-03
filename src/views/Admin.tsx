@@ -10,7 +10,7 @@ import { Product } from "../types";
 import { 
   Sliders, 
   Menu as MenuIcon, 
-  Battery, 
+  Package, 
   Save, 
   Plus, 
   Trash2, 
@@ -24,16 +24,10 @@ import {
   Zap, 
   DollarSign, 
   FileText,
-  Briefcase,
   Mail,
   BookOpen,
-  Building,
-  ShieldCheck,
-  QrCode,
   Calculator,
   MapPin,
-  Gift,
-  PackageCheck,
   PanelsTopLeft,
   ShoppingBag,
   Layers
@@ -42,17 +36,9 @@ import {
 import HomePageAdmin from "./Admin/HomePageAdmin";
 import AboutPageAdmin from "./Admin/AboutPageAdmin";
 import ProductsAdmin from "./Admin/ProductsAdmin";
-import SalesProgramsAdmin from "./Admin/SalesProgramsAdmin";
-import DealerPricingAdmin from "./Admin/DealerPricingAdmin";
-import DealerAccountsAdmin from "./Admin/DealerAccountsAdmin";
-import DealerOrdersAdmin from "./Admin/DealerOrdersAdmin";
 import KnowledgeAdmin from "./Admin/KnowledgeAdmin";
-import AcademyAdmin from "./Admin/AcademyAdmin";
-import RecruitmentAdmin from "./Admin/RecruitmentAdmin";
 import ContactAdmin from "./Admin/ContactAdmin";
 import SolutionsAdmin from "./Admin/SolutionsAdmin";
-import DealerAdmin from "./Admin/DealerAdmin";
-import WarrantyAdmin from "./Admin/WarrantyAdmin";
 import QuotesAdmin from "./Admin/QuotesAdmin";
 import NewsletterAdmin from "./Admin/NewsletterAdmin";
 import SiteContactAdmin from "./Admin/SiteContactAdmin";
@@ -79,7 +65,7 @@ export default function Admin() {
     deleteQuoteRequest
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "dealerPricing" | "dealerAccounts" | "dealerOrders" | "salesPrograms" | "homepage" | "aboutpage" | "knowledge" | "academy" | "recruitment" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions" | "dealers" | "warranties">("hero");
+  const [activeTab, setActiveTab] = useState<"hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "homepage" | "aboutpage" | "knowledge" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions">("hero");
 
   // Hero config state & multi-slides control
   const [heroTitle, setHeroTitle] = useState(heroSettings.title);
@@ -225,7 +211,7 @@ export default function Admin() {
           <div className="flex items-center gap-3">
             <span className="text-xs font-mono text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-md flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Chế độ live: LOCAL STORAGE ACTIVE
+              Dữ liệu: FIREBASE + LOCAL CACHE
             </span>
           </div>
         </div>
@@ -310,26 +296,10 @@ export default function Admin() {
               }`}
             >
               <span className="flex items-center gap-3">
-                <Battery className="w-4 h-4" />
+                <Package className="w-4 h-4" />
                 Kho sản phẩm ({products.length})
               </span>
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "products" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-sales-programs"
-              onClick={() => setActiveTab("salesPrograms")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "salesPrograms"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <Gift className="w-4 h-4" />
-                Chương trình bán hàng
-              </span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "salesPrograms" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
 
             <button
@@ -351,37 +321,6 @@ export default function Admin() {
             </button>
 
             <button
-              id="admin-tab-dealer-pricing"
-              onClick={() => setActiveTab("dealerPricing")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "dealerPricing"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3"><DollarSign className="w-4 h-4" /> Giá đại lý</span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "dealerPricing" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-dealer-accounts"
-              onClick={() => setActiveTab("dealerAccounts")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${activeTab === "dealerAccounts" ? "bg-gold-dark/10 border-gold-light text-gold-light" : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"}`}
-            >
-              <span className="flex items-center gap-3"><ShieldCheck className="w-4 h-4" /> Tài khoản đại lý</span>
-              <ChevronRight className={`w-4 h-4 ${activeTab === "dealerAccounts" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-dealer-orders"
-              onClick={() => setActiveTab("dealerOrders")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${activeTab === "dealerOrders" ? "bg-gold-dark/10 border-gold-light text-gold-light" : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"}`}
-            >
-              <span className="flex items-center gap-3"><PackageCheck className="w-4 h-4" /> Đơn hàng đại lý</span>
-              <ChevronRight className={`w-4 h-4 ${activeTab === "dealerOrders" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
               id="admin-tab-knowledge"
               onClick={() => setActiveTab("knowledge")}
               className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
@@ -395,38 +334,6 @@ export default function Admin() {
                 Quản trị Kiến thức
               </span>
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "knowledge" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-academy"
-              onClick={() => setActiveTab("academy")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "academy"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <BookOpen className="w-4 h-4" />
-                Quản trị Học viện
-              </span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "academy" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-recruitment"
-              onClick={() => setActiveTab("recruitment")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "recruitment"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <Briefcase className="w-4 h-4" />
-                Quản trị Tuyển Dụng
-              </span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "recruitment" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
 
             <button
@@ -508,49 +415,6 @@ export default function Admin() {
               </span>
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "solutions" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
-
-            <button
-              id="admin-tab-dealers"
-              onClick={() => setActiveTab("dealers")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "dealers"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <Building className="w-4 h-4" />
-                Đại lý & Chi nhánh
-              </span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "dealers" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <button
-              id="admin-tab-warranties"
-              onClick={() => setActiveTab("warranties")}
-              className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
-                activeTab === "warranties"
-                  ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]"
-                  : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <ShieldCheck className="w-4 h-4" />
-                Bảo hành Điện tử
-              </span>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "warranties" ? "rotate-90 text-gold-light" : ""}`} />
-            </button>
-
-            <a
-              href="/admin/warranty-qr"
-              className="w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"
-            >
-              <span className="flex items-center gap-3">
-                <QrCode className="w-4 h-4" />
-                Tem QR bảo hành
-              </span>
-              <ChevronRight className="w-4 h-4" />
-            </a>
 
             <button
               id="admin-tab-webp"
@@ -806,7 +670,7 @@ export default function Admin() {
                 {/* Form to insert new link */}
                 <form onSubmit={handleAddMenu} className="p-4 bg-black border border-[#1A1A1A] grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                   <div className="md:col-span-3 space-y-1">
-                    <label className="text-[9px] font-display uppercase tracking-wider text-gray-400 block font-bold">Chữ Menu (Ví dụ: "HỌC VIỆN")</label>
+                    <label className="text-[9px] font-display uppercase tracking-wider text-gray-400 block font-bold">Chữ Menu (Ví dụ: "DỊCH VỤ MỚI")</label>
                     <input
                       type="text"
                       required
@@ -818,7 +682,7 @@ export default function Admin() {
                   </div>
 
                   <div className="md:col-span-3 space-y-1">
-                    <label className="text-[9px] font-display uppercase tracking-wider text-gray-400 block font-bold">Đường dẫn Path (Ví dụ: "/hoc-vien")</label>
+                    <label className="text-[9px] font-display uppercase tracking-wider text-gray-400 block font-bold">Đường dẫn Path (Ví dụ: "/dich-vu-moi")</label>
                     <input
                       type="text"
                       required
@@ -995,14 +859,6 @@ export default function Admin() {
 
             {activeTab === "landingOrders" && <LandingOrdersAdmin />}
 
-            {activeTab === "dealerPricing" && <DealerPricingAdmin />}
-
-            {activeTab === "dealerAccounts" && <DealerAccountsAdmin />}
-
-            {activeTab === "dealerOrders" && <DealerOrdersAdmin />}
-
-            {activeTab === "salesPrograms" && <SalesProgramsAdmin />}
-
             {/* T4. HOMEPAGE CONTENT EDITING */}
             {activeTab === "homepage" && <HomePageAdmin />}
 
@@ -1011,11 +867,6 @@ export default function Admin() {
 
             {/* T6. KNOWLEDGE/ARTICLES BASE MANAGEMENT */}
             {activeTab === "knowledge" && <KnowledgeAdmin />}
-
-            {activeTab === "academy" && <AcademyAdmin />}
-
-            {/* T7. RECRUITMENT/JOBS MANAGEMENT */}
-            {activeTab === "recruitment" && <RecruitmentAdmin />}
 
             {/* T12. CUSTOMER QUOTE REQUESTS */}
             {activeTab === "quotes" && <QuotesAdmin />}
@@ -1029,12 +880,6 @@ export default function Admin() {
 
             {/* T9. ENERGY SOLUTIONS EDITOR */}
             {activeTab === "solutions" && <SolutionsAdmin />}
-
-            {/* T10. DEALER & BRANCHES NETWORK */}
-            {activeTab === "dealers" && <DealerAdmin />}
-
-            {/* T11. WARRANTY RECORDS MANAGER */}
-            {activeTab === "warranties" && <WarrantyAdmin />}
 
             {activeTab === "webp" && <WebpConverterAdmin />}
 

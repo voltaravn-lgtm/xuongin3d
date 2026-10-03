@@ -10,10 +10,10 @@ export default function HomePageAdmin() {
     feature1Desc: homeContent.feature1Desc || "Nhận file, hình ảnh, bản vẽ hoặc mẫu thật.",
     feature2Title: homeContent.feature2Title || "Chất Lượng Vượt Trội",
     feature2Desc: homeContent.feature2Desc || "Vỏ sợi polycarbonate chống vỡ nứt.",
-    feature3Title: homeContent.feature3Title || "Bảo Hành Chính Hãng",
+    feature3Title: homeContent.feature3Title || "Thiết Kế Theo Yêu Cầu",
     feature3Desc: homeContent.feature3Desc || "Kích hoạt điện tử tra cứu siêu nhanh.",
     feature4Title: homeContent.feature4Title || "Hệ Thống Toàn Quốc",
-    feature4Desc: homeContent.feature4Desc || "Hàng trăm đại lý phân phối rộng khắp cả nước.",
+    feature4Desc: homeContent.feature4Desc || "Tiếp nhận yêu cầu và hỗ trợ tư vấn 24/7.",
     section2Title: homeContent.section2Title || "Sản Phẩm In 3D Theo Nhu Cầu",
     section2Desc: homeContent.section2Desc || "Đa dạng mẫu mã, vật liệu và kích thước cho cá nhân, gia đình và doanh nghiệp.",
   });
@@ -92,11 +92,11 @@ export default function HomePageAdmin() {
 
             {/* Feature 3 */}
             <div className="p-4 bg-black/40 border border-[#1A1A1A] space-y-3">
-              <span className="text-[10px] font-mono text-gold-dark font-bold">#03 TIÊU CHUẨN BẢO HÀNH</span>
+              <span className="text-[10px] font-mono text-gold-dark font-bold">#03 THIẾT KẾ THEO YÊU CẦU</span>
               <div className="space-y-2">
                 <input
                   type="text"
-                  placeholder="Tiêu đề (Vd: Bảo Hành Chính Hãng)"
+                  placeholder="Tiêu đề (Vd: Thiết Kế Theo Yêu Cầu)"
                   value={form.feature3Title}
                   onChange={(e) => handleChange("feature3Title", e.target.value)}
                   className="w-full bg-black border border-[#222] focus:border-gold-light text-[#ECECEC] px-3 py-2 text-xs focus:outline-none"

@@ -1,7 +1,5 @@
-'use client';
-
-import DealerOrder from '../../../views/DealerOrder';
+import { permanentRedirect } from 'next/navigation';
 
 export default function DealerOrderPage() {
-  return <DealerOrder />;
+  permanentRedirect('/in-3d-theo-yeu-cau');
 }

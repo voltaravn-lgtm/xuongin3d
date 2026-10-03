@@ -1,7 +1,5 @@
-'use client';
-
-import Careers from '../../views/Careers';
+import { permanentRedirect } from 'next/navigation';
 
 export default function CareersPage() {
-  return <Careers />;
+  permanentRedirect('/gioi-thieu');
 }

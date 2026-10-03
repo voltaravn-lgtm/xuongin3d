@@ -25,17 +25,17 @@ export default function AboutPageAdmin() {
     coreValue2Title: aboutContent.coreValue2Title || "Đổi mới",
     coreValue2Desc: aboutContent.coreValue2Desc || "Linh hoạt thiết kế, vật liệu và cách hoàn thiện.",
     coreValue3Title: aboutContent.coreValue3Title || "Hợp tác",
-    coreValue3Desc: aboutContent.coreValue3Desc || "Đồng hành trọn vẹn thịnh vượng cùng đại lý ủy quyền.",
+    coreValue3Desc: aboutContent.coreValue3Desc || "Đồng hành từ tiếp nhận ý tưởng đến hoàn thiện và bàn giao sản phẩm.",
     coreValue4Title: aboutContent.coreValue4Title || "Trách nhiệm",
     coreValue4Desc: aboutContent.coreValue4Desc || "An tâm bảo hiểm rủi ro tài sản cao cấp chính hãng.",
     stat1Num: aboutContent.stat1Num || "50+",
-    stat1Label: aboutContent.stat1Label || "Đại lý toàn quốc",
+    stat1Label: aboutContent.stat1Label || "Công nghệ in",
     stat2Num: aboutContent.stat2Num || "100.000+",
     stat2Label: aboutContent.stat2Label || "Sản phẩm bàn giao",
     stat3Num: aboutContent.stat3Num || "5.000 m²",
     stat3Label: aboutContent.stat3Label || "Nhà máy hiện đại",
     stat4Num: aboutContent.stat4Num || "3 Năm",
-    stat4Label: aboutContent.stat4Label || "Bảo hành chính hãng",
+    stat4Label: aboutContent.stat4Label || "Hỗ trợ tư vấn",
     factorySubtitle: aboutContent.factorySubtitle || "TIÊU CHUẨN ĐỒNG BỘ",
     factoryTitle: aboutContent.factoryTitle || "Nhà Máy Hiện Đại Công Nghệ Tiên Tiến",
     factoryDesc: aboutContent.factoryDesc || "Xưởng tiếp nhận nhiều nhóm sản phẩm từ decor, quà tặng đến mô hình kỹ thuật, POSM và sa bàn.",
@@ -66,7 +66,7 @@ export default function AboutPageAdmin() {
           <FileText className="w-4 h-4 scale-110" />
           QUẢN TRỊ NỘI DUNG TRANG GIỚI THIỆU
         </h2>
-        <p className="text-xs text-gray-400">Hiệu chỉnh Sứ mệnh, Tầm nhìn chiến lược, Giá trị cốt lõi, Số liệu thống kê sinh động và hình ảnh nhà máy Voltara.</p>
+        <p className="text-xs text-gray-400">Hiệu chỉnh giới thiệu xưởng, quy trình làm việc, giá trị cốt lõi, số liệu và hình ảnh năng lực sản xuất.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-8 pt-4">
@@ -334,7 +334,7 @@ export default function AboutPageAdmin() {
             </div>
 
             <div className="p-3 bg-black border border-[#1A1A1A]">
-              <label className="text-[9px] text-gray-500 block mb-0.5">STAT 04 (Bảo hành)</label>
+              <label className="text-[9px] text-gray-500 block mb-0.5">STAT 04 (Hỗ trợ)</label>
               <input
                 type="text"
                 value={form.stat4Num}

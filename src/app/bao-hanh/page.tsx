@@ -1,7 +1,5 @@
-'use client';
-
-import Warranty from '../../views/Warranty';
+import { permanentRedirect } from 'next/navigation';
 
 export default function WarrantyPage() {
-  return <Warranty />;
+  permanentRedirect('/lien-he');
 }

@@ -3,6 +3,7 @@ import { getBuildProducts } from "../lib/productData";
 import { getProductSlug } from "../lib/productRoutes";
 import { siteUrl } from "../lib/seo";
 import { listPublishedLandingsForSitemap } from "../lib/landing/landingSitemapRepository";
+import { ARTICLES_DATA } from "../data";
 
 export const dynamic = "force-dynamic";
 
@@ -42,5 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  return [...pageRoutes, ...productRoutes, ...landingRoutes];
+  const articleRoutes = ARTICLES_DATA.map((article) => ({
+    url: new URL(`/kien-thuc/${article.id}`, siteUrl).toString(),
+    lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.65,
+  }));
+
+  return [...pageRoutes, ...productRoutes, ...articleRoutes, ...landingRoutes];
 }

@@ -24,7 +24,7 @@ export function createDefaultLandingBlock(type: LandingBlockType): LandingBlock 
     case 'faq': return { ...base, type, title: 'Câu hỏi thường gặp', items: [] };
     case 'warranty': return { ...base, type, title: 'Bảo hành chính hãng', description: '', items: [] };
     case 'cta': return { ...base, type, title: 'Sẵn sàng sở hữu sản phẩm?', buttonLabel: 'Đặt hàng ngay', buttonTarget: '#dat-hang' };
-    case 'order-form': return { ...base, type, title: 'Thông tin đặt hàng', formType: 'order', submitLabel: 'Xác nhận đặt hàng', successMessage: 'Cảm ơn bạn. Voltara sẽ liên hệ xác nhận sớm nhất.', requireAddress: true, allowNote: true, showName: true, showAddress: true, showNote: true, showQuantity: true };
+    case 'order-form': return { ...base, type, title: 'Thông tin đặt hàng', formType: 'order', submitLabel: 'Xác nhận đặt hàng', successMessage: 'Cảm ơn bạn. Xưởng In 3D sẽ liên hệ xác nhận sớm nhất.', requireAddress: true, allowNote: true, showName: true, showAddress: true, showNote: true, showQuantity: true };
     case 'contact-button': return { ...base, type, channel: 'call', label: 'Gọi ngay', href: '', fixedOnMobile: false };
     case 'spacer': return { ...base, type, desktopHeight: 48, mobileHeight: 24 };
   }

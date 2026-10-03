@@ -1114,7 +1114,7 @@ export default function ProductsAdmin() {
           break;
         }
         case "link": {
-          const url = window.prompt("DÃ¡n Ä‘Æ°á»ng dáº«n liÃªn káº¿t:", "https://voltara.vn");
+          const url = window.prompt("Dán đường dẫn liên kết:", "https://xuong-in-3d.web.app");
           if (url) document.execCommand("createLink", false, url);
           break;
         }
@@ -1168,7 +1168,7 @@ export default function ProductsAdmin() {
           break;
         }
         case "link": {
-          const url = window.prompt("Dán đường dẫn liên kết:", "https://voltara.vn");
+          const url = window.prompt("Dán đường dẫn liên kết:", "https://xuong-in-3d.web.app");
           if (url) doc.execCommand("createLink", false, url);
           break;
         }
@@ -1207,7 +1207,7 @@ export default function ProductsAdmin() {
   replacement = `<div style="text-align: justify;">\n${selectedText || "Nội dung căn đều hai bên"}\n</div>`;
   break;
       case "image":
-        replacement = `\n![Mô tả ảnh](${selectedText || "url_hinh_anh_voltara_banner_v.png"})\n`;
+        replacement = `\n![Mô tả ảnh](${selectedText || "url_hinh_anh_san_pham.webp"})\n`;
         break;
       case "bullet":
         replacement = `\n- ${selectedText || "Mục dòng liệt kê"}`;
@@ -1216,7 +1216,7 @@ export default function ProductsAdmin() {
         replacement = `\n### ${selectedText || "Tiêu đề phụ"}\n`;
         break;
       case "link":
-        replacement = `[${selectedText || "Văn bản hiển thị"}](https://voltara.vn)`;
+        replacement = `[${selectedText || "Văn bản hiển thị"}](https://xuong-in-3d.web.app)`;
         break;
     }
 
