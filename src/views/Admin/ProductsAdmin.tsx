@@ -750,7 +750,8 @@ export default function ProductsAdmin() {
       });
     } else {
       setEditingProduct(null);
-    const blankForm = createBlankProductForm("IN3D-" + Math.floor(Math.random() * 90000 + 10000));
+      const generatedCode = "IN3D-" + Math.floor(Math.random() * 90000 + 10000);
+      const blankForm = { ...createBlankProductForm(generatedCode), sku: generatedCode };
       descriptionDraftRef.current = blankForm.description || "";
       setProductForm(blankForm);
     }
@@ -759,8 +760,8 @@ export default function ProductsAdmin() {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.id?.trim() || !productForm.name) {
-      showToast("Vui lòng điền đầy đủ ID và Tên sản phẩm!", "warning");
+    if (!productForm.id?.trim() || !productForm.sku?.trim() || !productForm.name) {
+      showToast("Vui lòng điền đầy đủ Mã SP, ID và Tên sản phẩm!", "warning");
       return;
     }
 
@@ -1770,6 +1771,14 @@ export default function ProductsAdmin() {
         }).filter(([key, value]) => key && value),
       );
       const existingById = new Map(products.map((product) => [product.id, product]));
+      const normalizeProductCode = (value: string | undefined) => String(value || "").trim().toLocaleLowerCase("vi");
+      const existingByCode = new Map<string, Product>();
+      products.forEach((product) => {
+        [product.id, product.sku, product.barcode].forEach((value) => {
+          const normalized = normalizeProductCode(value);
+          if (normalized) existingByCode.set(normalized, product);
+        });
+      });
       const candidates: Product[] = [];
       const normalizeCategoryValue = (value: string) => value.trim().toLocaleLowerCase("vi");
       const resolveCategoryId = (value: string, fallback: string) => {
@@ -1793,10 +1802,12 @@ export default function ProductsAdmin() {
       matrix.slice(1).forEach((row) => {
         const name = cell(row, "Tên sản phẩm");
         const productCode = cell(row, "Mã SP") || cell(row, "SKU") || cell(row, "ID");
-        const id = cell(row, "ID") || slugifyProductText(productCode || name);
+        const requestedId = cell(row, "ID");
+        const existing = (requestedId ? existingById.get(requestedId) : undefined)
+          || existingByCode.get(normalizeProductCode(productCode));
+        const id = existing?.id || requestedId || slugifyProductText(productCode || name);
         if (!id || !name) return;
 
-        const existing = existingById.get(id);
         const keep = (label: string, fallback = "") => cell(row, label) || fallback;
         const imageLines = splitLines(cell(row, "Ảnh bổ sung"));
         const videoLines = splitLines(cell(row, "Video"));
@@ -1835,6 +1846,10 @@ export default function ProductsAdmin() {
         };
         candidates.push(imported);
         existingById.set(id, imported);
+        [imported.id, imported.sku, imported.barcode].forEach((value) => {
+          const normalized = normalizeProductCode(value);
+          if (normalized) existingByCode.set(normalized, imported);
+        });
       });
 
       if (!candidates.length) throw new Error("Không tìm thấy sản phẩm hợp lệ. File cần có cột Mã SP và Tên sản phẩm.");
@@ -2291,14 +2306,16 @@ export default function ProductsAdmin() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">ID Sản phẩm (Độc nhất)</label>
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gold-light">Mã SP / SKU</label>
                   <input
                     type="text"
                     required
-                    value={productForm.id}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, id: e.target.value }))}
+                    value={productForm.sku || ""}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value.trim().toUpperCase() }))}
+                    placeholder="VD: MH001"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono"
                   />
+                  <p className="text-[10px] text-gray-500">Dùng trong Excel và đặt tên ảnh: MH001.jpg, MH001-1.jpg...</p>
                 </div>
 
                 <div className="space-y-1">
@@ -2310,6 +2327,19 @@ export default function ProductsAdmin() {
                     onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-500">ID hệ thống (độc nhất)</label>
+                  <input
+                    type="text"
+                    required
+                    value={productForm.id}
+                    readOnly={Boolean(editingProduct)}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, id: e.target.value }))}
+                    className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-gray-400 px-3.5 py-2.5 text-xs focus:outline-none font-mono read-only:cursor-not-allowed read-only:opacity-60"
+                  />
+                  <p className="text-[10px] text-gray-600">Mã kỹ thuật dùng bởi Firebase; không cần dùng để đặt tên ảnh và không thể đổi sau khi tạo.</p>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
@@ -2501,7 +2531,7 @@ export default function ProductsAdmin() {
                 <div className="col-span-1 sm:col-span-2 border border-gold-dark/20 bg-[#080808] p-4 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Thong tin kho & SKU</h3>
+                      <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Thông tin kho & đồng bộ</h3>
                       <p className="mt-1 text-[10px] text-gray-500">Chuan bi du lieu de sau nay lien ket Nhanh.vn, Haravan, Shopee, Tiki, TikTok Shop.</p>
                     </div>
                     <label className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-300 cursor-pointer">
@@ -2515,17 +2545,7 @@ export default function ProductsAdmin() {
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">SKU</label>
-                      <input
-                        type="text"
-                        value={productForm.sku}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value }))}
-                        placeholder="VD: QZJ004-21V"
-                        className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Barcode</label>
                       <input
