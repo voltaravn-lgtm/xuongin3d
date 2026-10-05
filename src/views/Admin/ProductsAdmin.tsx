@@ -393,6 +393,7 @@ export default function ProductsAdmin() {
   const [quickPriceDrafts, setQuickPriceDrafts] = useState<Record<string, string>>({});
   const [quickVariantPriceDrafts, setQuickVariantPriceDrafts] = useState<Record<string, string>>({});
   const [savingQuickPriceId, setSavingQuickPriceId] = useState<string | null>(null);
+  const [expandedVariantPriceIds, setExpandedVariantPriceIds] = useState<Set<string>>(() => new Set());
   const [bulkImporting, setBulkImporting] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newChildCategoryNames, setNewChildCategoryNames] = useState<Record<string, string>>({});
@@ -2144,10 +2145,10 @@ export default function ProductsAdmin() {
                 prod.hidden
                   ? "border-gray-800 opacity-70 hover:opacity-100"
                   : "border-[#1A1A1A] hover:border-gold-dark/40"
-              } ${adminViewMode === "grid" ? "p-4 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
+              } ${adminViewMode === "grid" ? "p-3 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
             >
-              <div className={`flex items-start gap-4 ${adminViewMode === "list" ? "flex-1 min-w-0" : ""}`}>
-                <div className={`${adminViewMode === "grid" ? "w-16 h-16" : "w-12 h-12"} bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0`}>
+              <div className={`flex items-start gap-3 ${adminViewMode === "list" ? "flex-1 min-w-0" : ""}`}>
+                <div className={`${adminViewMode === "grid" ? "w-14 h-14" : "w-12 h-12"} bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0`}>
                   {prod.image ? (
                     <img
                       src={prod.image}
@@ -2202,12 +2203,29 @@ export default function ProductsAdmin() {
                   </div>
 
                   {(prod.variants || []).length > 0 && (
-                    <div className="mt-2 space-y-1.5 border-t border-white/5 pt-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-gold-light">Giá theo phân loại</span>
-                        <span className="text-[9px] text-gray-600">{prod.variants?.length} phân loại</span>
-                      </div>
-                      {(prod.variants || []).map((variant) => {
+                    <div className="mt-2 border-t border-white/5 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedVariantPriceIds((current) => {
+                          const next = new Set(current);
+                          if (next.has(prod.id)) next.delete(prod.id);
+                          else next.add(prod.id);
+                          return next;
+                        })}
+                        className="flex w-full items-center justify-between border border-white/5 bg-white/[.02] px-2.5 py-2 text-left hover:border-gold-dark/30"
+                        aria-expanded={expandedVariantPriceIds.has(prod.id)}
+                      >
+                        <span className="text-[9px] font-black uppercase tracking-wider text-gold-light">
+                          Giá theo phân loại · {prod.variants?.length}
+                        </span>
+                        <span className="flex items-center gap-2 text-[9px] text-gray-500">
+                          {expandedVariantPriceIds.has(prod.id) ? "Thu gọn" : "Xem giá"}
+                          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedVariantPriceIds.has(prod.id) ? "rotate-90" : ""}`} />
+                        </span>
+                      </button>
+                      {expandedVariantPriceIds.has(prod.id) && (
+                        <div className="mt-1.5 space-y-1.5">
+                          {(prod.variants || []).map((variant) => {
                         const key = getVariantDraftKey(prod.id, variant.id);
                         return (
                           <div key={variant.id} className={`grid grid-cols-[minmax(0,1fr)_125px_auto] items-center gap-2 border px-2 py-1.5 ${!parsePriceValue(variant.salePrice || variant.price) ? "border-red-500/25 bg-red-500/5" : "border-white/5 bg-white/[.02]"}`}>
@@ -2234,14 +2252,16 @@ export default function ProductsAdmin() {
                             ) : <span className={`h-2 w-2 rounded-full ${parsePriceValue(variant.salePrice || variant.price) ? "bg-emerald-500" : "bg-red-500"}`} title={parsePriceValue(variant.salePrice || variant.price) ? "Đã có giá" : "Chưa có giá"} />}
                           </div>
                         );
-                      })}
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
                 </div>
               </div>
 
-              <div className={`${adminViewMode === "grid" ? "mt-4 pt-3 border-t border-[#1A1A1A] flex items-center justify-between" : "flex items-center justify-end gap-2 shrink-0"}`}>
+              <div className={`${adminViewMode === "grid" ? "mt-3 pt-2.5 border-t border-[#1A1A1A] flex items-center justify-between" : "flex items-center justify-end gap-2 shrink-0"}`}>
                 {adminViewMode === "grid" && (
                   <span className="text-[9px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 font-bold uppercase">{getCategoryDisplayName(prod.category, prod.subCategory)}</span>
                 )}
