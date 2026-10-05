@@ -10,6 +10,8 @@ import { Product, Solution, Article, Course, Job, Branch } from "../types";
 import { useApp } from "../context/AppContext";
 import { getProductHref } from "../lib/productRoutes";
 import ProductPromoImage from "./ProductPromoImage";
+import { getProductCardPrice } from "../lib/productCardPrice";
+import { productDisplayName } from "../lib/productDisplayName";
 
 function formatDisplayPrice(price: string | undefined): string {
   const raw = (price || "").trim();
@@ -96,14 +98,12 @@ export const StatCard: React.FC<{
 // Premium ProductCard matching the photos
 export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const { salesPrograms } = useApp();
-  const firstVariantWithPrice = (product.variants || []).find((variant) => variant.salePrice || variant.price);
-  const regularPrice = formatDisplayPrice(firstVariantWithPrice?.price || product.price);
-  const salePrice = formatDisplayPrice(firstVariantWithPrice?.salePrice || product.salePrice);
+  const lowestPrice = getProductCardPrice(product);
+  const regularPrice = formatDisplayPrice(lowestPrice.price);
+  const salePrice = formatDisplayPrice(lowestPrice.salePrice);
   const hasDiscount = Boolean(salePrice && isLowerPrice(salePrice, regularPrice));
   const displayPrice = salePrice || regularPrice;
-  const hasVariants = Boolean(product.variants?.length);
   const hasProductVideo = (product.videoUrls || []).some((url) => String(url || "").trim());
-  const technicalSpecs = Object.entries(product.specs || {}).filter(([, value]) => String(value || "").trim());
   const hasActiveCombo = salesPrograms.some((program) => {
     if (program.type !== "combo" || program.hidden) return false;
     const now = Date.now();
@@ -117,7 +117,7 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   return (
     <Link
       to={getProductHref(product)}
-      className="bg-[#121212] hover:bg-[#1A1A1A] gold-border rounded-lg flex flex-col h-full relative group transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(216,154,43,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light/70"
+      className="bg-[#121212] hover:bg-[#1A1A1A] gold-border rounded-lg overflow-hidden flex flex-col h-full relative group transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(216,154,43,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light/70"
       aria-label={`Xem chi tiết ${product.name}`}
     >
       {/* Brand water mark */}
@@ -152,60 +152,27 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         )}
       </div>
 
-      <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between border-t border-[#D89A2B]/20">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col border-t border-[#D89A2B]/20">
         <div>
-          {/* Brand/Voltage Tag */}
-          <div className="flex flex-col min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between gap-1 text-[9px] sm:text-[10px] text-gray-500 font-display font-semibold mb-2">
-            <span className="text-gold-light uppercase tracking-wider">{product.brand}</span>
-            <span>{[product.voltage, product.capacity].filter(Boolean).join(" • ")}</span>
-          </div>
-
-          <h3 className="text-[11px] sm:text-xs uppercase font-display font-bold text-[#ECECEC] line-clamp-2 tracking-wide leading-relaxed mb-2 sm:mb-3 group-hover:text-gold-light transition-colors">
-            {product.name}
+          <div className="mb-1 text-[9px] sm:text-[10px] font-semibold text-gold-light">Xưởng In 3D</div>
+          <h3 className="text-xs sm:text-[13px] font-sans font-semibold text-[#ECECEC] line-clamp-2 leading-4 h-8 mb-1 group-hover:text-gold-light transition-colors">
+            {productDisplayName(product.name)}
           </h3>
 
-          <div className="mb-2 sm:mb-3 min-h-[30px] sm:min-h-[34px]">
+          <div className="min-h-6">
             {hasDiscount ? (
               <div className="space-y-0.5">
-                <div className="text-xs sm:text-sm font-display font-black text-gold-light">{hasVariants ? "Từ " : ""}{salePrice}</div>
+                <div className="text-sm sm:text-base font-display font-black text-gold-light">{salePrice}</div>
                 {regularPrice && <div className="text-[10px] text-gray-500 line-through">{regularPrice}</div>}
               </div>
             ) : displayPrice ? (
-              <div className="text-xs sm:text-sm font-display font-black text-gold-light">{hasVariants ? "Từ " : ""}{displayPrice}</div>
+              <div className="text-sm sm:text-base font-display font-black text-gold-light">{displayPrice}</div>
             ) : (
               <div className="text-xs font-display font-bold uppercase tracking-wider text-gray-500">Liên hệ</div>
             )}
           </div>
-          {hasActiveCombo && (
-            <div className="mb-3 inline-flex items-center gap-1.5 border border-gold-dark/30 bg-gold-dark/10 px-2.5 py-1 text-[9px] font-display font-bold uppercase tracking-widest text-gold-light">
-              <Gift className="h-3 w-3" />
-              Có combo khuyến mãi
-            </div>
-          )}
-
-          <div className="space-y-1 mb-3 sm:space-y-1.5 sm:mb-4">
-            {technicalSpecs.slice(0, 3).map(([key, value]) => (
-              <div key={key} className="flex items-start justify-between gap-2 text-[9px] sm:text-[10px] text-gray-400">
-                <span className="text-gray-500">{key}:</span>
-                <span className="font-medium text-[#C7C7C7]">{value}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        <div className="pt-3 border-t border-[#D89A2B]/20 flex flex-col min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between gap-2">
-          <div className="text-[9px] sm:text-[10px] text-gray-500 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-gold-dark" />
-            <span>Bảo hành {product.warranty}</span>
-          </div>
-
-          <span
-            className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-display font-bold text-gold-light uppercase tracking-widest group/btn group-hover:text-white transition-colors"
-          >
-            <span>XEM CHI TIẾT</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-          </span>
-        </div>
       </div>
     </Link>
   );

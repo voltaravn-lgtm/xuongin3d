@@ -10,11 +10,10 @@ import { useApp } from "../context/AppContext";
 import { SectionTitle, ProductCard } from "../components/Cards";
 import QuoteRequestModal from "../components/QuoteRequestModal";
 import { getProductHref } from "../lib/productRoutes";
-import { getMenuBanner } from "../lib/menuBanners";
+import { productDisplayName } from "../lib/productDisplayName";
 import ProductDetailClient from "../components/ProductDetailClient";
 import ProductPromoImage from "../components/ProductPromoImage";
 import { getProductDescriptionExcerpt } from "../lib/productDescription";
-import PageHero from "../components/PageHero";
 
 const PRODUCTS_PAGE_SIZE = 12;
 
@@ -74,8 +73,7 @@ export default function Products() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedIdFromUrl = searchParams.get("select");
-  const { products, showToast, menuItems, productCategories, contactSettings } = useApp();
-  const bannerImage = getMenuBanner(menuItems, "/san-pham", "/images/san-pham.webp");
+  const { products, showToast, productCategories, contactSettings } = useApp();
   const visibleProducts = useMemo(() => products.filter(product => !product.hidden), [products]);
 
   const [activeCategory, setActiveCategory] = useState("all");
@@ -236,16 +234,8 @@ export default function Products() {
   return (
     <div id="products-page" className="pb-20 relative bg-[#050505]">
       
-      <PageHero
-        image={bannerImage}
-        imageAlt="Sản phẩm in 3D theo yêu cầu"
-        breadcrumb="Sản phẩm"
-        eyebrow="Danh mục sản phẩm"
-        title="Sản phẩm in 3D"
-        description="Khám phá các sản phẩm decor, tiện ích, quà tặng, mô hình, POSM và sa bàn. Mỗi mẫu có thể được điều chỉnh về kích thước, màu sắc và vật liệu."
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 className="sr-only">Sản phẩm in 3D</h1>
+      <div className="max-w-7xl mx-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
 
         {/* 2. BODY LAYOUT - SIDEBAR & PRODUCTS GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -568,12 +558,12 @@ export default function Products() {
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-3 text-[10px] text-gray-600 mb-1">
-                          <span className="text-gold-light font-display uppercase tracking-wider">{prod.brand}</span>
+                          <span className="text-gold-light font-semibold">Xưởng In 3D</span>
                           <span>•</span>
                           <span>{[prod.voltage, prod.capacity].filter(Boolean).join(" • ")}</span>
                         </div>
-                        <h3 className="text-xs font-display font-extrabold text-[#ECECEC] uppercase mb-2 group-hover:text-gold-light transition-colors">
-                          {prod.name}
+                        <h3 className="text-sm font-sans font-semibold text-[#ECECEC] mb-2 group-hover:text-gold-light transition-colors">
+                          {productDisplayName(prod.name)}
                         </h3>
                         <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
                           {getProductDescriptionExcerpt(prod.description, prod.name, 150)}

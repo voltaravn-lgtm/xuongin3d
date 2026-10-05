@@ -52,6 +52,8 @@ export interface Product {
 }
 
 export interface ProductVariant {
+  selectedSize?: string;
+  selectedColor?: string;
   id: string;
   name: string;
   price?: string;
@@ -103,6 +105,8 @@ export interface SalesProgram {
 }
 
 export interface CartItem {
+  selectedSize?: string;
+  selectedColor?: string;
   productId: string;
   variantId?: string;
   variantName?: string;
@@ -346,6 +350,7 @@ export interface ToastMessage {
 }
 
 export interface QuoteRequest {
+  orderItems?: CartItem[];
   id: string;
   customerName: string;
   phone: string;

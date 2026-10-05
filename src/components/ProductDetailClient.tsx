@@ -276,6 +276,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     const sizeId = encodeURIComponent(selectedSize.toLocaleLowerCase("vi"));
     return {
       ...baseVariant,
+      selectedSize,
+      selectedColor,
       id: `${baseVariant.id}${sizeId ? `--size-${sizeId}` : ""}${colorId ? `--color-${colorId}` : ""}`,
       name: [selectedVariant?.name, selectedSize ? `Kích thước ${selectedSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" · "),
     };

@@ -1382,6 +1382,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeCart = () => setIsCartOpen(false);
 
   const addToCart = (product: Product, quantity = 1, variant?: ProductVariant | null, combo?: ProductCombo | null) => {
+    const sizes = String(product.voltage || "").split(/[,|\n]/).map(value => value.trim()).filter(Boolean);
+    const colors = (product.colors || []).map(value => value.trim()).filter(Boolean);
+    if ((sizes.length > 0 && !sizes.includes(variant?.selectedSize || "")) || (colors.length > 0 && !colors.includes(variant?.selectedColor || ""))) {
+      showToast("Vui lòng mở sản phẩm và chọn đầy đủ kích thước, màu sắc trước khi thêm giỏ hàng.", "warning");
+      return;
+    }
     const safeQuantity = Math.max(1, Math.floor(quantity || 1));
     const variantId = variant?.id || "";
     const comboId = combo?.id || "";
@@ -1403,6 +1409,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         {
           productId: product.id,
+          selectedSize: variant?.selectedSize || "",
+          selectedColor: variant?.selectedColor || "",
           variantId: variant?.id,
           variantName: variant?.name,
           variantPrice: variant?.price,

@@ -7,6 +7,7 @@ import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
+import { readProductExcelOptions, variantExcelFields, variantExcelHeader } from "../../lib/productExcelOptions";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
   Bold, Italic,
@@ -156,7 +157,7 @@ async function readProductImportRows(file: File) {
     return XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[firstSheetName], {
       header: 1,
       defval: "",
-      raw: false,
+      raw: true,
     });
   }
 
@@ -1715,11 +1716,18 @@ export default function ProductsAdmin() {
 
     const columns: Array<[string, (product: Product) => unknown]> = [
       ["ID", (product) => product.id],
+      ["Mã SP", (product) => product.sku || product.id],
       ["Tên sản phẩm", (product) => product.name],
       ["Danh mục", (product) => product.category],
       ["Danh mục con", (product) => product.subCategory],
       ["Thương hiệu", (product) => product.brand],
       ["Kích thước / quy mô", (product) => product.voltage],
+      ["Màu sắc", (product) => (product.colors || []).join(", ")],
+      ["Ghi chú đặt hàng", (product) => product.orderNote],
+      ["Phân loại chọn sẵn", (product) => {
+        const index = (product.variants || []).findIndex((variant) => variant.id === product.defaultVariantId);
+        return index >= 0 ? index + 1 : "";
+      }],
       ["Hình thức thực hiện", (product) => product.capacity],
       ["Vật liệu", (product) => product.cellType],
       ["Bảo hành", (product) => product.warranty],
@@ -1754,6 +1762,14 @@ export default function ProductsAdmin() {
       ["Ngày cập nhật", (product) => product.updatedAt],
     ];
 
+    const variantCount = Math.max(3, ...exportRows.map((product) => product.variants?.length || 0));
+    const variantKeys = ["id", "name", "price", "salePrice", "sku", "stockQuantity", "image", "stockStatus"] as const;
+    for (let index = 1; index <= variantCount; index += 1) {
+      variantExcelFields.forEach((field, fieldIndex) => {
+        columns.push([variantExcelHeader(index, field), (product) => product.variants?.[index - 1]?.[variantKeys[fieldIndex]] || ""]);
+      });
+    }
+
     const headerCells = columns.map(([label]) => `<th>${escapeExcelCell(label)}</th>`).join("");
     const bodyRows = exportRows.map((product) => (
       `<tr>${columns.map(([, getter]) => `<td style="mso-number-format:'\\@'; white-space:pre-wrap;">${escapeExcelCell(getter(product))}</td>`).join("")}</tr>`
@@ -1774,12 +1790,12 @@ export default function ProductsAdmin() {
 
   const handleDownloadImportTemplate = () => {
     const link = document.createElement("a");
-    link.href = "/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx";
+    link.href = "/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx?v=20261005";
     link.download = "mau-nhap-san-pham-xuong-in-3d.xlsx";
     document.body.appendChild(link);
     link.click();
     link.remove();
-    showToast("Đã tải file Excel mẫu có danh mục chọn sẵn.", "success");
+    showToast("Đã tải mẫu Excel có màu sắc, kích thước và phân loại sản phẩm.", "success");
   };
 
   const handleImportProducts = async (file: File | undefined) => {
@@ -1790,11 +1806,11 @@ export default function ProductsAdmin() {
       const matrix = await readProductImportRows(file);
       if (matrix.length < 2) throw new Error("File chưa có dòng dữ liệu sản phẩm.");
 
-      const headers = matrix[0].map((header) => header.trim().toLowerCase());
+      const headers = matrix[0].map((header) => String(header ?? "").trim().toLowerCase());
       const headerIndex = new Map(headers.map((header, index) => [header, index]));
       const cell = (row: string[], label: string) => {
         const index = headerIndex.get(label.toLowerCase());
-        return index === undefined ? "" : String(row[index] || "").trim();
+        return index === undefined ? "" : String(row[index] ?? "").trim();
       };
       const splitLines = (value: string) => value.split(/\r?\n|\s*\|\s*/).map((item) => item.trim()).filter(Boolean);
       const parseSpecs = (value: string) => Object.fromEntries(
@@ -1878,6 +1894,7 @@ export default function ProductsAdmin() {
           hidden: visibility ? /ẩn|hidden|true|1/.test(visibility) : existing?.hidden || false,
           createdAt: existing?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          ...readProductExcelOptions(headers, (label) => cell(row, label), id, existing),
         };
         candidates.push(imported);
         existingById.set(id, imported);

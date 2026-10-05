@@ -44,6 +44,18 @@ export default function CartDrawer() {
     return total + getCartItemUnitPriceValue(item) * item.quantity;
   }, 0);
   const cartTotalLabel = cartTotalValue ? formatPriceNumber(cartTotalValue) : "Liên hệ";
+  const hasIncompleteSelections = detailedItems.some(item => {
+    if (!item) return false;
+    const sizes = String(item.product.voltage || "").split(/[,|\n]/).map(value => value.trim()).filter(Boolean);
+    const colors = (item.product.colors || []).map(value => value.trim()).filter(Boolean);
+    return (sizes.length > 0 && !sizes.includes(item.selectedSize || ""))
+      || (colors.length > 0 && !colors.includes(item.selectedColor || ""));
+  });
+  const validateCartSelections = () => {
+    if (!hasIncompleteSelections) return true;
+    showToast("Có sản phẩm chưa chọn đủ kích thước hoặc màu sắc. Vui lòng xóa dòng đó và mở sản phẩm để chọn lại.", "warning");
+    return false;
+  };
 
   if (!isCartOpen) return null;
 
@@ -59,6 +71,7 @@ export default function CartDrawer() {
 
   const handleSubmitCart = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!validateCartSelections()) return;
 
     if (!detailedItems.length) {
       showToast("Giỏ hàng đang trống.", "warning");
@@ -79,12 +92,13 @@ export default function CartDrawer() {
       const originalTotal = originalPriceValue && unitPriceValue && originalPriceValue > unitPriceValue ? formatPriceNumber(originalPriceValue * item.quantity) : "";
       const unitPrice = unitPriceValue ? formatPriceNumber(unitPriceValue) : "Liên hệ";
       const lineTotal = unitPriceValue ? formatPriceNumber(unitPriceValue * item.quantity) : "Liên hệ";
-      return `- ${item.product.name}${variantName ? ` - Phân loại: ${variantName}` : ""}${comboName ? ` - Combo: ${comboName}` : ""} | SKU: ${item.combo?.sku || item.comboSku || item.variant?.sku || item.variantSku || item.product.sku || item.product.id} | SL: ${item.quantity} | Đơn giá: ${unitPrice} | ${originalTotal ? `Giá gốc: ${originalTotal} | ` : ""}Tổng: ${lineTotal}`;
+      return `- ${item.product.name}${variantName ? ` - Phân loại: ${variantName}` : ""}${comboName ? ` - Combo: ${comboName}` : ""} | Kích thước: ${item.selectedSize || "Không áp dụng"} | Màu sắc: ${item.selectedColor || "Không áp dụng"} | SKU: ${item.combo?.sku || item.comboSku || item.variant?.sku || item.variantSku || item.product.sku || item.product.id} | SL: ${item.quantity} | Đơn giá: ${unitPrice} | ${originalTotal ? `Giá gốc: ${originalTotal} | ` : ""}Tổng: ${lineTotal}`;
     }).filter(Boolean);
     const fullAddress = `${address.trim()}, ${district.trim()}, ${province.trim()}`;
 
     addQuoteRequest({
       id: "cart-order-" + Date.now(),
+      orderItems: cartItems,
       customerName: customerName.trim(),
       phone: phone.trim(),
       email: email.trim(),
@@ -204,7 +218,7 @@ export default function CartDrawer() {
               <span className="text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">Tổng tạm tính</span>
               <span className="text-base font-display font-black text-gold-light">{cartTotalLabel}</span>
             </div>
-            <button type="button" onClick={() => setIsCheckoutOpen(true)} className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-gold-dark to-gold-light px-5 py-3 text-[11px] font-display font-black uppercase tracking-widest text-black">
+            <button type="button" onClick={() => { if (validateCartSelections()) setIsCheckoutOpen(true); }} className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-gold-dark to-gold-light px-5 py-3 text-[11px] font-display font-black uppercase tracking-widest text-black">
               <ShoppingCart className="h-4 w-4" />
               Đặt hàng
             </button>
