@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import MobileQuickAccess from "../components/MobileQuickAccess";
 import ToastContainer from "../components/ToastContainer";
+import SiteBackground from "../components/SiteBackground";
 import { usePathname } from "next/navigation";
 
 export default function RootClientLayout({
@@ -17,6 +18,8 @@ export default function RootClientLayout({
   const pathname = usePathname();
   const isCatalogPage = pathname === '/catalog';
   const isAdminPage = pathname === '/admin' || pathname?.startsWith('/admin/');
+  const sceneRoutes = ['/san-pham', '/in-3d-theo-yeu-cau', '/giai-phap', '/du-an-da-thuc-hien', '/kien-thuc', '/gioi-thieu', '/lien-he'];
+  const hasSceneBackground = pathname === '/' || sceneRoutes.some((route) => pathname === route || pathname?.startsWith(`${route}/`));
 
   useEffect(() => {
     setMounted(true);
@@ -40,8 +43,9 @@ export default function RootClientLayout({
     <AppProvider>
       <div className="min-h-screen bg-[#050505] text-[#ECECEC] font-sans antialiased flex flex-col justify-between">
         <Header />
-        <main className="flex-1 w-full">
-          {children}
+        <main className={`flex-1 w-full${hasSceneBackground ? ' site-scene-content' : ''}`}>
+          {hasSceneBackground && <SiteBackground subdued={pathname !== '/' && !pathname?.startsWith('/san-pham')} />}
+          {hasSceneBackground ? <div className="site-scene-foreground">{children}</div> : children}
         </main>
         {!isCatalogPage && !isAdminPage && <Footer />}
         <MobileQuickAccess />

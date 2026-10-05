@@ -8,6 +8,7 @@ import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
 import { readProductExcelOptions, variantExcelFields, variantExcelHeader } from "../../lib/productExcelOptions";
+import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
   Bold, Italic,
@@ -16,6 +17,7 @@ import {
   Loader2, Search, LayoutGrid, Rows3, EyeOff, Download, Undo2, Redo2, ChevronRight
 } from "lucide-react";
 const fulfillmentOptions = ["Có sẵn", "In theo yêu cầu", "Thiết kế + in", "In + sơn hoàn thiện", "Thiết kế + in + sơn hoàn thiện"];
+const variantNameOptions = ["Size XS", "Size S", "Size M", "Size L", "Size XL", "Size XXL", "Nhỏ", "Trung", "Lớn"];
 const defaultSpecTemplate: Product["specs"] = {
   "Công suất tối đa": "",
   "Trọng lượng thân máy": "",
@@ -397,6 +399,7 @@ export default function ProductsAdmin() {
   const [isToolbarPreviewMode, setIsToolbarPreviewMode] = useState(false);
   const [isQuickImagePanelOpen, setIsQuickImagePanelOpen] = useState(false);
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null);
+  const [variantImagePickerId, setVariantImagePickerId] = useState<string | null>(null);
   const [adminViewMode, setAdminViewMode] = useState<"grid" | "list">("grid");
   const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false);
   const [isComboPanelOpen, setIsComboPanelOpen] = useState(false);
@@ -415,6 +418,30 @@ export default function ProductsAdmin() {
   const [productForm, setProductForm] = useState<Partial<Product>>(createBlankProductForm());
   const [productColorsDraft, setProductColorsDraft] = useState("");
   const [isCustomFulfillment, setIsCustomFulfillment] = useState(false);
+  const [variantTemplates, setVariantTemplates] = useState<VariantTemplates>({});
+
+  useEffect(() => {
+    try { setVariantTemplates(readVariantTemplates(localStorage.getItem(VARIANT_TEMPLATES_KEY))); }
+    catch { /* Storage may be disabled; product editing remains available. */ }
+  }, []);
+
+  const persistVariantTemplates = (templates: VariantTemplates) => {
+    try {
+      localStorage.setItem(VARIANT_TEMPLATES_KEY, JSON.stringify(templates));
+      setVariantTemplates(templates);
+    } catch { showToast("Không lưu được mẫu trên máy. Kiểm tra quyền lưu trữ của trình duyệt.", "error"); }
+  };
+
+  const handleRememberVariant = (variant: ProductVariant, remember: boolean) => {
+    if (remember && !variant.name?.trim()) {
+      showToast("Hãy chọn hoặc nhập tên phân loại trước khi lưu mẫu.", "error");
+      return;
+    }
+    const next = { ...variantTemplates };
+    if (remember) next[variant.id] = { name: variant.name.trim(), size: variant.size?.trim() || "" };
+    else delete next[variant.id];
+    persistVariantTemplates(next);
+  };
 
   const [newSpecKey, setNewSpecKey] = useState("");
   const [newSpecValue, setNewSpecValue] = useState("");
@@ -484,6 +511,7 @@ export default function ProductsAdmin() {
       .map((variant, index) => ({
         id: String(variant.id || `variant-${index + 1}`).trim() || `variant-${index + 1}`,
         name: String(variant.name || "").trim(),
+        size: String(variant.size || "").trim(),
         price: String(variant.price || "").trim(),
         salePrice: String(variant.salePrice || "").trim(),
         image: String(variant.image || "").trim(),
@@ -776,6 +804,11 @@ export default function ProductsAdmin() {
       setProductColorsDraft("");
       const generatedCode = "IN3D-" + Math.floor(Math.random() * 90000 + 10000);
       const blankForm = { ...createBlankProductForm(generatedCode), sku: generatedCode };
+      const rememberedVariants = variantsFromTemplates(variantTemplates);
+      if (rememberedVariants.length) {
+        blankForm.variants = rememberedVariants;
+        blankForm.defaultVariantId = rememberedVariants[0].id;
+      }
       descriptionDraftRef.current = blankForm.description || "";
       setProductForm(blankForm);
     }
@@ -784,6 +817,10 @@ export default function ProductsAdmin() {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (uploadingImageTarget) {
+      showToast("Vui lòng đợi ảnh tải xong trước khi lưu sản phẩm.", "warning");
+      return;
+    }
     if (!productForm.id?.trim() || !productForm.sku?.trim() || !productForm.name) {
       showToast("Vui lòng điền đầy đủ Mã SP, ID và Tên sản phẩm!", "warning");
       return;
@@ -892,6 +929,11 @@ export default function ProductsAdmin() {
   };
 
   const handleUpdateVariant = (index: number, updates: Partial<ProductVariant>) => {
+    const variant = productForm.variants?.[index];
+    if (variant && variantTemplates[variant.id] && (updates.name !== undefined || updates.size !== undefined)) {
+      const updated = { ...variant, ...updates };
+      persistVariantTemplates({ ...variantTemplates, [variant.id]: { name: updated.name || "", size: updated.size || "" } });
+    }
     setProductForm(prev => ({
       ...prev,
       variants: (prev.variants || []).map((variant, variantIndex) =>
@@ -1455,7 +1497,7 @@ export default function ProductsAdmin() {
 
   const handleCloudinaryUpload = async (
     files: FileList | null,
-    target: "main" | "gallery" | "description" | `combo-${number}`,
+    target: "main" | "gallery" | "description" | `combo-${number}` | `variant-image:${string}`,
   ) => {
     const scrollTopBeforeUpload = productFormScrollRef.current?.scrollTop || 0;
 
@@ -1468,6 +1510,7 @@ export default function ProductsAdmin() {
     }
 
     const selectedFiles = Array.from(files);
+    const uploadProductId = productForm.id;
     setUploadingImageTarget(target);
 
     try {
@@ -1488,6 +1531,14 @@ export default function ProductsAdmin() {
         setProductForm(prev => ({
           ...prev,
           images: [...(prev.images || []), ...urls],
+        }));
+      }
+
+      if (target.startsWith("variant-image:")) {
+        const variantId = target.slice("variant-image:".length);
+        setProductForm(prev => prev.id !== uploadProductId ? prev : ({
+          ...prev,
+          variants: (prev.variants || []).map(variant => variant.id === variantId ? { ...variant, image: urls[0] } : variant),
         }));
       }
 
@@ -1763,7 +1814,7 @@ export default function ProductsAdmin() {
     ];
 
     const variantCount = Math.max(3, ...exportRows.map((product) => product.variants?.length || 0));
-    const variantKeys = ["id", "name", "price", "salePrice", "sku", "stockQuantity", "image", "stockStatus"] as const;
+    const variantKeys = ["id", "name", "price", "salePrice", "sku", "stockQuantity", "image", "stockStatus", "size"] as const;
     for (let index = 1; index <= variantCount; index += 1) {
       variantExcelFields.forEach((field, fieldIndex) => {
         columns.push([variantExcelHeader(index, field), (product) => product.variants?.[index - 1]?.[variantKeys[fieldIndex]] || ""]);
@@ -2544,6 +2595,7 @@ export default function ProductsAdmin() {
                       <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Phân loại sản phẩm</h3>
                       <p className="mt-1 text-[10px] text-gray-500">Nếu giá riêng để trống, phân loại sẽ dùng giá của sản phẩm chính. Ảnh riêng sẽ hiện khi khách chọn phân loại.</p>
                       <p className="mt-1 text-[10px] text-gray-500">“Chọn sẵn” là phân loại hiện đầu tiên khi khách mở sản phẩm, với giá và ảnh tương ứng. Khách vẫn có thể đổi phân loại.</p>
+                      <p className="mt-1 text-[10px] text-gray-500">“Lưu mẫu trên máy” giữ tên và kích thước cho sản phẩm mới trên trình duyệt này, không giữ giá, tồn kho hoặc ảnh. Bỏ tích để không dùng lại.</p>
                     </div>
                     <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-1.5 border border-gold-dark/40 px-3 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light hover:border-gold-light hover:text-white">
                       <Plus className="w-3.5 h-3.5" />
@@ -2557,6 +2609,10 @@ export default function ProductsAdmin() {
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">Phân loại {index + 1}</span>
                             <div className="flex items-center gap-3">
+                              <label className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] text-gray-300">
+                                <input type="checkbox" checked={Boolean(variantTemplates[variant.id])} onChange={(e) => handleRememberVariant(variant, e.target.checked)} className="h-3.5 w-3.5 accent-gold-dark" />
+                                Lưu mẫu trên máy
+                              </label>
                               <label className="inline-flex cursor-pointer items-center gap-1.5 text-[9px] font-display font-bold uppercase tracking-wider text-gold-light">
                                 <input
                                   type="radio"
@@ -2573,13 +2629,43 @@ export default function ProductsAdmin() {
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <input type="text" value={variant.name || ""} onChange={(e) => handleUpdateVariant(index, { name: e.target.value })} placeholder="Tên phân loại" className="md:col-span-2 w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
+                            <div className="md:col-span-2 flex flex-col gap-2">
+                              <select aria-label={`Chọn tên phân loại ${index + 1}`} value={variantNameOptions.includes(variant.name || '') ? variant.name : ''} onChange={(e) => handleUpdateVariant(index, { name: e.target.value })} className="w-full bg-[#050505] border border-[#1A1A1A] text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none focus:border-gold-light">
+                                <option value="">Tự nhập tên phân loại</option>
+                                {variantNameOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                              </select>
+                              <input aria-label={`Tên phân loại ${index + 1}`} type="text" value={variant.name || ""} onChange={(e) => handleUpdateVariant(index, { name: e.target.value })} placeholder="Tên phân loại (có thể tự sửa)" className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
+                            </div>
                             <input type="text" value={variant.price || ""} onChange={(e) => handleUpdateVariant(index, { price: e.target.value })} placeholder={productForm.price || "Giá riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
                             <input type="text" value={variant.salePrice || ""} onChange={(e) => handleUpdateVariant(index, { salePrice: e.target.value })} placeholder={productForm.salePrice || "Giá giảm riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
-                            <input type="text" value={variant.sku || ""} onChange={(e) => handleUpdateVariant(index, { sku: e.target.value })} placeholder={productForm.sku || "SKU riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono" />
                             <input type="number" min="0" value={variant.stockQuantity || ""} onChange={(e) => handleUpdateVariant(index, { stockQuantity: e.target.value })} placeholder="Số tồn" className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
-                            <input type="text" value={variant.image || ""} onChange={(e) => handleUpdateVariant(index, { image: e.target.value })} placeholder={productForm.image || "URL ảnh phân loại"} className="md:col-span-2 w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono" />
+                            <input aria-label={`URL ảnh phân loại ${index + 1}`} type="text" value={variant.image || ""} onChange={(e) => handleUpdateVariant(index, { image: e.target.value })} placeholder="Ảnh riêng (không bắt buộc)" className="md:col-span-3 w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono" />
                           </div>
+                          <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                            <label className={`inline-flex items-center gap-1.5 border border-gold-dark/40 px-3 py-2 text-gold-light ${uploadingImageTarget ? 'opacity-50' : 'cursor-pointer hover:border-gold-light'}`}>
+                              {uploadingImageTarget === `variant-image:${variant.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                              {uploadingImageTarget === `variant-image:${variant.id}` ? 'Đang tải...' : 'Tải ảnh từ máy'}
+                              <input type="file" accept="image/*" className="hidden" disabled={Boolean(uploadingImageTarget)} onChange={(e) => { handleCloudinaryUpload(e.target.files, `variant-image:${variant.id}`); e.target.value = ''; }} />
+                            </label>
+                            <button type="button" aria-expanded={variantImagePickerId === variant.id} onClick={() => setVariantImagePickerId(current => current === variant.id ? null : variant.id)} className="inline-flex items-center gap-1.5 border border-white/15 px-3 py-2 text-gray-300 hover:text-gold-light"><ImageIcon className="h-3.5 w-3.5" />Chọn ảnh sản phẩm</button>
+                            {variant.image && <button type="button" onClick={() => handleUpdateVariant(index, { image: '' })} className="px-2 py-2 text-gray-400 hover:text-red-400">Bỏ ảnh riêng</button>}
+                            <span className="text-gray-500">Để trống sẽ dùng ảnh chung của sản phẩm.</span>
+                          </div>
+                          {variantImagePickerId === variant.id && (
+                            <div className="flex flex-wrap gap-2 border border-white/10 p-2">
+                              {Array.from(new Set([productForm.image, ...(productForm.images || [])].filter((url): url is string => Boolean(url?.trim())))).map((url, imageIndex) => (
+                                <button key={url} type="button" aria-label={`Chọn ảnh sản phẩm ${imageIndex + 1} cho phân loại ${index + 1}`} aria-pressed={variant.image === url} onClick={() => { handleUpdateVariant(index, { image: url }); setVariantImagePickerId(null); }} className={`h-16 w-16 border p-1 hover:border-gold-light ${variant.image === url ? 'border-gold-light' : 'border-white/15'}`}>
+                                  <img src={url} alt={`Ảnh sản phẩm ${imageIndex + 1}`} className="h-full w-full object-contain" referrerPolicy="no-referrer" />
+                                </button>
+                              ))}
+                              {!productForm.image && !productForm.images?.length && <p className="text-[10px] text-gray-500">Chưa có ảnh sản phẩm. Tải bộ ảnh trong mục ảnh sản phẩm trước, hoặc tải ảnh riêng từ máy.</p>}
+                            </div>
+                          )}
+                          <label className="block space-y-1 text-[10px] text-gray-400">
+                            <span>Kích thước riêng của phân loại</span>
+                            <input type="text" value={variant.size || ""} onChange={(e) => handleUpdateVariant(index, { size: e.target.value })} placeholder="VD: Cao 16 cm hoặc 15 × 10 × 20 cm" className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
+                            <span className="block text-[9px] text-gray-500">Một kích thước cố định. Chọn phân loại này sẽ tự áp dụng kích thước trên, không cho chọn kích thước khác. Để trống để dùng lựa chọn chung.</span>
+                          </label>
                           {variant.image && (
                             <div className="h-20 w-24 border border-white/10 bg-[#050505] p-1.5">
                               <img src={variant.image} alt={variant.name || ""} className="h-full w-full object-contain" referrerPolicy="no-referrer" />

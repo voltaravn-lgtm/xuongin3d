@@ -232,8 +232,7 @@ export default function Products() {
   }
 
   return (
-    <div id="products-page" className="pb-20 relative bg-[#050505]">
-      
+    <div id="products-page" className="relative isolate min-h-screen pb-20">
       <h1 className="sr-only">Sản phẩm in 3D</h1>
       <div className="max-w-7xl mx-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
 

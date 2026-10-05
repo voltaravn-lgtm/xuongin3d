@@ -74,6 +74,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedComboId, setSelectedComboId] = useState("");
   const selectedVariant = productVariants.find((variant) => variant.id === selectedVariantId) || null;
+  const lockedSize = selectedVariant?.size?.trim() || "";
+  const effectiveSize = lockedSize || selectedSize;
+  const availableSizes = lockedSize ? [lockedSize] : productSizes;
   const selectedCombo = selectedComboId ? productCombos.find((combo) => combo.id === selectedComboId) || null : null;
 
   const gallery = useMemo(() => {
@@ -114,7 +117,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   );
   const displayTechnicalSpecs = useMemo(() => {
     const categoryName = productCategories.find((category) => category.id === currentProduct.category)?.name || currentProduct.category;
-    const sizeValue = currentProduct.voltage || productVariants.map((variant) => variant.name).join(", ");
+    const sizeValue = effectiveSize || currentProduct.voltage || productVariants.map((variant) => variant.size || variant.name).join(", ");
     const baseSpecs: Array<[string, string]> = [
       ["Danh mục", categoryName],
       ["Vật liệu", currentProduct.cellType || ""],
@@ -133,7 +136,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         seen.add(normalized);
         return true;
       });
-  }, [currentProduct.capacity, currentProduct.category, currentProduct.cellType, currentProduct.sku, currentProduct.voltage, currentProduct.warranty, productCategories, productColors, productVariants, technicalSpecs]);
+  }, [effectiveSize, currentProduct.capacity, currentProduct.category, currentProduct.cellType, currentProduct.sku, currentProduct.voltage, currentProduct.warranty, productCategories, productColors, productVariants, technicalSpecs]);
   const productVideos = useMemo(
     () => cleanVideoUrls(currentProduct.videoUrls).map((url, index) => getProductVideoEmbed(url, index)).filter(Boolean),
     [currentProduct.videoUrls],
@@ -203,7 +206,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     setSelectedVariantId(variant.id);
     const normalizedName = variant.name.toLocaleLowerCase("vi").replace(/\s/g, "");
     const matchingSize = productSizes.find((size) => normalizedName.includes(size.toLocaleLowerCase("vi").replace(/\s/g, "")));
-    setSelectedSize(matchingSize || "");
+    setSelectedSize(variant.size?.trim() || matchingSize || "");
     if (variant.image) setActiveImage(variant.image);
   };
 
@@ -248,7 +251,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     }
   };
   const validateRequiredSelections = () => {
-    if (productSizes.length > 0 && !selectedSize) {
+    if (productSizes.length > 0 && !effectiveSize) {
       showToast("Vui lòng chọn kích thước trước khi đặt hàng.", "warning");
       return false;
     }
@@ -263,7 +266,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     return true;
   };
   const cartVariant = useMemo<ProductVariant | null>(() => {
-    if (!selectedColor && !selectedSize) return selectedVariant;
+    if (!selectedColor && !effectiveSize) return selectedVariant;
     const baseVariant = selectedVariant || {
       id: "default",
       name: "Mặc định",
@@ -273,15 +276,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       image: currentProduct.image,
     };
     const colorId = encodeURIComponent(selectedColor.toLocaleLowerCase("vi"));
-    const sizeId = encodeURIComponent(selectedSize.toLocaleLowerCase("vi"));
+    const sizeId = encodeURIComponent(effectiveSize.toLocaleLowerCase("vi"));
     return {
       ...baseVariant,
-      selectedSize,
+      selectedSize: effectiveSize,
       selectedColor,
       id: `${baseVariant.id}${sizeId ? `--size-${sizeId}` : ""}${colorId ? `--color-${colorId}` : ""}`,
-      name: [selectedVariant?.name, selectedSize ? `Kích thước ${selectedSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" · "),
+      name: [selectedVariant?.name, effectiveSize ? `Kích thước ${effectiveSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" · "),
     };
-  }, [currentProduct.image, currentProduct.price, currentProduct.salePrice, currentProduct.sku, selectedColor, selectedSize, selectedVariant]);
+  }, [currentProduct.image, currentProduct.price, currentProduct.salePrice, currentProduct.sku, selectedColor, effectiveSize, selectedVariant]);
   const getComboSummary = (combo: ProductCombo | null) => {
     if (!combo) return "";
     if (combo.description) return combo.description;
@@ -444,24 +447,25 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </div>
               )}
 
-              {productSizes.length > 0 && (
+              {availableSizes.length > 0 && (
                 <div className="mt-5">
                   <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">
-                    Chọn kích thước <span className="text-gold-light">*</span>
+                    {lockedSize ? "Kích thước của phân loại" : "Chọn kích thước"} {!lockedSize && <span className="text-gold-light">*</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {productSizes.map((size) => (
+                    {availableSizes.map((size) => (
                       <button
                         key={size}
                         type="button"
-                        aria-pressed={selectedSize === size}
+                        aria-pressed={effectiveSize === size}
+                        disabled={Boolean(lockedSize)}
                         onClick={() => {
                           setSelectedSize(size);
                           const normalizedSize = size.toLocaleLowerCase("vi").replace(/\s/g, "");
                           const matchingVariant = productVariants.find((variant) => variant.name.toLocaleLowerCase("vi").replace(/\s/g, "").includes(normalizedSize));
                           if (matchingVariant) handleSelectVariant(matchingVariant);
                         }}
-                        className={`border px-4 py-2 text-[11px] font-display font-bold uppercase tracking-wider transition-colors ${selectedSize === size ? "border-gold-light bg-gold-dark/10 text-white" : "border-white/10 bg-[#101010] text-gray-300 hover:border-gold-dark/60"}`}
+                        className={`border px-4 py-2 text-[11px] font-display font-bold uppercase tracking-wider transition-colors ${effectiveSize === size ? "border-gold-light bg-gold-dark/10 text-white" : "border-white/10 bg-[#101010] text-gray-300 hover:border-gold-dark/60"}`}
                       >
                         {size}
                       </button>
@@ -826,7 +830,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       <QuoteRequestModal
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
-        prepopulatedProduct={[currentProduct.name, selectedVariant?.name, selectedSize ? `Kích thước ${selectedSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
+        prepopulatedProduct={[currentProduct.name, selectedVariant?.name, effectiveSize ? `Kích thước ${effectiveSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
       />
     </div>
   );

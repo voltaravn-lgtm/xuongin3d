@@ -26,6 +26,7 @@ export default function PageHero({
 }: PageHeroProps) {
   return (
     <section
+      data-page-hero
       className={`relative flex min-h-[400px] items-center overflow-hidden border-b border-white/5 bg-black py-14 sm:min-h-[430px] lg:h-[480px] lg:min-h-0 lg:py-16 ${className}`}
     >
       <div className="pointer-events-none absolute inset-0 z-0 select-none">

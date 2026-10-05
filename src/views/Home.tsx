@@ -467,12 +467,12 @@ export default function Home() {
       {/* 5. BENEFITS LIST INTERACTIVE BLOCK */}
       <section className="py-20 bg-[#050505]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
             {/* Left side: Luxury visual blocks */}
             <div className="lg:col-span-5 relative">
               <div className="absolute -inset-3 radial-bg opacity-40 pointer-events-none" />
-              <div className="relative bg-[#121212] p-8 gold-border shadow-2xl">
+              <div className="relative h-full bg-[#121212] p-6 sm:p-8 gold-border shadow-2xl">
                 <span className="text-xs font-display font-semibold text-gold-light tracking-widest uppercase mb-2 block">
                   QUY TRÌNH RÕ RÀNG
                 </span>
@@ -501,16 +501,16 @@ export default function Home() {
             </div>
 
             {/* Right side: Benefits descriptions */}
-            <div className="lg:col-span-7 flex flex-col justify-center">
-              <span className="inline-block px-3 py-1 gold-border text-[10px] tracking-widest text-[#D89A2B] mb-3 uppercase font-display font-bold bg-[#D89A2B]/5">
+            <div className="lg:col-span-7 flex flex-col bg-[#121212] p-6 sm:p-8 gold-border shadow-2xl">
+              <span className="block text-xs tracking-widest text-gold-light mb-2 uppercase font-display font-semibold">
                 LỢI THẾ DỊCH VỤ
               </span>
-              <h2 className="text-2xl sm:text-3xl font-display font-bold uppercase tracking-wider text-[#ECECEC] glow-text mb-6">
+              <h2 className="text-lg sm:text-xl font-display font-extrabold uppercase tracking-wider text-[#ECECEC] mb-4">
                 Vì Sao Nên Chọn Xưởng In 3D?
               </h2>
-              <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-24 mb-8" />
+              <div className="h-[2px] bg-gradient-to-r from-gold-dark to-transparent w-24 mb-6" />
 
-              <div className="space-y-6">
+              <div className="space-y-5 [&_p]:text-gray-300">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 bg-white/5 border border-white/5 flex items-center justify-center text-gold-light shrink-0">
                     <Truck className="w-5 h-5" />

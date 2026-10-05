@@ -9,6 +9,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import { Product, ProductVariant, ProductCombo, SalesProgram, Solution, Article, Branch, Dealer, HomeContent, AboutContent, Job, ContactSubmission, WarrantyRecord, ToastMessage, QuoteRequest, Course, CartItem } from "../types";
 import { getProductSlug } from "../lib/productRoutes";
+import { isValidProductSize } from "../lib/productSize";
 import { PRODUCTS_DATA, SOLUTIONS_DATA, ARTICLES_DATA, BRANCHES_DATA, DEALERS_DATA, JOBS_DATA, COURSES_DATA } from "../data";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { isAdminEmail } from "../lib/adminAuth";
@@ -1382,9 +1383,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeCart = () => setIsCartOpen(false);
 
   const addToCart = (product: Product, quantity = 1, variant?: ProductVariant | null, combo?: ProductCombo | null) => {
-    const sizes = String(product.voltage || "").split(/[,|\n]/).map(value => value.trim()).filter(Boolean);
     const colors = (product.colors || []).map(value => value.trim()).filter(Boolean);
-    if ((sizes.length > 0 && !sizes.includes(variant?.selectedSize || "")) || (colors.length > 0 && !colors.includes(variant?.selectedColor || ""))) {
+    if (!isValidProductSize(product, variant?.id, variant?.selectedSize) || (colors.length > 0 && !colors.includes(variant?.selectedColor || ""))) {
       showToast("Vui lòng mở sản phẩm và chọn đầy đủ kích thước, màu sắc trước khi thêm giỏ hàng.", "warning");
       return;
     }

@@ -425,3 +425,59 @@ body.day-mode .product-description-content tr:first-child td {
 @media (prefers-reduced-motion: reduce) {
   .landing-animate-fade, .landing-animate-zoom { animation: none; }
 }
+
+/* Explicit background/content layers keep the scene above the shell's black fill. */
+.site-scene-content {
+  position: relative;
+  isolation: isolate;
+}
+.site-scene-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #050505;
+}
+.site-scene-image {
+  position: absolute;
+  inset: 0;
+  background: url('/anh-nen.webp') center / cover no-repeat;
+}
+.site-scene-shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.05);
+}
+.site-scene-background-subdued .site-scene-image {
+  filter: blur(12px);
+  transform: scale(1.05);
+}
+.site-scene-background-subdued .site-scene-shade {
+  background: rgba(0, 0, 0, 0.52);
+}
+.site-scene-foreground {
+  position: relative;
+  z-index: 1;
+}
+.site-scene-foreground > :not(script),
+.site-scene-content #products-page,
+.site-scene-content #solutions-page {
+  background-color: transparent !important;
+}
+/* Keep dedicated hero imagery, cards, forms and dialogs intact. */
+.site-scene-foreground > :not(script) > section:not([data-page-hero]):not([style]) {
+  background-color: transparent;
+}
+/* Home's solid section fills must not hide the shared scene. Keep its banner
+   and the individual card surfaces unchanged. */
+.site-scene-content #home-page > section:not(#home-hero) {
+  background-color: transparent !important;
+}
+/* The detail hero previously painted another dark, blurred product photo. */
+.site-scene-content .product-detail-page > section:first-child {
+  background-color: transparent;
+}
+.site-scene-content .product-detail-page > section:first-child > .absolute {
+  display: none;
+}

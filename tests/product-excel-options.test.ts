@@ -27,10 +27,10 @@ test('file cũ không có cột mới giữ dữ liệu hiện tại', () => {
 
 test('xuất rồi nhập lại giữ ID, giá giảm, ảnh, tồn 0 và chọn sẵn', () => {
   const variants = [
-    { id:'old-a',name:'Size S',price:'120000',salePrice:'100000',sku:'TEST-S',stockQuantity:'0',image:'https://example.com/s.jpg',stockStatus:'out-of-stock' },
-    { id:'old-b',name:'Size M',price:'150000',salePrice:'',sku:'TEST-M',stockQuantity:'8',image:'',stockStatus:'in-stock' },
+    { id:'old-a',name:'Size S',size:'12cm',price:'120000',salePrice:'100000',sku:'TEST-S',stockQuantity:'0',image:'https://example.com/s.jpg',stockStatus:'out-of-stock' },
+    { id:'old-b',name:'Size M',size:'15cm',price:'150000',salePrice:'',sku:'TEST-M',stockQuantity:'8',image:'',stockStatus:'in-stock' },
   ];
-  const keys = ['id','name','price','salePrice','sku','stockQuantity','image','stockStatus'] as const;
+  const keys = ['id','name','price','salePrice','sku','stockQuantity','image','stockStatus','size'] as const;
   const row: Record<string,string> = {'Màu sắc':'Trắng, Vàng','Phân loại chọn sẵn':'2'};
   variants.forEach((variant,index) => variantExcelFields.forEach((field,i) => { row[variantExcelHeader(index+1,field)] = variant[keys[i]]; }));
   const parsed = parse(row);

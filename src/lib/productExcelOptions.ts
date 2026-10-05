@@ -1,6 +1,6 @@
 import type { Product, ProductVariant } from "../types";
 
-export const variantExcelFields = ["ID", "Tên", "Giá bán", "Giá giảm", "SKU", "Số tồn", "Ảnh", "Trạng thái kho"] as const;
+export const variantExcelFields = ["ID", "Tên", "Giá bán", "Giá giảm", "SKU", "Số tồn", "Ảnh", "Trạng thái kho", "Kích thước"] as const;
 export const variantExcelHeader = (index: number, field: string) => `Phân loại ${index} - ${field}`;
 
 export function splitProductChoices(value: string): string[] {
@@ -31,6 +31,7 @@ export function readProductExcelOptions(
     indexed.push({ index, variant: {
       ...previous,
       id, name,
+      size: read("Kích thước") || previous?.size || "",
       price: read("Giá bán") || previous?.price || "",
       salePrice: read("Giá giảm") || previous?.salePrice || "",
       sku: read("SKU") || previous?.sku || "",

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Minus, Plus, Send, ShoppingCart, Trash2, X } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { getProductHref } from "../lib/productRoutes";
+import { isValidProductSize, resolveProductVariant } from "../lib/productSize";
 import { VIETNAM_LOCATIONS } from "../lib/vietnamLocations";
 import { announceOrderSuccess } from "../lib/orderSuccess";
 
@@ -31,7 +32,7 @@ export default function CartDrawer() {
     return cartItems
       .map((item) => {
         const product = products.find((prod) => prod.id === item.productId);
-        const variant = product?.variants?.find((entry) => entry.id === item.variantId);
+        const variant = product ? resolveProductVariant(product, item.variantId) : undefined;
         const combo = product?.combos?.find((entry) => entry.id === item.comboId);
         return product ? { ...item, product, variant, combo } : null;
       })
@@ -46,9 +47,8 @@ export default function CartDrawer() {
   const cartTotalLabel = cartTotalValue ? formatPriceNumber(cartTotalValue) : "Liên hệ";
   const hasIncompleteSelections = detailedItems.some(item => {
     if (!item) return false;
-    const sizes = String(item.product.voltage || "").split(/[,|\n]/).map(value => value.trim()).filter(Boolean);
     const colors = (item.product.colors || []).map(value => value.trim()).filter(Boolean);
-    return (sizes.length > 0 && !sizes.includes(item.selectedSize || ""))
+    return !isValidProductSize(item.product, item.variantId, item.selectedSize)
       || (colors.length > 0 && !colors.includes(item.selectedColor || ""));
   });
   const validateCartSelections = () => {

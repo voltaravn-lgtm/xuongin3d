@@ -52,6 +52,7 @@ export interface Product {
 }
 
 export interface ProductVariant {
+  size?: string;
   selectedSize?: string;
   selectedColor?: string;
   id: string;
