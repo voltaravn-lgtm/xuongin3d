@@ -14,6 +14,7 @@ import {
   Image as ImageIcon, Link as LinkIcon, List, Eye, Upload,
   Loader2, Search, LayoutGrid, Rows3, EyeOff, Download, Undo2, Redo2, ChevronRight
 } from "lucide-react";
+const fulfillmentOptions = ["Có sẵn", "In theo yêu cầu", "Thiết kế + in", "In + sơn hoàn thiện", "Thiết kế + in + sơn hoàn thiện"];
 const defaultSpecTemplate: Product["specs"] = {
   "Công suất tối đa": "",
   "Trọng lượng thân máy": "",
@@ -411,6 +412,8 @@ export default function ProductsAdmin() {
   const [newChildCategoryNames, setNewChildCategoryNames] = useState<Record<string, string>>({});
   
   const [productForm, setProductForm] = useState<Partial<Product>>(createBlankProductForm());
+  const [productColorsDraft, setProductColorsDraft] = useState("");
+  const [isCustomFulfillment, setIsCustomFulfillment] = useState(false);
 
   const [newSpecKey, setNewSpecKey] = useState("");
   const [newSpecValue, setNewSpecValue] = useState("");
@@ -748,6 +751,8 @@ export default function ProductsAdmin() {
 
     if (product) {
       setEditingProduct(product);
+      setIsCustomFulfillment(Boolean(product.capacity && !fulfillmentOptions.includes(product.capacity)));
+      setProductColorsDraft((product.colors || []).join(", "));
       descriptionDraftRef.current = product.description || "";
       setProductForm({
         ...product,
@@ -766,6 +771,8 @@ export default function ProductsAdmin() {
       });
     } else {
       setEditingProduct(null);
+      setIsCustomFulfillment(false);
+      setProductColorsDraft("");
       const generatedCode = "IN3D-" + Math.floor(Math.random() * 90000 + 10000);
       const blankForm = { ...createBlankProductForm(generatedCode), sku: generatedCode };
       descriptionDraftRef.current = blankForm.description || "";
@@ -790,7 +797,7 @@ export default function ProductsAdmin() {
     ? productForm.defaultVariantId
     : productVariants[0]?.id || "",
   combos: productCombos,
-  colors: Array.from(new Set((productForm.colors || []).map((color) => color.trim()).filter(Boolean))),
+  colors: Array.from(new Set(productColorsDraft.split(/[,|\n]/).map((color) => color.trim()).filter(Boolean))),
   orderNote: String(productForm.orderNote || "").trim(),
   description: getDescriptionEditorHtml() || productForm.description,
   subCategory: activeProductSubCategories.length > 0 ? productForm.subCategory || "" : "",
@@ -2428,11 +2435,8 @@ export default function ProductsAdmin() {
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Màu sắc cho khách chọn</label>
                   <input
                     type="text"
-                    value={(productForm.colors || []).join(", ")}
-                    onChange={(e) => setProductForm(prev => ({
-                      ...prev,
-                      colors: e.target.value.split(/[,|\n]/).map((color) => color.trim()).filter(Boolean),
-                    }))}
+                    value={productColorsDraft}
+                    onChange={(e) => setProductColorsDraft(e.target.value)}
                     placeholder="VD: Trắng, Đen, Vàng, Xanh"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
@@ -2441,21 +2445,30 @@ export default function ProductsAdmin() {
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Hình thức thực hiện</label>
-                  <input
-                    type="text"
-                    list="product-fulfillment-options"
-                    value={productForm.capacity}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, capacity: e.target.value }))}
-                    placeholder="Chọn gợi ý hoặc tự nhập (không bắt buộc)"
+                  <select
+                    aria-label="Hình thức thực hiện"
+                    value={isCustomFulfillment ? "__custom__" : productForm.capacity || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setIsCustomFulfillment(value === "__custom__");
+                      setProductForm(prev => ({ ...prev, capacity: value === "__custom__" ? "" : value }));
+                    }}
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
-                  />
-                  <datalist id="product-fulfillment-options">
-                    <option value="Có sẵn" />
-                    <option value="In theo yêu cầu" />
-                    <option value="Thiết kế + in" />
-                    <option value="In + sơn hoàn thiện" />
-                    <option value="Thiết kế + in + sơn hoàn thiện" />
-                  </datalist>
+                  >
+                    <option value="">Không chọn (không bắt buộc)</option>
+                    {fulfillmentOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    <option value="__custom__">Khác — tự nhập</option>
+                  </select>
+                  {isCustomFulfillment && (
+                    <input
+                      type="text"
+                      aria-label="Hình thức thực hiện tự nhập"
+                      value={productForm.capacity || ""}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, capacity: e.target.value }))}
+                      placeholder="Nhập hình thức thực hiện của sản phẩm"
+                      className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
+                    />
+                  )}
                   <p className="text-[10px] text-gray-600">Chọn gợi ý, tự nhập nội dung khác hoặc để trống nếu không áp dụng.</p>
                 </div>
 
@@ -2513,6 +2526,7 @@ export default function ProductsAdmin() {
                     <div>
                       <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Phân loại sản phẩm</h3>
                       <p className="mt-1 text-[10px] text-gray-500">Nếu giá riêng để trống, phân loại sẽ dùng giá của sản phẩm chính. Ảnh riêng sẽ hiện khi khách chọn phân loại.</p>
+                      <p className="mt-1 text-[10px] text-gray-500">“Chọn sẵn” là phân loại hiện đầu tiên khi khách mở sản phẩm, với giá và ảnh tương ứng. Khách vẫn có thể đổi phân loại.</p>
                     </div>
                     <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-1.5 border border-gold-dark/40 px-3 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light hover:border-gold-light hover:text-white">
                       <Plus className="w-3.5 h-3.5" />
@@ -2534,7 +2548,7 @@ export default function ProductsAdmin() {
                                   onChange={() => setProductForm(prev => ({ ...prev, defaultVariantId: variant.id }))}
                                   className="h-3.5 w-3.5 accent-gold-dark"
                                 />
-                                Mặc định
+                                Chọn sẵn
                               </label>
                               <button type="button" onClick={() => handleRemoveVariant(index)} className="p-1.5 text-gray-500 hover:text-red-400" aria-label="Xóa phân loại">
                                 <Trash2 className="w-4 h-4" />

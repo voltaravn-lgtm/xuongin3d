@@ -35,6 +35,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     () => Array.from(new Set((currentProduct.colors || []).map((color) => color.trim()).filter(Boolean))),
     [currentProduct.colors],
   );
+  const productSizes = useMemo(
+    () => Array.from(new Set(String(currentProduct.voltage || "").split(/[,|\n]/).map((size) => size.trim()).filter(Boolean))),
+    [currentProduct.voltage],
+  );
   const productCombos = useMemo(
     () => [
       ...(currentProduct.combos || []),
@@ -67,6 +71,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   );
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [selectedComboId, setSelectedComboId] = useState("");
   const selectedVariant = productVariants.find((variant) => variant.id === selectedVariantId) || null;
   const selectedCombo = selectedComboId ? productCombos.find((combo) => combo.id === selectedComboId) || null : null;
@@ -178,6 +183,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   }, [currentProduct.id]);
 
   useEffect(() => {
+    setSelectedSize("");
+  }, [currentProduct.id, currentProduct.voltage]);
+
+  useEffect(() => {
     setSelectedComboId("");
   }, [currentProduct.id]);
 
@@ -192,6 +201,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   const handleSelectVariant = (variant: ProductVariant) => {
     setSelectedVariantId(variant.id);
+    const normalizedName = variant.name.toLocaleLowerCase("vi").replace(/\s/g, "");
+    const matchingSize = productSizes.find((size) => normalizedName.includes(size.toLocaleLowerCase("vi").replace(/\s/g, "")));
+    setSelectedSize(matchingSize || "");
     if (variant.image) setActiveImage(variant.image);
   };
 
@@ -236,6 +248,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     }
   };
   const validateRequiredSelections = () => {
+    if (productSizes.length > 0 && !selectedSize) {
+      showToast("Vui lòng chọn kích thước trước khi đặt hàng.", "warning");
+      return false;
+    }
     if (productVariants.length > 0 && !selectedVariant) {
       showToast("Vui lòng chọn kích thước / phân loại sản phẩm.", "warning");
       return false;
@@ -247,7 +263,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     return true;
   };
   const cartVariant = useMemo<ProductVariant | null>(() => {
-    if (!selectedColor) return selectedVariant;
+    if (!selectedColor && !selectedSize) return selectedVariant;
     const baseVariant = selectedVariant || {
       id: "default",
       name: "Mặc định",
@@ -257,12 +273,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       image: currentProduct.image,
     };
     const colorId = encodeURIComponent(selectedColor.toLocaleLowerCase("vi"));
+    const sizeId = encodeURIComponent(selectedSize.toLocaleLowerCase("vi"));
     return {
       ...baseVariant,
-      id: `${baseVariant.id}--color-${colorId || "selected"}`,
-      name: `${selectedVariant?.name ? `${selectedVariant.name} · ` : ""}Màu ${selectedColor}`,
+      id: `${baseVariant.id}${sizeId ? `--size-${sizeId}` : ""}${colorId ? `--color-${colorId}` : ""}`,
+      name: [selectedVariant?.name, selectedSize ? `Kích thước ${selectedSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" · "),
     };
-  }, [currentProduct.image, currentProduct.price, currentProduct.salePrice, currentProduct.sku, selectedColor, selectedVariant]);
+  }, [currentProduct.image, currentProduct.price, currentProduct.salePrice, currentProduct.sku, selectedColor, selectedSize, selectedVariant]);
   const getComboSummary = (combo: ProductCombo | null) => {
     if (!combo) return "";
     if (combo.description) return combo.description;
@@ -277,7 +294,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   return (
     <div className="product-detail-page bg-[#050505] pb-20">
-      <section className="relative overflow-hidden bg-black pt-28 pb-12 lg:pt-36 lg:pb-16">
+      <section className="relative overflow-hidden bg-black pt-28 pb-6 lg:pt-36 lg:pb-8">
         <div className="absolute inset-0 pointer-events-none">
           <img
             src={currentProduct.image}
@@ -421,6 +438,32 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {productSizes.length > 0 && (
+                <div className="mt-5">
+                  <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">
+                    Chọn kích thước <span className="text-gold-light">*</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {productSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        aria-pressed={selectedSize === size}
+                        onClick={() => {
+                          setSelectedSize(size);
+                          const normalizedSize = size.toLocaleLowerCase("vi").replace(/\s/g, "");
+                          const matchingVariant = productVariants.find((variant) => variant.name.toLocaleLowerCase("vi").replace(/\s/g, "").includes(normalizedSize));
+                          if (matchingVariant) handleSelectVariant(matchingVariant);
+                        }}
+                        className={`border px-4 py-2 text-[11px] font-display font-bold uppercase tracking-wider transition-colors ${selectedSize === size ? "border-gold-light bg-gold-dark/10 text-white" : "border-white/10 bg-[#101010] text-gray-300 hover:border-gold-dark/60"}`}
+                      >
+                        {size}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -586,27 +629,35 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-sm border border-gold-dark/25 bg-[#0C0C0C]">
-          <div className="flex border-b border-white/10 p-3 sm:p-4">
+      <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-xl border border-gold-dark/25 bg-[#0C0C0C]">
+          <div className="flex gap-1 border-b border-white/10 p-2" role="tablist" aria-label="Thông tin sản phẩm">
             <button
               type="button"
+              role="tab"
+              id="product-description-tab"
+              aria-selected={activeInfoTab === "description"}
+              aria-controls="product-information-panel"
               onClick={() => setActiveInfoTab("description")}
-              className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-3 text-[11px] font-display font-black uppercase tracking-wider transition-colors sm:flex-none sm:px-7 ${activeInfoTab === "description" ? "border border-gold-dark/60 bg-gold-dark/10 text-gold-light" : "border border-transparent text-gray-500 hover:text-white"}`}
+              className={`inline-flex h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition-colors sm:flex-none sm:px-5 ${activeInfoTab === "description" ? "bg-gold-dark/15 text-gold-light" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
             >
               <FileText className="h-4 w-4" />
-              Mô tả sản phẩm
+              Mô tả
             </button>
             <button
               type="button"
+              role="tab"
+              id="product-specs-tab"
+              aria-selected={activeInfoTab === "specs"}
+              aria-controls="product-information-panel"
               onClick={() => setActiveInfoTab("specs")}
-              className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-3 text-[11px] font-display font-black uppercase tracking-wider transition-colors sm:flex-none sm:px-7 ${activeInfoTab === "specs" ? "border border-gold-dark/60 bg-gold-dark/10 text-gold-light" : "border border-transparent text-gray-500 hover:text-white"}`}
+              className={`inline-flex h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition-colors sm:flex-none sm:px-5 ${activeInfoTab === "specs" ? "bg-gold-dark/15 text-gold-light" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Thông số kỹ thuật
+              Thông số
             </button>
           </div>
-          <div className="min-h-56 p-6 lg:p-8">
+          <div id="product-information-panel" role="tabpanel" aria-labelledby={activeInfoTab === "description" ? "product-description-tab" : "product-specs-tab"} className="p-4 sm:p-6">
             {activeInfoTab === "description" ? (
               descriptionHtml ? (
                 <div
@@ -617,11 +668,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 <p className="text-sm text-gray-500">Nội dung mô tả đang được cập nhật.</p>
               )
             ) : displayTechnicalSpecs.length > 0 ? (
-              <div className="grid gap-x-10 gap-y-0 sm:grid-cols-2">
+              <div className="grid gap-x-8 sm:grid-cols-2">
                 {displayTechnicalSpecs.map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-[minmax(110px,0.8fr)_1.2fr] gap-4 border-b border-white/10 py-4">
-                    <div className="text-[10px] font-display font-bold uppercase tracking-wider text-gray-500">{key}</div>
-                    <div className="text-sm font-semibold text-[#ECECEC]">{value}</div>
+                  <div key={key} className="grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-start gap-3 border-b border-white/10 py-3 last:border-b-0">
+                    <div className="text-xs leading-5 text-gray-400">{key}</div>
+                    <div className="break-words text-sm font-medium leading-5 text-[#ECECEC]">{value}</div>
                   </div>
                 ))}
               </div>
@@ -773,7 +824,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       <QuoteRequestModal
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
-        prepopulatedProduct={[currentProduct.name, selectedVariant?.name, selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
+        prepopulatedProduct={[currentProduct.name, selectedVariant?.name, selectedSize ? `Kích thước ${selectedSize}` : "", selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
       />
     </div>
   );
