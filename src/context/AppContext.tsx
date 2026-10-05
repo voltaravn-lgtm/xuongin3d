@@ -140,13 +140,6 @@ function omitUndefinedValues<T>(value: T): T {
   return value;
 }
 
-const PUBLIC_FIRESTORE_CACHE_TTL_MS = 10 * 60 * 1000;
-
-function shouldRefreshPublicFirestoreCache(key: string) {
-  const lastSync = Number(localStorage.getItem(key) || "0");
-  return !lastSync || Date.now() - lastSync > PUBLIC_FIRESTORE_CACHE_TTL_MS;
-}
-
 interface AppContextType {
   menuItems: MenuItem[];
   setMenuItems: React.Dispatch<React.SetStateAction<MenuItem[]>>;
@@ -805,15 +798,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       try {
-        if (shouldRefreshPublicFirestoreCache("xuongin3d_products_last_firestore_sync_v2")) {
-          const response = await fetch("/api/products");
-          if (!response.ok) throw new Error(`Product catalog request failed with ${response.status}`);
+        const response = await fetch("/api/products", { cache: "no-store" });
+        if (!response.ok) throw new Error(`Product catalog request failed with ${response.status}`);
 
-          const data = await response.json() as { products?: Product[]; source?: "firestore" | "fallback" };
-          if (!cancelled && data.source === "firestore" && Array.isArray(data.products)) {
-            setProducts(sortProductsNewestFirst(data.products));
-            localStorage.setItem("xuongin3d_products_last_firestore_sync_v2", String(Date.now()));
-          }
+        const data = await response.json() as { products?: Product[]; source?: "firestore" | "fallback" };
+        if (!cancelled && Array.isArray(data.products)) {
+          setProducts(sortProductsNewestFirst(data.products));
+          localStorage.removeItem("xuongin3d_products_last_firestore_sync_v2");
         }
 
       } catch (error) {

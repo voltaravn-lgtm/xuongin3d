@@ -4,7 +4,8 @@ import { PRODUCTS_DATA } from "../../../data";
 import { db, isFirebaseConfigured } from "../../../lib/firebase";
 import { Product } from "../../../types";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function newestFirst(products: Product[]) {
   return [...products].sort((a, b) => {
@@ -29,7 +30,7 @@ export async function GET() {
       { products, source: "firestore" },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
+          "Cache-Control": "no-store, max-age=0",
         },
       },
     );
@@ -39,7 +40,7 @@ export async function GET() {
       { products: newestFirst(PRODUCTS_DATA), source: "fallback" },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+          "Cache-Control": "no-store, max-age=0",
         },
       },
     );
