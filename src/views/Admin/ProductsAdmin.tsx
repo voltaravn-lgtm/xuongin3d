@@ -2413,6 +2413,17 @@ export default function ProductsAdmin() {
                 </div>
 
                 <div className="space-y-1">
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Kích thước / quy mô</label>
+                  <input
+                    type="text"
+                    value={productForm.voltage}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, voltage: e.target.value }))}
+                    placeholder="VD: Cao 20 cm hoặc theo yêu cầu"
+                    className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Màu sắc cho khách chọn</label>
                   <input
                     type="text"
@@ -2433,14 +2444,16 @@ export default function ProductsAdmin() {
                     type="text"
                     value={productForm.capacity}
                     onChange={(e) => setProductForm(prev => ({ ...prev, capacity: e.target.value }))}
+                    placeholder="VD: Có sẵn, In theo yêu cầu, Thiết kế + in"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
+                  <p className="text-[10px] text-gray-600">Cho khách biết sản phẩm có sẵn hay được thiết kế, in và hoàn thiện theo yêu cầu.</p>
                 </div>
 
-                <div className="space-y-1 sm:col-span-2">
+                <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Ghi chú sản phẩm khi đặt hàng</label>
                   <textarea
-                    rows={2}
+                    rows={1}
                     value={productForm.orderNote || ""}
                     onChange={(e) => setProductForm(prev => ({ ...prev, orderNote: e.target.value }))}
                     placeholder="VD: Màu sắc thực tế có thể chênh lệch nhẹ; xưởng sẽ liên hệ xác nhận trước khi in."
