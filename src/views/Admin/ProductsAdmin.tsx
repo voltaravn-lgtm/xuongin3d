@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ProductCategory, useApp } from "../../context/AppContext";
 import { Product, ProductVariant, ProductCombo } from "../../types";
+import { PRODUCTS_DATA } from "../../data";
 import { uploadImageToCloudinary, isCloudinaryConfigured } from "../../lib/cloudinary";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
@@ -61,6 +62,33 @@ const createBlankProductForm = (id = ""): Partial<Product> => ({
   hidden: false,
   specs: { ...defaultSpecTemplate },
 });
+
+const EMPLOYEE_SAMPLE_PRODUCT: Product = {
+  ...PRODUCTS_DATA.find((product) => product.id === "mo-hinh-tuong-nhan-vat-3d")!,
+  id: "san-pham-mau-mo-hinh-rong-3d",
+  slug: "san-pham-mau-mo-hinh-rong-3d",
+  sku: "MAU-MH001",
+  name: "Mô hình rồng trang trí in 3D (Sản phẩm mẫu)",
+  tag: "Sản phẩm mẫu",
+  voltage: "Cao khoảng 20 cm",
+  capacity: "In theo yêu cầu",
+  cellType: "PLA / Resin",
+  warranty: "Kiểm tra trước khi bàn giao",
+  price: "Liên hệ",
+  stockStatus: "preorder",
+  stockQuantity: "",
+  hidden: false,
+  description: "Sản phẩm mẫu để nhân viên tham khảo cách trình bày nội dung khi đăng hàng. Mô hình rồng được sản xuất bằng công nghệ in 3D, phù hợp trưng bày tại bàn làm việc, kệ sách, quầy tiếp khách hoặc làm quà tặng. Khách hàng có thể yêu cầu điều chỉnh kích thước, màu sắc, vật liệu và mức độ hoàn thiện theo nhu cầu thực tế. Trước khi sản xuất, xưởng sẽ kiểm tra file, tư vấn phương án và xác nhận mẫu với khách hàng.",
+  specs: {
+    "Mã sản phẩm": "MAU-MH001",
+    "Kích thước tham khảo": "Cao khoảng 20 cm",
+    "Vật liệu": "PLA / Resin",
+    "Công nghệ": "FDM / Resin",
+    "Màu sắc": "Theo yêu cầu",
+    "Hoàn thiện": "Có thể chà nhám và sơn màu",
+    "Thời gian thực hiện": "Xác nhận sau khi duyệt mẫu",
+  },
+};
 
 const markdownImageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
 
@@ -390,9 +418,27 @@ export default function ProductsAdmin() {
     if (!isFirebaseConfigured || hasSyncedProductPreviewRef.current) return;
     hasSyncedProductPreviewRef.current = true;
     let cancelled = false;
-    getDocs(collection(db, "products")).then((snapshot) => {
+    Promise.all([
+      getDocs(collection(db, "products")),
+      getDoc(doc(db, "siteSettings", "employeeSampleProductSeed")),
+    ]).then(async ([snapshot, seedMarker]) => {
       if (cancelled) return;
-      const remoteItems = snapshot.docs.map((item) => item.data() as Product);
+      let remoteItems = snapshot.docs.map((item) => item.data() as Product);
+
+      if (snapshot.empty && !seedMarker.exists()) {
+        const now = new Date().toISOString();
+        const sampleProduct = { ...EMPLOYEE_SAMPLE_PRODUCT, createdAt: now, updatedAt: now };
+        const batch = writeBatch(db);
+        batch.set(doc(db, "products", sampleProduct.id), sampleProduct);
+        batch.set(doc(db, "siteSettings", "employeeSampleProductSeed"), {
+          productId: sampleProduct.id,
+          seededAt: now,
+        });
+        await batch.commit();
+        remoteItems = [sampleProduct];
+      }
+
+      if (cancelled) return;
       setProducts(() => {
         return remoteItems.sort((a, b) => {
           const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
