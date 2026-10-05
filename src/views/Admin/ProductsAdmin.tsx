@@ -2137,7 +2137,7 @@ export default function ProductsAdmin() {
           <p className="text-xs text-gray-400 font-display font-bold uppercase tracking-widest">Không tìm thấy sản phẩm phù hợp</p>
         </div>
       ) : (
-        <div className={adminViewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6" : "space-y-2 mt-6"}>
+        <div className={adminViewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 mt-4" : "space-y-2 mt-4"}>
           {filteredAdminProducts.map((prod) => (
             <div
               key={prod.id}
@@ -2145,10 +2145,10 @@ export default function ProductsAdmin() {
                 prod.hidden
                   ? "border-gray-800 opacity-70 hover:opacity-100"
                   : "border-[#1A1A1A] hover:border-gold-dark/40"
-              } ${adminViewMode === "grid" ? "p-3 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
+              } ${adminViewMode === "grid" ? "p-2.5 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
             >
               <div className={`flex items-start gap-3 ${adminViewMode === "list" ? "flex-1 min-w-0" : ""}`}>
-                <div className={`${adminViewMode === "grid" ? "w-14 h-14" : "w-12 h-12"} bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0`}>
+                <div className="w-12 h-12 bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0">
                   {prod.image ? (
                     <img
                       src={prod.image}
@@ -2175,17 +2175,17 @@ export default function ProductsAdmin() {
                       {prod.hidden ? "Đang ẩn" : "Đang hiện"}
                     </span>
                   </div>
-                  <h3 className="text-xs font-display font-bold text-white uppercase line-clamp-1 leading-snug">{prod.name}</h3>
-                  <div className="flex flex-wrap items-end gap-2 pt-1">
-                    <label className="min-w-[170px] flex-1 space-y-1">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-500">Giá bán lẻ / Giá web</span>
+                  <h3 className="text-[11px] font-display font-bold text-white uppercase line-clamp-1 leading-snug">{prod.name}</h3>
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="shrink-0 text-[8px] font-bold uppercase tracking-wider text-gray-500">Giá web</span>
                       <input
                         type="text"
                         inputMode="numeric"
                         value={getQuickPriceValue(prod)}
                         onChange={(e) => setQuickPriceDrafts((current) => ({ ...current, [prod.id]: e.target.value }))}
                         placeholder="Nhập giá bán lẻ"
-                        className={`w-full border bg-[#0b0b0b] px-3 py-2 text-xs font-bold text-white outline-none ${hasQuickPriceChange(prod) ? "border-gold-light" : "border-white/10 focus:border-gold-dark"}`}
+                        className={`h-8 min-w-0 flex-1 border bg-[#0b0b0b] px-2.5 text-[11px] font-bold text-white outline-none ${hasQuickPriceChange(prod) ? "border-gold-light" : "border-white/10 focus:border-gold-dark"}`}
                       />
                     </label>
                     {hasQuickPriceChange(prod) && (
@@ -2193,13 +2193,13 @@ export default function ProductsAdmin() {
                         type="button"
                         disabled={savingQuickPriceId === prod.id}
                         onClick={() => handleSaveQuickPrice(prod)}
-                        className="flex items-center gap-1 bg-gold-light px-3 py-2 text-[10px] font-black uppercase text-black disabled:opacity-50"
+                        className="flex h-8 items-center gap-1 bg-gold-light px-2 text-[9px] font-black uppercase text-black disabled:opacity-50"
                       >
                         <Save className="h-3.5 w-3.5" />
                         {savingQuickPriceId === prod.id ? "Đang lưu" : "Xác nhận"}
                       </button>
                     )}
-                    {prod.salePrice && <span className="pb-2 text-[9px] font-bold text-emerald-400">KM: {prod.salePrice}</span>}
+                    {prod.salePrice && <span className="shrink-0 text-[8px] font-bold text-emerald-400">KM: {prod.salePrice}</span>}
                   </div>
 
                   {(prod.variants || []).length > 0 && (
@@ -2261,16 +2261,16 @@ export default function ProductsAdmin() {
                 </div>
               </div>
 
-              <div className={`${adminViewMode === "grid" ? "mt-3 pt-2.5 border-t border-[#1A1A1A] flex items-center justify-between" : "flex items-center justify-end gap-2 shrink-0"}`}>
+              <div className={`${adminViewMode === "grid" ? "mt-2.5 pt-2 border-t border-[#1A1A1A] flex items-center justify-between gap-2" : "flex items-center justify-end gap-2 shrink-0"}`}>
                 {adminViewMode === "grid" && (
-                  <span className="text-[9px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 font-bold uppercase">{getCategoryDisplayName(prod.category, prod.subCategory)}</span>
+                  <span className="min-w-0 truncate text-[8px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 font-bold uppercase">{getCategoryDisplayName(prod.category, prod.subCategory)}</span>
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleToggleProductVisibility(prod)}
-                    className={`bg-[#111] hover:bg-[#222] border border-white/5 text-[10px] font-display uppercase tracking-wider px-2.5 py-1 flex items-center gap-1 transition-all cursor-pointer ${prod.hidden ? "text-emerald-400" : "text-gray-400"}`}
+                    className={`bg-[#111] hover:bg-[#222] border border-white/5 text-[9px] font-display uppercase tracking-wider px-2 py-1 flex items-center gap-1 transition-all cursor-pointer ${prod.hidden ? "text-emerald-400" : "text-gray-400"}`}
                     title={prod.hidden ? "Bật hiển thị sản phẩm" : "Ẩn sản phẩm khỏi trang công khai"}
                   >
                     {prod.hidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -2279,7 +2279,7 @@ export default function ProductsAdmin() {
                   <button
                     type="button"
                     onClick={() => handleCopyProduct(prod)}
-                    className="bg-[#111] hover:bg-[#222] border border-white/5 text-[10px] font-display uppercase tracking-wider text-[#A3E635] px-2.5 py-1 flex items-center gap-1 transition-all cursor-pointer"
+                    className="bg-[#111] hover:bg-[#222] border border-white/5 text-[9px] font-display uppercase tracking-wider text-[#A3E635] px-2 py-1 flex items-center gap-1 transition-all cursor-pointer"
                     title="Nhân bản sản phẩm"
                   >
                     <Copy className="w-3 h-3 text-[#A3E635]" />
@@ -2287,7 +2287,7 @@ export default function ProductsAdmin() {
                   </button>
                   <button
                     onClick={() => handleOpenProductModal(prod)}
-                    className="bg-[#111] hover:bg-[#222] border border-white/5 text-[10px] font-display uppercase tracking-wider text-white px-2.5 py-1 flex items-center gap-1 transition-all cursor-pointer"
+                    className="bg-[#111] hover:bg-[#222] border border-white/5 text-[9px] font-display uppercase tracking-wider text-white px-2 py-1 flex items-center gap-1 transition-all cursor-pointer"
                   >
                     <Edit className="w-3 h-3 text-[#F5C45A]" />
                     Sửa
