@@ -92,12 +92,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   );
   const summarySpecs = useMemo(
     () => [
-      ["Điện áp", currentProduct.voltage],
-      ["Dung lượng", currentProduct.capacity],
-      ["Cell", currentProduct.cellType],
+      ["Hình thức", currentProduct.capacity],
+      ["Vật liệu", currentProduct.cellType],
       ["Bảo hành", currentProduct.warranty],
     ].filter(([, value]) => String(value || "").trim()),
-    [currentProduct.voltage, currentProduct.capacity, currentProduct.cellType, currentProduct.warranty],
+    [currentProduct.capacity, currentProduct.cellType, currentProduct.warranty],
   );
   const technicalSpecs = useMemo(
     () => Object.entries(currentProduct.specs || {}).filter(([, value]) => String(value || "").trim()),
