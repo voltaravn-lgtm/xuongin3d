@@ -443,11 +443,15 @@ body.day-mode .product-description-content tr:first-child td {
   position: absolute;
   inset: 0;
   background: url('/anh-nen.webp') center / cover no-repeat;
+  /* Độ nhòe nền trang chủ/sản phẩm: tăng px để nhòe hơn. */
+  filter: blur(2px);
+  transform: scale(1.02);
 }
 .site-scene-shade {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.05);
+  /* Độ tối nền: 0 = không che, 1 = che đen hoàn toàn. */
+  background: rgba(0, 0, 0, 0.15);
 }
 .site-scene-background-subdued .site-scene-image {
   filter: blur(12px);
