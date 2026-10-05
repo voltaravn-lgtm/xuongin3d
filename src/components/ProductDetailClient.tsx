@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Gift, Phone, PlayCircle, ShieldCheck, ShoppingCart, Zap } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, FileText, Gift, Heart, Phone, PlayCircle, Share2, ShieldCheck, ShoppingCart, SlidersHorizontal } from "lucide-react";
 import QuoteRequestModal from "./QuoteRequestModal";
-import OrderRequestModal from "./OrderRequestModal";
 import { useApp } from "../context/AppContext";
 import { getProductHref } from "../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../lib/video";
@@ -16,7 +15,7 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
-  const { products, salesPrograms, addToCart, contactSettings, showToast } = useApp();
+  const { products, productCategories, salesPrograms, addToCart, contactSettings, showToast } = useApp();
   const currentProduct = products.find((item) => item.id === product.id) || product;
   const productSource = (products.length > 0 ? products : [product, ...relatedProducts]).filter(item => !item.hidden);
   const sameCategoryProducts = productSource.filter(
@@ -85,7 +84,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   const [activeImage, setActiveImage] = useState(gallery[0] || currentProduct.image);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeInfoTab, setActiveInfoTab] = useState<"description" | "specs">("description");
 
   const descriptionHtml = useMemo(
     () => formatProductDescriptionToHtml(currentProduct.description),
@@ -107,6 +107,28 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     () => Object.entries(currentProduct.specs || {}).filter(([, value]) => String(value || "").trim()),
     [currentProduct.specs],
   );
+  const displayTechnicalSpecs = useMemo(() => {
+    const categoryName = productCategories.find((category) => category.id === currentProduct.category)?.name || currentProduct.category;
+    const sizeValue = currentProduct.voltage || productVariants.map((variant) => variant.name).join(", ");
+    const baseSpecs: Array<[string, string]> = [
+      ["Danh mục", categoryName],
+      ["Vật liệu", currentProduct.cellType || ""],
+      ["SKU", currentProduct.sku || ""],
+      ["Màu sắc", productColors.join(", ")],
+      ["Kích thước", sizeValue],
+      ["Hình thức thực hiện", currentProduct.capacity || ""],
+      ["Bảo hành", currentProduct.warranty || ""],
+    ];
+    const seen = new Set<string>();
+    return [...baseSpecs, ...technicalSpecs]
+      .filter(([, value]) => String(value || "").trim())
+      .filter(([key]) => {
+        const normalized = key.trim().toLocaleLowerCase("vi");
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+      });
+  }, [currentProduct.capacity, currentProduct.category, currentProduct.cellType, currentProduct.sku, currentProduct.voltage, currentProduct.warranty, productCategories, productColors, productVariants, technicalSpecs]);
   const productVideos = useMemo(
     () => cleanVideoUrls(currentProduct.videoUrls).map((url, index) => getProductVideoEmbed(url, index)).filter(Boolean),
     [currentProduct.videoUrls],
@@ -159,6 +181,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     setSelectedComboId("");
   }, [currentProduct.id]);
 
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("xuongin3d_favorite_products") || "[]") as string[];
+      setIsFavorite(saved.includes(currentProduct.id));
+    } catch {
+      setIsFavorite(false);
+    }
+  }, [currentProduct.id]);
+
   const handleSelectVariant = (variant: ProductVariant) => {
     setSelectedVariantId(variant.id);
     if (variant.image) setActiveImage(variant.image);
@@ -167,6 +198,42 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const handleSelectCombo = (combo: ProductCombo) => {
     setSelectedComboId(combo.id);
     if (combo.image) setActiveImage(combo.image);
+  };
+  const handleToggleFavorite = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("xuongin3d_favorite_products") || "[]") as string[];
+      const next = isFavorite
+        ? saved.filter((id) => id !== currentProduct.id)
+        : Array.from(new Set([...saved, currentProduct.id]));
+      localStorage.setItem("xuongin3d_favorite_products", JSON.stringify(next));
+      setIsFavorite(!isFavorite);
+      showToast(isFavorite ? "Đã bỏ sản phẩm khỏi mục yêu thích." : "Đã thêm sản phẩm vào mục yêu thích.", "success");
+    } catch {
+      showToast("Không thể lưu mục yêu thích trên trình duyệt này.", "warning");
+    }
+  };
+  const handleShareProduct = async () => {
+    const shareData = {
+      title: currentProduct.name,
+      text: shortDescription || currentProduct.name,
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(shareData.url);
+      showToast("Đã sao chép liên kết sản phẩm.", "success");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        showToast("Đã sao chép liên kết sản phẩm.", "success");
+      } catch {
+        showToast("Không thể chia sẻ sản phẩm trên trình duyệt này.", "warning");
+      }
+    }
   };
   const validateRequiredSelections = () => {
     if (productVariants.length > 0 && !selectedVariant) {
@@ -462,7 +529,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </div>
               )}
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 flex gap-2 sm:gap-3">
                 {hasVisiblePrice && (
                   <button
                     type="button"
@@ -470,56 +537,102 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       if (!validateRequiredSelections()) return;
                       addToCart(currentProduct, 1, cartVariant, selectedCombo);
                     }}
-                    className="inline-flex h-12 items-center justify-center gap-2 border border-gold-dark/40 px-6 text-[11px] font-display font-black uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
+                    className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 border border-gold-dark/40 px-4 text-[11px] font-display font-black uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white sm:px-6"
                   >
                     <ShoppingCart className="h-4 w-4" />
                     Thêm giỏ hàng
                   </button>
                 )}
+                {!hasVisiblePrice && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!validateRequiredSelections()) return;
+                      setIsQuoteModalOpen(true);
+                    }}
+                    className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 bg-gradient-to-r from-[#D89A2B] to-[#F5C45A] px-4 text-[11px] font-display font-black uppercase tracking-widest text-black shadow-[0_0_25px_rgba(216,154,43,0.2)]"
+                  >
+                    Yêu cầu báo giá
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!validateRequiredSelections()) return;
-                    if (hasVisiblePrice) setIsOrderModalOpen(true);
-                    else setIsQuoteModalOpen(true);
-                  }}
-                  className="inline-flex h-12 items-center justify-center gap-2 bg-gradient-to-r from-[#D89A2B] to-[#F5C45A] px-6 text-[11px] font-display font-black uppercase tracking-widest text-black shadow-[0_0_25px_rgba(216,154,43,0.2)] transition-transform hover:scale-[1.01]"
+                  onClick={handleToggleFavorite}
+                  className={`inline-flex h-12 w-12 shrink-0 items-center justify-center border transition-colors ${isFavorite ? "border-rose-500 bg-rose-500/10 text-rose-400" : "border-gold-dark/30 text-gold-light hover:border-gold-light hover:text-white"}`}
+                  aria-label={isFavorite ? "Bỏ khỏi mục yêu thích" : "Thêm vào mục yêu thích"}
+                  title={isFavorite ? "Bỏ yêu thích" : "Yêu thích"}
                 >
-                  <ShoppingCart className="h-4 w-4" />
-                  {hasVisiblePrice ? "Đặt hàng / tư vấn" : "Yêu cầu báo giá"}
+                  <Heart className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
                 </button>
-                <a
-                  href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`}
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-gold-dark/30 px-6 text-[11px] font-display font-bold uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => void handleShareProduct()}
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center border border-gold-dark/30 text-gold-light transition-colors hover:border-gold-light hover:text-white"
+                  aria-label="Chia sẻ sản phẩm"
+                  title="Chia sẻ"
                 >
-                  <Phone className="h-4 w-4" />
-                  {contactSettings.hotline}
-                </a>
+                  <Share2 className="h-5 w-5" />
+                </button>
               </div>
+              <a
+                href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`}
+                className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 border border-gold-dark/30 px-6 text-[11px] font-display font-bold uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
+              >
+                <Phone className="h-4 w-4" />
+                {contactSettings.hotline}
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 pt-12 sm:px-6 lg:grid-cols-12 lg:px-8">
-        <div className="lg:col-span-8">
-          {descriptionHtml && (
-            <div className="mb-8 border border-white/10 bg-[#0C0C0C] p-6 lg:p-8">
-              <div className="mb-6 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-gold-light" />
-                <h2 className="font-display text-sm font-black uppercase tracking-widest text-white">
-                  Mô tả chi tiết
-                </h2>
+      <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-sm border border-gold-dark/25 bg-[#0C0C0C]">
+          <div className="flex border-b border-white/10 p-3 sm:p-4">
+            <button
+              type="button"
+              onClick={() => setActiveInfoTab("description")}
+              className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-3 text-[11px] font-display font-black uppercase tracking-wider transition-colors sm:flex-none sm:px-7 ${activeInfoTab === "description" ? "border border-gold-dark/60 bg-gold-dark/10 text-gold-light" : "border border-transparent text-gray-500 hover:text-white"}`}
+            >
+              <FileText className="h-4 w-4" />
+              Mô tả sản phẩm
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveInfoTab("specs")}
+              className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-3 text-[11px] font-display font-black uppercase tracking-wider transition-colors sm:flex-none sm:px-7 ${activeInfoTab === "specs" ? "border border-gold-dark/60 bg-gold-dark/10 text-gold-light" : "border border-transparent text-gray-500 hover:text-white"}`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Thông số kỹ thuật
+            </button>
+          </div>
+          <div className="min-h-56 p-6 lg:p-8">
+            {activeInfoTab === "description" ? (
+              descriptionHtml ? (
+                <div
+                  className="product-description-content text-sm leading-7 text-gray-300"
+                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">Nội dung mô tả đang được cập nhật.</p>
+              )
+            ) : displayTechnicalSpecs.length > 0 ? (
+              <div className="grid gap-x-10 gap-y-0 sm:grid-cols-2">
+                {displayTechnicalSpecs.map(([key, value]) => (
+                  <div key={key} className="grid grid-cols-[minmax(110px,0.8fr)_1.2fr] gap-4 border-b border-white/10 py-4">
+                    <div className="text-[10px] font-display font-bold uppercase tracking-wider text-gray-500">{key}</div>
+                    <div className="text-sm font-semibold text-[#ECECEC]">{value}</div>
+                  </div>
+                ))}
               </div>
-              <div
-                className="product-description-content text-sm leading-7 text-gray-300"
-                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-              />
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-gray-500">Thông số kỹ thuật đang được cập nhật.</p>
+            )}
+          </div>
+        </div>
 
-          {productVideos.length > 0 && (
-            <div className="mb-8 border border-white/10 bg-[#0C0C0C] p-6 lg:p-8">
+        {productVideos.length > 0 && (
+            <div className="mt-8 border border-white/10 bg-[#0C0C0C] p-6 lg:p-8">
               <div className="mb-6 flex items-center gap-2">
                 <PlayCircle className="h-5 w-5 text-gold-light" />
                 <h2 className="font-display text-sm font-black uppercase tracking-widest text-white">
@@ -562,37 +675,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               </div>
             </div>
           )}
-        </div>
 
-        <aside className="space-y-5 lg:col-span-4">
-          {technicalSpecs.length > 0 && (
-            <div className="border border-white/10 bg-[#0C0C0C] p-6">
-              <div className="mb-5 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-gold-light" />
-                <h2 className="font-display text-sm font-black uppercase tracking-widest text-white">
-                  Thông số kỹ thuật
-                </h2>
-              </div>
-
-              <div className="divide-y divide-white/10">
-                {technicalSpecs.map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-1 gap-1 py-3">
-                    <div className="text-[10px] font-display font-bold uppercase tracking-wider text-gray-500">{key}</div>
-                    <div className="text-sm font-semibold text-[#ECECEC]">{value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="border border-gold-dark/25 bg-gold-dark/5 p-6">
+          <div className="mt-8 border border-gold-dark/25 bg-gold-dark/5 p-6 lg:p-8">
             <div className="mb-4 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-gold-light" />
               <h2 className="font-display text-sm font-black uppercase tracking-widest text-white">
                 Cam kết của Xưởng In 3D
               </h2>
             </div>
-            <ul className="space-y-3 text-xs leading-relaxed text-gray-300">
+            <ul className="grid gap-3 text-xs leading-relaxed text-gray-300 md:grid-cols-3">
               {[
                 "Tư vấn công nghệ và vật liệu theo mục đích sử dụng.",
                 "Thống nhất kích thước, màu sắc và phương án trước khi sản xuất.",
@@ -608,12 +699,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
           <a
             href="/san-pham"
-            className="inline-flex w-full items-center justify-center gap-2 border border-white/10 px-5 py-4 text-[11px] font-display font-bold uppercase tracking-widest text-gray-300 transition-colors hover:border-gold-light hover:text-gold-light"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 border border-white/10 px-5 py-4 text-[11px] font-display font-bold uppercase tracking-widest text-gray-300 transition-colors hover:border-gold-light hover:text-gold-light"
           >
             <ArrowLeft className="h-4 w-4" />
             Quay lại danh sách sản phẩm
           </a>
-        </aside>
       </section>
 
       {currentRelatedProducts.length > 0 && (
@@ -684,20 +774,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
         prepopulatedProduct={[currentProduct.name, selectedVariant?.name, selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
-      />
-      <OrderRequestModal
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        productName={currentProduct.name}
-        variantName={selectedVariant?.name}
-        colorName={selectedColor}
-        productNote={currentProduct.orderNote}
-        comboName={selectedCombo?.name}
-        comboDescription={getComboSummary(selectedCombo)}
-        comboOriginalPrice={selectedCombo ? displayRegularPrice : ""}
-        productPrice={displayFinalPrice}
-        productSku={selectedCombo?.sku || selectedVariant?.sku || currentProduct.sku}
-        productId={currentProduct.id}
       />
     </div>
   );
