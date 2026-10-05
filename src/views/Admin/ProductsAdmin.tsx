@@ -1853,8 +1853,8 @@ export default function ProductsAdmin() {
           category: categoryId,
           subCategory: resolveSubCategoryId(categoryId, cell(row, "Danh mục con"), existing?.subCategory || ""),
           brand: keep("Thương hiệu", existing?.brand || "XƯỞNG IN 3D"),
-          voltage: keep("Kích thước / quy mô", existing?.voltage || "Theo yêu cầu"),
-          capacity: keep("Hình thức thực hiện", existing?.capacity || "Theo yêu cầu"),
+          voltage: keep("Kích thước / quy mô", existing?.voltage || ""),
+          capacity: keep("Hình thức thực hiện", existing?.capacity || ""),
           cellType: keep("Vật liệu", existing?.cellType || "Theo yêu cầu"),
           warranty: keep("Bảo hành", existing?.warranty || "Hỗ trợ sau bàn giao"),
           price: keep("Giá bán", existing?.price || "Liên hệ"),
@@ -2418,9 +2418,10 @@ export default function ProductsAdmin() {
                     type="text"
                     value={productForm.voltage}
                     onChange={(e) => setProductForm(prev => ({ ...prev, voltage: e.target.value }))}
-                    placeholder="VD: Cao 20 cm hoặc theo yêu cầu"
+                    placeholder="VD: 12 cm, 15 cm, 20 cm"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
+                  <p className="text-[10px] text-gray-600">Có thể để trống hoặc nhập nhiều kích thước cách nhau bằng dấu phẩy.</p>
                 </div>
 
                 <div className="space-y-1">
@@ -2442,12 +2443,20 @@ export default function ProductsAdmin() {
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Hình thức thực hiện</label>
                   <input
                     type="text"
+                    list="product-fulfillment-options"
                     value={productForm.capacity}
                     onChange={(e) => setProductForm(prev => ({ ...prev, capacity: e.target.value }))}
-                    placeholder="VD: Có sẵn, In theo yêu cầu, Thiết kế + in"
+                    placeholder="Chọn gợi ý hoặc tự nhập (không bắt buộc)"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
-                  <p className="text-[10px] text-gray-600">Cho khách biết sản phẩm có sẵn hay được thiết kế, in và hoàn thiện theo yêu cầu.</p>
+                  <datalist id="product-fulfillment-options">
+                    <option value="Có sẵn" />
+                    <option value="In theo yêu cầu" />
+                    <option value="Thiết kế + in" />
+                    <option value="In + sơn hoàn thiện" />
+                    <option value="Thiết kế + in + sơn hoàn thiện" />
+                  </datalist>
+                  <p className="text-[10px] text-gray-600">Chọn gợi ý, tự nhập nội dung khác hoặc để trống nếu không áp dụng.</p>
                 </div>
 
                 <div className="space-y-1">
