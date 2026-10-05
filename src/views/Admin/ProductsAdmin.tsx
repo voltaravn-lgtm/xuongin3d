@@ -35,6 +35,9 @@ const createBlankProductForm = (id = ""): Partial<Product> => ({
   image: "",
   images: [],
   videoUrls: [],
+  colors: [],
+  orderNote: "",
+  defaultVariantId: "variant-default",
   description: "",
   category: "",
   subCategory: "",
@@ -46,7 +49,16 @@ const createBlankProductForm = (id = ""): Partial<Product> => ({
   dealerDiscountPercent: undefined,
   dealerLevel1DiscountPercent: undefined,
   dealerLevel2DiscountPercent: undefined,
-  variants: [],
+  variants: [{
+    id: "variant-default",
+    name: "",
+    price: "",
+    salePrice: "",
+    image: "",
+    sku: "",
+    stockQuantity: "",
+    stockStatus: "",
+  }],
   combos: [],
   sku: "",
   barcode: "",
@@ -741,6 +753,9 @@ export default function ProductsAdmin() {
         ...product,
         images: product.images || [],
         videoUrls: product.videoUrls || [],
+        colors: product.colors || [],
+        orderNote: product.orderNote || "",
+        defaultVariantId: product.defaultVariantId || product.variants?.[0]?.id || "",
         variants: product.variants || [],
         combos: product.combos || [],
         subCategory: product.subCategory || "",
@@ -771,7 +786,12 @@ export default function ProductsAdmin() {
   images: galleryImageUrls,
   videoUrls: productVideoUrls,
   variants: productVariants,
+  defaultVariantId: productVariants.some((variant) => variant.id === productForm.defaultVariantId)
+    ? productForm.defaultVariantId
+    : productVariants[0]?.id || "",
   combos: productCombos,
+  colors: Array.from(new Set((productForm.colors || []).map((color) => color.trim()).filter(Boolean))),
+  orderNote: String(productForm.orderNote || "").trim(),
   description: getDescriptionEditorHtml() || productForm.description,
   subCategory: activeProductSubCategories.length > 0 ? productForm.subCategory || "" : "",
   hidden: productForm.hidden ?? false,
@@ -843,12 +863,14 @@ export default function ProductsAdmin() {
   };
 
   const handleAddVariant = () => {
+    const variantId = `variant-${Date.now()}`;
     setProductForm(prev => ({
       ...prev,
+      defaultVariantId: prev.defaultVariantId || variantId,
       variants: [
         ...(prev.variants || []),
         {
-          id: `variant-${Date.now()}`,
+          id: variantId,
           name: "",
           price: "",
           salePrice: "",
@@ -871,10 +893,15 @@ export default function ProductsAdmin() {
   };
 
   const handleRemoveVariant = (index: number) => {
-    setProductForm(prev => ({
-      ...prev,
-      variants: (prev.variants || []).filter((_, variantIndex) => variantIndex !== index),
-    }));
+    setProductForm(prev => {
+      const removedId = prev.variants?.[index]?.id;
+      const variants = (prev.variants || []).filter((_, variantIndex) => variantIndex !== index);
+      return {
+        ...prev,
+        variants,
+        defaultVariantId: prev.defaultVariantId === removedId ? variants[0]?.id || "" : prev.defaultVariantId,
+      };
+    });
   };
 
   const handleAddCombo = () => {
@@ -2386,14 +2413,18 @@ export default function ProductsAdmin() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Kích thước / quy mô</label>
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Màu sắc cho khách chọn</label>
                   <input
                     type="text"
-                    required
-                    value={productForm.voltage}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, voltage: e.target.value }))}
+                    value={(productForm.colors || []).join(", ")}
+                    onChange={(e) => setProductForm(prev => ({
+                      ...prev,
+                      colors: e.target.value.split(/[,|\n]/).map((color) => color.trim()).filter(Boolean),
+                    }))}
+                    placeholder="VD: Trắng, Đen, Vàng, Xanh"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
+                  <p className="text-[10px] text-gray-600">Nhập các màu cách nhau bằng dấu phẩy. Khách phải chọn màu trước khi đặt hàng.</p>
                 </div>
 
                 <div className="space-y-1">
@@ -2403,6 +2434,17 @@ export default function ProductsAdmin() {
                     value={productForm.capacity}
                     onChange={(e) => setProductForm(prev => ({ ...prev, capacity: e.target.value }))}
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Ghi chú sản phẩm khi đặt hàng</label>
+                  <textarea
+                    rows={2}
+                    value={productForm.orderNote || ""}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, orderNote: e.target.value }))}
+                    placeholder="VD: Màu sắc thực tế có thể chênh lệch nhẹ; xưởng sẽ liên hệ xác nhận trước khi in."
+                    className="w-full resize-y bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
                 </div>
 
@@ -2461,9 +2503,21 @@ export default function ProductsAdmin() {
                         <div key={variant.id || index} className="border border-white/10 bg-black/70 p-3 space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">Phân loại {index + 1}</span>
-                            <button type="button" onClick={() => handleRemoveVariant(index)} className="p-1.5 text-gray-500 hover:text-red-400" aria-label="Xóa phân loại">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <label className="inline-flex cursor-pointer items-center gap-1.5 text-[9px] font-display font-bold uppercase tracking-wider text-gold-light">
+                                <input
+                                  type="radio"
+                                  name="default-product-variant"
+                                  checked={productForm.defaultVariantId === variant.id}
+                                  onChange={() => setProductForm(prev => ({ ...prev, defaultVariantId: variant.id }))}
+                                  className="h-3.5 w-3.5 accent-gold-dark"
+                                />
+                                Mặc định
+                              </label>
+                              <button type="button" onClick={() => handleRemoveVariant(index)} className="p-1.5 text-gray-500 hover:text-red-400" aria-label="Xóa phân loại">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <input type="text" value={variant.name || ""} onChange={(e) => handleUpdateVariant(index, { name: e.target.value })} placeholder="Tên phân loại" className="md:col-span-2 w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
@@ -2654,16 +2708,16 @@ export default function ProductsAdmin() {
                 <label className="col-span-1 sm:col-span-2 flex items-center justify-between gap-4 border border-[#1A1A1A] bg-black/70 px-4 py-3 cursor-pointer">
                   <div className="space-y-1">
                     <span className="text-[10px] font-display font-bold uppercase tracking-widest text-[#ECECEC]">
-                      Ẩn sản phẩm khỏi website công khai
+                      Đưa sản phẩm lên website
                     </span>
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      Sản phẩm vẫn còn trong quản trị để sửa lại, nhưng không hiện ở trang chủ và danh sách sản phẩm.
+                      Bật để khách hàng nhìn thấy sản phẩm. Tắt để lưu bản nháp chỉ trong trang quản trị.
                     </p>
                   </div>
                   <input
                     type="checkbox"
-                    checked={Boolean(productForm.hidden)}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, hidden: e.target.checked }))}
+                    checked={!Boolean(productForm.hidden)}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, hidden: !e.target.checked }))}
                     className="w-4 h-4 accent-gold-dark"
                   />
                 </label>

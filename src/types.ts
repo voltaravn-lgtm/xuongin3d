@@ -15,6 +15,9 @@ export interface Product {
   image: string;
   images?: string[];
   videoUrls?: string[];
+  colors?: string[];
+  orderNote?: string;
+  defaultVariantId?: string;
   tag?: string;
   description: string;
   category: string;

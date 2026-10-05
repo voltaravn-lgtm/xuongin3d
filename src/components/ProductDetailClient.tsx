@@ -16,7 +16,7 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
-  const { products, salesPrograms, addToCart, contactSettings } = useApp();
+  const { products, salesPrograms, addToCart, contactSettings, showToast } = useApp();
   const currentProduct = products.find((item) => item.id === product.id) || product;
   const productSource = (products.length > 0 ? products : [product, ...relatedProducts]).filter(item => !item.hidden);
   const sameCategoryProducts = productSource.filter(
@@ -31,6 +31,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const productVariants = useMemo(
     () => (currentProduct.variants || []).filter((variant) => String(variant.name || "").trim()),
     [currentProduct.variants],
+  );
+  const productColors = useMemo(
+    () => Array.from(new Set((currentProduct.colors || []).map((color) => color.trim()).filter(Boolean))),
+    [currentProduct.colors],
   );
   const productCombos = useMemo(
     () => [
@@ -63,8 +67,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     [currentProduct.combos, currentProduct.id, salesPrograms],
   );
   const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [selectedComboId, setSelectedComboId] = useState("");
-  const selectedVariant = productVariants.find((variant) => variant.id === selectedVariantId) || productVariants[0] || null;
+  const selectedVariant = productVariants.find((variant) => variant.id === selectedVariantId) || null;
   const selectedCombo = selectedComboId ? productCombos.find((combo) => combo.id === selectedComboId) || null : null;
 
   const gallery = useMemo(() => {
@@ -142,8 +147,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   }, [gallery, currentProduct.image]);
 
   useEffect(() => {
-    setSelectedVariantId(productVariants[0]?.id || "");
-  }, [currentProduct.id, productVariants]);
+    const defaultVariant = productVariants.find((variant) => variant.id === currentProduct.defaultVariantId) || productVariants[0];
+    setSelectedVariantId(defaultVariant?.id || "");
+  }, [currentProduct.defaultVariantId, currentProduct.id, productVariants]);
+
+  useEffect(() => {
+    setSelectedColor("");
+  }, [currentProduct.id]);
 
   useEffect(() => {
     setSelectedComboId("");
@@ -158,6 +168,34 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     setSelectedComboId(combo.id);
     if (combo.image) setActiveImage(combo.image);
   };
+  const validateRequiredSelections = () => {
+    if (productVariants.length > 0 && !selectedVariant) {
+      showToast("Vui lòng chọn kích thước / phân loại sản phẩm.", "warning");
+      return false;
+    }
+    if (productColors.length > 0 && !selectedColor) {
+      showToast("Vui lòng chọn màu sắc trước khi đặt hàng.", "warning");
+      return false;
+    }
+    return true;
+  };
+  const cartVariant = useMemo<ProductVariant | null>(() => {
+    if (!selectedColor) return selectedVariant;
+    const baseVariant = selectedVariant || {
+      id: "default",
+      name: "Mặc định",
+      price: currentProduct.price,
+      salePrice: currentProduct.salePrice,
+      sku: currentProduct.sku,
+      image: currentProduct.image,
+    };
+    const colorId = encodeURIComponent(selectedColor.toLocaleLowerCase("vi"));
+    return {
+      ...baseVariant,
+      id: `${baseVariant.id}--color-${colorId || "selected"}`,
+      name: `${selectedVariant?.name ? `${selectedVariant.name} · ` : ""}Màu ${selectedColor}`,
+    };
+  }, [currentProduct.image, currentProduct.price, currentProduct.salePrice, currentProduct.sku, selectedColor, selectedVariant]);
   const getComboSummary = (combo: ProductCombo | null) => {
     if (!combo) return "";
     if (combo.description) return combo.description;
@@ -320,6 +358,36 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </div>
               )}
 
+              {productColors.length > 0 && (
+                <div className="mt-5">
+                  <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">
+                    Chọn màu sắc <span className="text-gold-light">*</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {productColors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={`border px-4 py-2 text-[11px] font-display font-bold uppercase tracking-wider transition-colors ${
+                          selectedColor === color
+                            ? "border-gold-light bg-gold-dark/10 text-white"
+                            : "border-white/10 bg-[#101010] text-gray-300 hover:border-gold-dark/60"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentProduct.orderNote && (
+                <div className="mt-5 border-l-2 border-gold-dark bg-gold-dark/5 px-4 py-3 text-xs leading-relaxed text-gray-300">
+                  <b className="mr-1 text-gold-light">Lưu ý:</b>{currentProduct.orderNote}
+                </div>
+              )}
+
               {productCombos.length > 0 && (
                 <div className="mt-6 border border-gold-dark/35 bg-gold-dark/5 p-4 shadow-[0_0_24px_rgba(216,154,43,0.08)]">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -398,7 +466,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 {hasVisiblePrice && (
                   <button
                     type="button"
-                    onClick={() => addToCart(currentProduct, 1, selectedVariant, selectedCombo)}
+                    onClick={() => {
+                      if (!validateRequiredSelections()) return;
+                      addToCart(currentProduct, 1, cartVariant, selectedCombo);
+                    }}
                     className="inline-flex h-12 items-center justify-center gap-2 border border-gold-dark/40 px-6 text-[11px] font-display font-black uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -407,7 +478,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 )}
                 <button
                   type="button"
-                  onClick={() => hasVisiblePrice ? setIsOrderModalOpen(true) : setIsQuoteModalOpen(true)}
+                  onClick={() => {
+                    if (!validateRequiredSelections()) return;
+                    if (hasVisiblePrice) setIsOrderModalOpen(true);
+                    else setIsQuoteModalOpen(true);
+                  }}
                   className="inline-flex h-12 items-center justify-center gap-2 bg-gradient-to-r from-[#D89A2B] to-[#F5C45A] px-6 text-[11px] font-display font-black uppercase tracking-widest text-black shadow-[0_0_25px_rgba(216,154,43,0.2)] transition-transform hover:scale-[1.01]"
                 >
                   <ShoppingCart className="h-4 w-4" />
@@ -608,13 +683,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       <QuoteRequestModal
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
-        prepopulatedProduct={currentProduct.name}
+        prepopulatedProduct={[currentProduct.name, selectedVariant?.name, selectedColor ? `Màu ${selectedColor}` : ""].filter(Boolean).join(" - ")}
       />
       <OrderRequestModal
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
         productName={currentProduct.name}
         variantName={selectedVariant?.name}
+        colorName={selectedColor}
+        productNote={currentProduct.orderNote}
         comboName={selectedCombo?.name}
         comboDescription={getComboSummary(selectedCombo)}
         comboOriginalPrice={selectedCombo ? displayRegularPrice : ""}

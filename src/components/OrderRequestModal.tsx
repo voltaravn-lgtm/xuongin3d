@@ -9,6 +9,8 @@ interface OrderRequestModalProps {
   onClose: () => void;
   productName: string;
   variantName?: string;
+  colorName?: string;
+  productNote?: string;
   comboName?: string;
   comboDescription?: string;
   comboOriginalPrice?: string;
@@ -17,7 +19,7 @@ interface OrderRequestModalProps {
   productId?: string;
 }
 
-export default function OrderRequestModal({ isOpen, onClose, productName, variantName, comboName, comboDescription, comboOriginalPrice, productPrice, productSku, productId }: OrderRequestModalProps) {
+export default function OrderRequestModal({ isOpen, onClose, productName, variantName, colorName, productNote, comboName, comboDescription, comboOriginalPrice, productPrice, productSku, productId }: OrderRequestModalProps) {
   const { addQuoteRequest, showToast } = useApp();
   const [isSuccess, setIsSuccess] = useState(false);
   const [form, setForm] = useState({
@@ -64,13 +66,15 @@ export default function OrderRequestModal({ isOpen, onClose, productName, varian
       email: form.email,
       province: form.province || "Chưa cung cấp",
       address: form.address,
-      productName: [productName, variantName, comboName].filter(Boolean).join(" - "),
+      productName: [productName, variantName, colorName ? `Màu ${colorName}` : "", comboName].filter(Boolean).join(" - "),
       batteryType: "Đặt hàng sản phẩm có giá",
       voltage: "Không áp dụng",
       capacity: "Không áp dụng",
       notes: [
         productId ? `Product ID: ${productId}` : "",
         variantName ? `Phân loại: ${variantName}` : "",
+        colorName ? `Màu sắc: ${colorName}` : "",
+        productNote ? `Lưu ý sản phẩm: ${productNote}` : "",
         comboName ? `Combo: ${comboName}` : "",
         comboDescription ? `Thành phần combo: ${comboDescription}` : "",
         productSku ? `SKU: ${productSku}` : "",
@@ -146,8 +150,10 @@ export default function OrderRequestModal({ isOpen, onClose, productName, varian
                   <div>
                     <div className="text-white font-display font-bold text-xs uppercase tracking-wide">{productName}</div>
                     {variantName && <div className="mt-1 text-[10px] font-display font-bold uppercase tracking-wider text-gold-light">Phân loại: {variantName}</div>}
+                    {colorName && <div className="mt-1 text-[10px] font-display font-bold uppercase tracking-wider text-gold-light">Màu sắc: {colorName}</div>}
                     {comboName && <div className="mt-1 text-[10px] font-display font-bold uppercase tracking-wider text-gold-light">Combo: {comboName}</div>}
                     {comboDescription && <div className="mt-1 text-[10px] leading-relaxed text-gray-400">{comboDescription}</div>}
+                    {productNote && <div className="mt-2 border-l-2 border-gold-dark pl-2 text-[10px] leading-relaxed text-gray-400">{productNote}</div>}
                     {totalOriginalPriceLabel && <div className="mt-1 text-[11px] font-semibold text-gray-500 line-through">{totalOriginalPriceLabel}</div>}
                     <div className="mt-1 text-gold-light font-display font-black text-sm">{totalPriceLabel}</div>
                     {quantity > 1 && unitPriceValue && (
