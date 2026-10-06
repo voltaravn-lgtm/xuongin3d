@@ -1,0 +1,68 @@
+import fs from 'node:fs/promises';
+import { Workbook, SpreadsheetFile, FileBlob } from '@oai/artifact-tool';
+import { productWorkbookMatrix, productWorkbookGuide } from '../../src/lib/productWorkbook.ts';
+
+const outputDir = 'artifact-work/product-excel/outputs/template-20261006';
+await fs.mkdir(outputDir, { recursive: true });
+const old = await SpreadsheetFile.importXlsx(await FileBlob.load('public/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx'));
+const oldPreview = await old.render({sheetName: old.worksheets.getItemAt(0).name, range:'A1:F3',scale:1,format:'png'});
+await fs.writeFile(`${outputDir}/before.png`, new Uint8Array(await oldPreview.arrayBuffer()));
+const response = await fetch('http://localhost:3000/api/products');
+if (!response.ok) throw new Error('Không đọc được sản phẩm hiện tại.');
+const { products } = await response.json();
+const actual = products.find(p => p.variants?.length);
+if (!actual) throw new Error('Cần sản phẩm thực tế có phân loại để tạo ví dụ.');
+const common = { ...actual, hidden:true, syncEnabled:false, combos:[], createdAt:'',updatedAt:'', slug:'', barcode:'', externalProductId:'',externalVariantId:'',haravanProductId:'',haravanVariantId:'',lastSyncedAt:'', syncChannel:'', videoUrls:[], images:[], description:'Ví dụ nhập Excel. Thay nội dung và mã trước khi đăng sản phẩm thật.', orderNote:'Ví dụ minh họa, cần kiểm tra nội dung trước khi nhập.' };
+common.brand = actual.brand || 'Xưởng In 3D';
+common.colors = actual.colors?.length ? actual.colors : ['Trắng','Đen'];
+const simple = { ...common, id:'MAU-DON-001', sku:'MAU-DON-001',name:`Ví dụ không phân loại: ${actual.name}`, price:actual.variants[0].price || actual.price, salePrice:actual.variants[0].salePrice || '', voltage:actual.variants[0].size || actual.voltage, variants:[],defaultVariantId:'' };
+const variants = actual.variants.map((v,i) => ({...v,id:`MAU-SIZE-001-${i+1}`,sku:'',image:v.image || '',size:v.size || '',stockQuantity:v.stockQuantity || ''}));
+const multiple = { ...common,id:'MAU-SIZE-001',sku:'MAU-SIZE-001',name:`Ví dụ có phân loại: ${actual.name}`,variants,defaultVariantId:variants[0].id };
+const matrix = productWorkbookMatrix([simple,multiple]);
+const wb = Workbook.create();
+const sheet = wb.worksheets.add('Sản phẩm');
+sheet.showGridLines = false;
+sheet.tabColor = '#9B6B13';
+sheet.getRange('A1').write(matrix);
+const range = sheet.getRangeByIndexes(0,0,matrix.length,matrix[0].length);
+range.format.font = {name:'Arial',size:10,color:'#202020'};
+range.format.wrapText = true;
+range.format.verticalAlignment = 'center';
+range.format.columnWidth = 24;
+range.format.rowHeight = 90;
+const header = sheet.getRangeByIndexes(0,0,1,matrix[0].length);
+header.format.fill = '#29313A';
+header.format.font = {name:'Arial',size:10,bold:true,color:'#FFFFFF'};
+header.format.rowHeight = 60;
+header.format.horizontalAlignment = 'center';
+sheet.freezePanes.freezeRows(1);
+sheet.freezePanes.freezeColumns(3);
+matrix[0].forEach((label,i) => {
+  const column = sheet.getRangeByIndexes(1,i,2,1);
+  if (/Giá|Số tồn|Chiết khấu/.test(label)) { column.setNumberFormat('#,##0'); column.format.horizontalAlignment='right'; }
+  if (/ID|SKU|Barcode|Mã SP/.test(label)) column.setNumberFormat('@');
+  if (/Tên sản phẩm|Mô tả|Thông số|Ảnh|Video|JSON/.test(label)) sheet.getRangeByIndexes(0,i,3,1).format.columnWidth = 42;
+  if (/^Phân loại \d+/.test(label)) sheet.getRangeByIndexes(0,i,1,1).format.fill = '#71561D';
+});
+sheet.getRange('G2:G100').dataValidation = {rule:{type:'list',values:['Có','Không']}};
+const guide = wb.worksheets.add('Hướng dẫn');
+guide.showGridLines = false;
+guide.getRange('A1').write(productWorkbookGuide);
+guide.getRange(`A1:B${productWorkbookGuide.length}`).format.font = {name:'Arial',size:11,color:'#222222'};
+guide.getRange(`A1:B${productWorkbookGuide.length}`).format.wrapText=true;
+guide.getRange(`A1:B${productWorkbookGuide.length}`).format.verticalAlignment='center';
+guide.getRange(`A1:B${productWorkbookGuide.length}`).format.rowHeight=52;
+guide.getRange(`A1:A${productWorkbookGuide.length}`).format.columnWidth=29;
+guide.getRange(`B1:B${productWorkbookGuide.length}`).format.columnWidth=108;
+guide.getRange('A1:B1').format.fill='#29313A';
+guide.getRange('A1:B1').format.font={name:'Arial',size:11,bold:true,color:'#FFFFFF'};
+wb.recalculate();
+console.log((await wb.inspect({kind:'table',range:'Sản phẩm!A1:M3',tableMaxRows:3,tableMaxCols:13,maxChars:2200})).ndjson);
+for (const [name,range,file] of [['Sản phẩm','A1:J3','products'],['Sản phẩm','AS1:BS3','variants'],['Hướng dẫn','A1:B10','guide'],['Hướng dẫn','A11:B19','guide-more']]) {
+  const png = await wb.render({sheetName:name,range,scale:1,format:'png'});
+  await fs.writeFile(`${outputDir}/${file}.png`,new Uint8Array(await png.arrayBuffer()));
+}
+const output = await SpreadsheetFile.exportXlsx(wb);
+await output.save(`${outputDir}/mau-nhap-san-pham-xuong-in-3d.xlsx`);
+await fs.copyFile(`${outputDir}/mau-nhap-san-pham-xuong-in-3d.xlsx`,'public/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx');
+console.log(`Đã tạo mẫu từ ${products.length} sản phẩm hiện tại, ${matrix[0].length} cột.`);

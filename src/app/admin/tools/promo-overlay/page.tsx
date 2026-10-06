@@ -5,10 +5,11 @@ import { Calendar, ChevronLeft, ChevronRight, Download, Eraser, ImagePlus, Layer
 import { useApp } from "../../../../context/AppContext";
 import { isCloudinaryConfigured, uploadImageToCloudinary } from "../../../../lib/cloudinary";
 import { revalidateProductCache } from "../../../../lib/productCacheClient";
+import { drawWatermark, type WatermarkOptions } from "../../../../lib/watermark";
 
 type ExportSize = "original" | 800 | 1000 | 1200;
 type BackgroundMode = "white" | "transparent" | "custom";
-type ProductPublishMode = "filename-bulk" | "gallery-by-filename" | "primary-bulk" | "replace-all";
+type ProductPublishMode = "filename-bulk" | "gallery-by-filename" | "primary-bulk" | "replace-all" | "append-gallery";
 
 interface ImageAsset {
   file: File;
@@ -182,6 +183,9 @@ export default function PromoOverlayPage(): React.ReactElement {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<ImageAsset | null>(null);
+  const [watermarkAsset, setWatermarkAsset] = useState<ImageAsset | null>(null);
+  const [toolMode, setToolMode] = useState<'overlay' | 'watermark'>('overlay');
+  const [watermarkOptions, setWatermarkOptions] = useState<WatermarkOptions>({ position: 'bottom-right', size: 20, opacity: 70, margin: 3 });
   const [eventEnabled, setEventEnabled] = useState(promoOverlaySettings.enabled);
   const [eventEndDate, setEventEndDate] = useState(promoOverlaySettings.endDate || "");
   const [savingEventOverlay, setSavingEventOverlay] = useState(false);
@@ -193,7 +197,7 @@ export default function PromoOverlayPage(): React.ReactElement {
   const [backgroundMode, setBackgroundMode] = useState<BackgroundMode>("white");
   const [customBackground, setCustomBackground] = useState("#ffffff");
   const [exportBaseName, setExportBaseName] = useState("may-khoan-qzj005");
-  const [preserveOriginalNames, setPreserveOriginalNames] = useState(false);
+  const [preserveOriginalNames, setPreserveOriginalNames] = useState(true);
   const [saveDirectoryHandle, setSaveDirectoryHandle] = useState<DirectoryHandleLike | null>(null);
   const [publishMode, setPublishMode] = useState<ProductPublishMode>("filename-bulk");
   const [bulkProductTargets, setBulkProductTargets] = useState<Record<string, string>>({});
@@ -211,6 +215,8 @@ export default function PromoOverlayPage(): React.ReactElement {
   const overlayInputRef = useRef<HTMLInputElement | null>(null);
   const productsRef = useRef<ProductItem[]>([]);
   const overlayRef = useRef<ImageAsset | null>(null);
+  const watermarkAssetRef = useRef<ImageAsset | null>(null);
+  watermarkAssetRef.current = watermarkAsset;
 
   const activeProduct = useMemo(() => products.find((item) => item.id === activeProductId) || products[0] || null, [activeProductId, products]);
   const activeProductIndex = activeProduct ? products.findIndex((item) => item.id === activeProduct.id) : -1;
@@ -219,7 +225,13 @@ export default function PromoOverlayPage(): React.ReactElement {
     () => catalogProducts.find((item) => item.id === replaceAllProductId),
     [catalogProducts, replaceAllProductId],
   );
-  const previewOverlayUrl = overlay?.url || promoOverlaySettings.imageUrl || "";
+  const previewOverlayUrl = toolMode === 'watermark' ? watermarkAsset?.url || '/images/logo-x3d.webp' : overlay?.url || promoOverlaySettings.imageUrl || "";
+  const drawLayer = (ctx: CanvasRenderingContext2D, width: number, height = width) => {
+    const image = overlayImgRef.current;
+    if (!image) return;
+    if (toolMode === 'watermark') drawWatermark(ctx, image, width, height, watermarkOptions);
+    else ctx.drawImage(image, 0, 0, width, height);
+  };
 
   useEffect(() => {
     setEventEnabled(promoOverlaySettings.enabled);
@@ -296,7 +308,7 @@ export default function PromoOverlayPage(): React.ReactElement {
 
     if (!activeProduct) {
       if (overlayImgRef.current) {
-        ctx.drawImage(overlayImgRef.current, 0, 0, PREVIEW_CANVAS_SIZE, PREVIEW_CANVAS_SIZE);
+        drawLayer(ctx, PREVIEW_CANVAS_SIZE);
       }
       ctx.fillStyle = "#8A8A8A";
       ctx.font = "18px Inter, system-ui, Arial";
@@ -308,7 +320,7 @@ export default function PromoOverlayPage(): React.ReactElement {
     const cachedProduct = productImgRefs.current.get(activeProduct.id);
     if (cachedProduct) {
       drawProduct(ctx, activeProduct, cachedProduct, PREVIEW_CANVAS_SIZE);
-      if (overlayImgRef.current) ctx.drawImage(overlayImgRef.current, 0, 0, PREVIEW_CANVAS_SIZE, PREVIEW_CANVAS_SIZE);
+      drawLayer(ctx, PREVIEW_CANVAS_SIZE);
       return;
     }
 
@@ -318,7 +330,7 @@ export default function PromoOverlayPage(): React.ReactElement {
       productImgRefs.current.set(activeProduct.id, img);
       drawBackground(ctx, PREVIEW_CANVAS_SIZE, PREVIEW_CANVAS_SIZE, true);
       drawProduct(ctx, activeProduct, img, PREVIEW_CANVAS_SIZE);
-      if (overlayImgRef.current) ctx.drawImage(overlayImgRef.current, 0, 0, PREVIEW_CANVAS_SIZE, PREVIEW_CANVAS_SIZE);
+      drawLayer(ctx, PREVIEW_CANVAS_SIZE);
     };
   };
 
@@ -352,7 +364,7 @@ export default function PromoOverlayPage(): React.ReactElement {
 
   useEffect(() => {
     renderPreview();
-  }, [activeProduct, previewOverlayUrl, backgroundMode, customBackground]);
+  }, [activeProduct, previewOverlayUrl, backgroundMode, customBackground, toolMode, watermarkOptions]);
 
   useEffect(() => {
     productsRef.current = products;
@@ -366,6 +378,7 @@ export default function PromoOverlayPage(): React.ReactElement {
     return () => {
       productsRef.current.forEach((product) => URL.revokeObjectURL(product.url));
       if (overlayRef.current) URL.revokeObjectURL(overlayRef.current.url);
+      if (watermarkAssetRef.current) URL.revokeObjectURL(watermarkAssetRef.current.url);
     };
   }, []);
 
@@ -537,8 +550,14 @@ export default function PromoOverlayPage(): React.ReactElement {
     if (!file || file.type !== "image/png") return;
 
     try {
-      if (overlay) URL.revokeObjectURL(overlay.url);
-      setOverlay(await loadFileAsImage(file));
+      const asset = await loadFileAsImage(file);
+      if (toolMode === 'watermark') {
+        if (watermarkAsset) URL.revokeObjectURL(watermarkAsset.url);
+        setWatermarkAsset(asset);
+      } else {
+        if (overlay) URL.revokeObjectURL(overlay.url);
+        setOverlay(asset);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không thể thêm khung overlay.";
       showToast(message, "error");
@@ -705,6 +724,7 @@ export default function PromoOverlayPage(): React.ReactElement {
   };
 
   const generateExportCanvas = (size: ExportSize, product: ProductItem) => {
+    if (toolMode === 'watermark' && !overlayImgRef.current) throw new Error('Logo watermark chưa tải xong hoặc không đọc được. Hãy chọn lại logo trước khi xuất/upload.');
     const width = size === "original" ? product.width : size;
     const height = size === "original" ? product.height : size;
     const out = document.createElement("canvas");
@@ -717,7 +737,7 @@ export default function PromoOverlayPage(): React.ReactElement {
 
     const productImg = productImgRefs.current.get(product.id);
     if (productImg) drawProduct(ctx, product, productImg, width, height);
-    if (overlayImgRef.current) ctx.drawImage(overlayImgRef.current, 0, 0, width, height);
+    drawLayer(ctx, width, height);
 
     return out;
   };
@@ -865,6 +885,24 @@ export default function PromoOverlayPage(): React.ReactElement {
       return;
     }
 
+    if (publishMode === 'append-gallery') {
+      const target = catalogProducts.find(item => item.id === replaceAllProductId);
+      if (!target) { showToast('Chọn sản phẩm cần thêm ảnh.', 'warning'); return; }
+      if (!window.confirm(`Thêm ${products.length} ảnh đã xử lý vào “${target.name}”? Giữ nguyên ảnh đại diện và toàn bộ ảnh cũ.`)) return;
+      setPublishingProducts(true);
+      try {
+        const urls: string[] = [];
+        for (let index = 0; index < products.length; index++) {
+          setPublishProgress(`Đang tải ảnh ${index + 1}/${products.length}...`);
+          urls.push(await uploadImageToCloudinary(await createProcessedWebpFile(products[index])));
+        }
+        const updated = await updateProduct({ ...target, images: [...(target.images || []), ...urls] });
+        if (!updated) throw new Error('Không lưu được ảnh vào sản phẩm.');
+        await finishProductPublishing(`Đã thêm ${urls.length} ảnh vào “${target.name}”, giữ nguyên ảnh cũ.`);
+      } catch (error) { showToast(error instanceof Error ? error.message : 'Không thể thêm ảnh.', 'error'); }
+      finally { setPublishingProducts(false); setPublishProgress(''); }
+      return;
+    }
     const filenameGroups = new Map<string, Array<{ index: number; order: number }>>();
     const replaceAllEntries = products.map((item, index) => ({ index, order: getFileImagePosition(item.file.name).order }));
 
@@ -1103,10 +1141,10 @@ export default function PromoOverlayPage(): React.ReactElement {
               Công cụ ảnh quảng cáo
             </div>
             <h1 className="font-display text-2xl font-black uppercase tracking-wide text-white sm:text-3xl">
-              Ghép khung promo sản phẩm
+              Ghép khung & watermark sản phẩm
             </h1>
             <p className="mt-2 max-w-2xl text-xs leading-relaxed text-gray-400">
-              Tải một hoặc nhiều ảnh sản phẩm, chọn nền xuất, thêm khung PNG trong suốt rồi xuất WebP hoặc PNG vuông.
+              Ghép khung hoặc đóng watermark hàng loạt, tải ảnh về máy hoặc đăng trực tiếp vào sản phẩm.
             </p>
           </div>
           <a href="/admin" className="inline-flex h-10 items-center justify-center border border-white/10 px-4 text-[11px] font-display font-bold uppercase tracking-widest text-gray-300 hover:border-gold-light hover:text-gold-light">
@@ -1116,6 +1154,21 @@ export default function PromoOverlayPage(): React.ReactElement {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)]">
           <section className="space-y-5">
+            <div className="border border-white/10 bg-[#101010] p-4 space-y-4">
+              <div className="flex gap-2">
+                <ModeButton active={toolMode === 'overlay'} label="Ghép khung Overlay" onClick={() => setToolMode('overlay')} />
+                <ModeButton active={toolMode === 'watermark'} label="Đóng Watermark hàng loạt" onClick={() => { setToolMode('watermark'); setExportSize('original'); setPreserveOriginalNames(true); }} />
+              </div>
+              {toolMode === 'watermark' && <>
+                <p className="text-xs text-gray-300">Dùng logo Xưởng In 3D mặc định hoặc chọn PNG trong suốt bên dưới. Watermark được đóng trực tiếp vào mọi ảnh tải về/upload, không phải lớp phủ sự kiện. Nên chọn “Kích thước gốc” để giữ tỷ lệ ảnh.</p>
+                <div className="grid grid-cols-2 gap-4 text-xs text-gray-300">
+                  <label>Vị trí<select value={watermarkOptions.position} onChange={e => setWatermarkOptions(current => ({ ...current, position: e.target.value as WatermarkOptions['position'] }))} className="mt-2 w-full bg-black p-2"><option value="top-left">Trên trái</option><option value="top-right">Trên phải</option><option value="bottom-left">Dưới trái</option><option value="bottom-right">Dưới phải</option><option value="center">Chính giữa</option></select></label>
+                  <label>Độ rõ: {watermarkOptions.opacity}%<input type="range" min="10" max="100" value={watermarkOptions.opacity} onChange={e => setWatermarkOptions(current => ({ ...current, opacity: Number(e.target.value) }))} className="mt-3 w-full" /></label>
+                  <label>Chiều rộng logo: {watermarkOptions.size}%<input type="range" min="5" max="50" value={watermarkOptions.size} onChange={e => setWatermarkOptions(current => ({ ...current, size: Number(e.target.value) }))} className="mt-3 w-full" /></label>
+                  <label>Cách mép: {watermarkOptions.margin}%<input type="range" min="0" max="10" value={watermarkOptions.margin} onChange={e => setWatermarkOptions(current => ({ ...current, margin: Number(e.target.value) }))} className="mt-3 w-full" /></label>
+                </div>
+              </>}
+            </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <UploadBox
                 icon={<ImagePlus className="h-5 w-5" />}
@@ -1130,10 +1183,10 @@ export default function PromoOverlayPage(): React.ReactElement {
               />
               <UploadBox
                 icon={<Layers className="h-5 w-5" />}
-                title="Khung overlay"
+                title={toolMode === 'watermark' ? 'Logo watermark' : 'Khung overlay'}
                 subtitle="PNG nền trong suốt"
-                fileName={overlay?.file.name || promoOverlaySettings.fileName}
-                buttonText="Chọn khung"
+                fileName={toolMode === 'watermark' ? watermarkAsset?.file.name || 'Logo Xưởng In 3D mặc định' : overlay?.file.name || promoOverlaySettings.fileName}
+                buttonText={toolMode === 'watermark' ? 'Chọn logo PNG' : 'Chọn khung'}
                 secondary
                 dropActive={overlayDropActive}
                 onClick={() => overlayInputRef.current?.click()}
@@ -1145,7 +1198,7 @@ export default function PromoOverlayPage(): React.ReactElement {
             <input ref={productInputRef} type="file" multiple accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onProductFiles(e.target.files)} />
             <input ref={overlayInputRef} type="file" accept="image/png" className="hidden" onChange={(e) => onOverlayFiles(e.target.files)} />
 
-            <div className="border border-gold-dark/25 bg-gold-dark/5 p-4 sm:p-5">
+            <div className={classNames("border border-gold-dark/25 bg-gold-dark/5 p-4 sm:p-5", toolMode === 'watermark' && 'hidden')}>
               <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light">
@@ -1443,13 +1496,14 @@ export default function PromoOverlayPage(): React.ReactElement {
               </p>
 
               <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <ModeButton active={publishMode === "filename-bulk"} label="Đăng theo mã file" onClick={() => setPublishMode("filename-bulk")} />
-                <ModeButton active={publishMode === "gallery-by-filename"} label="Cập nhật ảnh phụ theo mã" onClick={() => setPublishMode("gallery-by-filename")} />
-                <ModeButton active={publishMode === "primary-bulk"} label="Thay ảnh đại diện hàng loạt" onClick={() => setPublishMode("primary-bulk")} />
-                <ModeButton active={publishMode === "replace-all"} label="Thay toàn bộ một sản phẩm" onClick={() => setPublishMode("replace-all")} />
+                <ModeButton active={publishMode === "filename-bulk"} label="Đăng theo mã file" description="Tự ghép ảnh với sản phẩm theo ID/SKU/barcode. File MÃ là ảnh đại diện; MÃ-1, MÃ-2… là ảnh phụ. Thay ảnh đại diện và toàn bộ bộ ảnh phụ bằng các file đã chọn." onClick={() => setPublishMode("filename-bulk")} />
+                <ModeButton active={publishMode === "gallery-by-filename"} label="Cập nhật ảnh phụ theo mã" description="Chỉ cập nhật ảnh phụ theo tên MÃ-1, MÃ-2… Giữ nguyên ảnh đại diện và các ảnh phụ ở vị trí không được cập nhật. Không dùng file MÃ không có số thứ tự." onClick={() => setPublishMode("gallery-by-filename")} />
+                <ModeButton active={publishMode === "primary-bulk"} label="Thay ảnh đại diện hàng loạt" description="Thay ảnh đại diện của nhiều sản phẩm theo file MÃ. Giữ các ảnh phụ cũ; nếu có file MÃ-1, MÃ-2… thì cập nhật thêm ảnh phụ ở vị trí tương ứng." onClick={() => setPublishMode("primary-bulk")} />
+                <ModeButton active={publishMode === "replace-all"} label="Thay toàn bộ một sản phẩm" description="Chọn một sản phẩm và thay toàn bộ ảnh cũ. Bộ file cần đúng một ảnh MÃ làm ảnh đại diện; MÃ-1, MÃ-2… làm ảnh phụ. Kiểm tra kỹ trước khi xác nhận." onClick={() => setPublishMode("replace-all")} />
+                <ModeButton active={publishMode === "append-gallery"} label="Thêm bộ ảnh vào sản phẩm (giữ ảnh cũ)" description="Chọn một sản phẩm rồi thêm tất cả ảnh đã xử lý vào cuối bộ ảnh. Giữ nguyên ảnh đại diện và toàn bộ ảnh cũ; tên file không cần theo mã sản phẩm." onClick={() => setPublishMode("append-gallery")} />
               </div>
 
-              {publishMode !== "replace-all" ? (
+              {publishMode !== "replace-all" && publishMode !== "append-gallery" ? (
                 <div className="space-y-3">
                   <div className="border border-gold-dark/20 bg-gold-dark/5 p-3 text-[10px] leading-relaxed text-gray-400">
                     <span className="font-bold text-gold-light">QZJ004.png</span> là ảnh đại diện. <span className="font-bold text-gold-light">QZJ004-1.png</span> hoặc <span className="font-bold text-gold-light">QZJ0041.png</span> là ảnh phụ số 1. Mã file khớp chính xác luôn được ưu tiên.
@@ -1496,6 +1550,7 @@ export default function PromoOverlayPage(): React.ReactElement {
                         <div className="flex min-w-0 items-center gap-2">
                           <ProcessedImageThumbnail
                             product={item}
+                            watermark={toolMode === 'watermark' ? watermarkOptions : undefined}
                             overlayUrl={previewOverlayUrl}
                             backgroundMode={backgroundMode}
                             customBackground={customBackground}
@@ -1556,7 +1611,7 @@ export default function PromoOverlayPage(): React.ReactElement {
               ) : (
                 <div className="space-y-3">
                   <label className="block">
-                    <span className="mb-2 block text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">Gõ mã sản phẩm cần thay toàn bộ ảnh</span>
+                    <span className="mb-2 block text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">{publishMode === 'append-gallery' ? 'Chọn sản phẩm cần thêm bộ ảnh' : 'Gõ mã sản phẩm cần thay toàn bộ ảnh'}</span>
                     <input
                       type="text"
                       list="replace-all-product-codes"
@@ -1584,7 +1639,7 @@ export default function PromoOverlayPage(): React.ReactElement {
                     </div>
                   ) : null}
                   <div className="border border-gold-dark/20 bg-gold-dark/5 p-3 text-[11px] leading-relaxed text-gray-400">
-                    Toàn bộ ảnh cũ trong dữ liệu sản phẩm sẽ được thay thế. File <span className="font-bold text-gold-light">không có hậu tố</span> là ảnh đại diện; file dạng <span className="font-bold text-gold-light">MÃ-1</span> hoặc <span className="font-bold text-gold-light">MÃ1</span> là ảnh bổ sung.
+                    {publishMode === 'append-gallery' ? 'Tất cả ảnh đã xử lý sẽ được thêm vào bộ ảnh của sản phẩm đã chọn. Giữ nguyên ảnh đại diện và ảnh cũ; không cần đặt tên file theo mã sản phẩm.' : <>Toàn bộ ảnh cũ trong dữ liệu sản phẩm sẽ được thay thế. File <span className="font-bold text-gold-light">không có hậu tố</span> là ảnh đại diện; file dạng <span className="font-bold text-gold-light">MÃ-1</span> hoặc <span className="font-bold text-gold-light">MÃ1</span> là ảnh bổ sung.</>}
                   </div>
                 </div>
               )}
@@ -1599,7 +1654,7 @@ export default function PromoOverlayPage(): React.ReactElement {
                 {publishingProducts ? publishProgress || "Đang đăng ảnh..." : "Kiểm tra và đăng ảnh"}
               </button>
               <p className="mt-2 text-[9px] leading-relaxed text-gray-600">
-                URL ảnh cũ được gỡ khỏi sản phẩm; file vật lý cũ trên Cloudinary không bị xóa tự động.
+                {publishMode === 'append-gallery' ? 'Ảnh cũ được giữ nguyên. Ảnh mới được upload lên Cloudinary trước khi thêm vào sản phẩm.' : 'URL ảnh cũ được gỡ khỏi sản phẩm; file vật lý cũ trên Cloudinary không bị xóa tự động.'}
               </p>
             </div>
 
@@ -1714,11 +1769,12 @@ export default function PromoOverlayPage(): React.ReactElement {
   );
 }
 
-function ProcessedImageThumbnail({ product, overlayUrl, backgroundMode, customBackground }: {
+function ProcessedImageThumbnail({ product, overlayUrl, backgroundMode, customBackground, watermark }: {
   product: ProductItem;
   overlayUrl: string;
   backgroundMode: BackgroundMode;
   customBackground: string;
+  watermark?: WatermarkOptions;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -1757,13 +1813,16 @@ function ProcessedImageThumbnail({ product, overlayUrl, backgroundMode, customBa
         const y = (size - drawHeight) / 2 + product.offset.y * (size / PREVIEW_CANVAS_SIZE);
         ctx.drawImage(productImage, x, y, drawWidth, drawHeight);
       }
-      if (overlayImage) ctx.drawImage(overlayImage, 0, 0, size, size);
+      if (overlayImage) {
+        if (watermark) drawWatermark(ctx, overlayImage, size, size, watermark);
+        else ctx.drawImage(overlayImage, 0, 0, size, size);
+      }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [product, overlayUrl, backgroundMode, customBackground]);
+  }, [product, overlayUrl, backgroundMode, customBackground, watermark]);
 
   return (
     <canvas
@@ -1875,14 +1934,17 @@ function ControlRange({ label, value, min, max, step, display, disabled, onChang
   );
 }
 
-function ModeButton({ active, label, onClick }: {
+function ModeButton({ active, label, description, onClick }: {
   active: boolean;
   label: string;
+  description?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
+      title={description}
+      aria-label={description ? `${label}. ${description}` : label}
       onClick={onClick}
       className={classNames(
         "h-10 border px-3 text-[11px] font-display font-black uppercase tracking-widest transition-colors",

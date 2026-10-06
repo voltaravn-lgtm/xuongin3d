@@ -24,26 +24,30 @@ export function readProductExcelOptions(
     if (!name) continue;
     const id = read("ID") || existing?.variants?.[index - 1]?.id || `${productId}-variant-${index}`;
     const previous = existing?.variants?.find((variant) => variant.id === id);
-    const stockStatus = read("Trạng thái kho") || previous?.stockStatus || "";
+    const stockStatus = read("Trạng thái kho") === '-' ? '' : read("Trạng thái kho") || previous?.stockStatus || "";
     if (!["", "in-stock", "low-stock", "out-of-stock", "preorder"].includes(stockStatus)) {
       throw new Error(`${productId}: trạng thái kho phân loại ${index} không hợp lệ.`);
     }
+    const optional = (field: string, fallback = '') => read(field) === '-' ? '' : read(field) || fallback;
     indexed.push({ index, variant: {
       ...previous,
       id, name,
-      size: read("Kích thước") || previous?.size || "",
-      price: read("Giá bán") || previous?.price || "",
-      salePrice: read("Giá giảm") || previous?.salePrice || "",
-      sku: read("SKU") || previous?.sku || "",
-      stockQuantity: read("Số tồn") || previous?.stockQuantity || "",
-      image: read("Ảnh") || previous?.image || "",
+      size: optional("Kích thước", previous?.size),
+      price: optional("Giá bán", previous?.price),
+      salePrice: optional("Giá giảm", previous?.salePrice),
+      sku: optional("SKU", previous?.sku),
+      stockQuantity: optional("Số tồn", previous?.stockQuantity),
+      image: optional("Ảnh", previous?.image),
       stockStatus: stockStatus as ProductVariant["stockStatus"],
     } });
   }
   if (new Set(indexed.map(({ variant }) => variant.id)).size !== indexed.length) {
     throw new Error(`${productId}: ID phân loại bị trùng.`);
   }
-  const variants = indexed.length ? indexed.map(({ variant }) => variant) : existing?.variants || [];
+  const noVariants = /^(không|khong|no|false|0)$/i.test(cell('Có phân loại'));
+  if (noVariants && indexed.length) throw new Error(`${productId}: đã chọn Không có phân loại nhưng vẫn điền tên phân loại.`);
+  const variants = noVariants ? [] : indexed.length ? indexed.map(({ variant }) => variant) : existing?.variants || [];
+  if (/^(có|co|yes|true|1)$/i.test(cell('Có phân loại')) && !variants.length) throw new Error(`${productId}: chọn Có phân loại cần điền ít nhất một tên phân loại.`);
   const defaultIndex = cell("Phân loại chọn sẵn");
   const requestedDefault = defaultIndex ? indexed.find(({ index }) => index === Number(defaultIndex))?.variant.id : undefined;
   if (defaultIndex && !requestedDefault) throw new Error(`${productId}: phân loại chọn sẵn phải là số thứ tự của phân loại đã điền tên.`);

@@ -40,6 +40,7 @@ export const SiteLogo: React.FC<{ className?: string; iconOnly?: boolean }> = ({
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDayMode, setIsDayMode] = useState(false);
@@ -49,7 +50,8 @@ export default function Header() {
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+    setIsMobileCategoriesOpen(false);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("xuongin3d_display_mode");
@@ -298,8 +300,8 @@ export default function Header() {
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="p-6 flex flex-col h-full justify-between">
-          <div>
+        <div className="p-6 flex flex-col h-full justify-between gap-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between pb-6 border-b border-white/5">
               <SiteLogo />
               <button
@@ -319,11 +321,14 @@ export default function Header() {
                     : location.pathname.startsWith(item.path);
 
                 return (
+                  <div key={item.path}>
+                  <div className="flex items-center border-b border-white/5">
                   <Link
                     key={item.path}
                     id={`mobile-nav-item-${item.path}`}
                     to={item.path}
-                    className={`block py-2 text-sm font-display font-medium uppercase tracking-wider border-b border-white/5 pb-2 transition-colors duration-200 ${
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`block flex-1 py-2 text-sm font-display font-medium uppercase tracking-wider pb-2 transition-colors duration-200 ${
                       isActive ? "text-gold-light font-bold" : "text-gray-300 hover:text-white"
                     }`}
                   >
@@ -332,12 +337,24 @@ export default function Header() {
                       {isActive && <div className="w-1.5 h-1.5 bg-gold-light rounded-full" />}
                     </div>
                   </Link>
+                  {item.path === '/san-pham' && <button type="button" aria-label="Mở danh mục sản phẩm" aria-expanded={isMobileCategoriesOpen} aria-controls="mobile-product-categories" onClick={() => setIsMobileCategoriesOpen(!isMobileCategoriesOpen)} className="p-3 text-gold-light"><ChevronRight className={`h-4 w-4 transition-transform ${isMobileCategoriesOpen ? 'rotate-90' : ''}`} /></button>}
+                  </div>
+                  {item.path === '/san-pham' && isMobileCategoriesOpen && (
+                    <div id="mobile-product-categories" className="mt-2 space-y-1 border-l border-gold-dark/30 pl-3 uppercase">
+                      <Link to="/san-pham" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 text-xs text-gold-light">Tất cả sản phẩm</Link>
+                      {visibleProductCategories.map(category => <div key={category.id}>
+                        <Link to={getCategoryHref(category.id)} onClick={() => setIsMobileMenuOpen(false)} className="block py-2 text-xs text-gray-200">{category.name}</Link>
+                        {(category.children || []).filter(child => !child.hidden).map(child => <Link key={child.id} to={getCategoryHref(category.id, child.id)} onClick={() => setIsMobileMenuOpen(false)} className="block py-2 pl-3 text-xs text-gray-400">{child.name}</Link>)}
+                      </div>)}
+                    </div>
+                  )}
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
+          <div className="shrink-0 pt-6 border-t border-white/5 flex flex-col gap-3">
             <Link
               id="mobile-drawer-cta"
               to="/in-3d-theo-yeu-cau"

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ProductCategory, useApp } from "../../context/AppContext";
 import { Product, ProductVariant, ProductCombo } from "../../types";
 import { PRODUCTS_DATA } from "../../data";
@@ -7,8 +7,10 @@ import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
-import { readProductExcelOptions, variantExcelFields, variantExcelHeader } from "../../lib/productExcelOptions";
+import { readProductExcelOptions } from "../../lib/productExcelOptions";
+import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras } from "../../lib/productWorkbook";
 import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
+import PriceInput from "../../components/Admin/PriceInput";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
   Bold, Italic,
@@ -154,7 +156,7 @@ async function readProductImportRows(file: File) {
   if (/\.xlsx$/i.test(file.name)) {
     const XLSX = await import("xlsx");
     const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
+    const firstSheetName = workbook.SheetNames.find(name => ['sản phẩm', 'san pham'].includes(name.trim().toLowerCase())) || workbook.SheetNames[0];
     if (!firstSheetName) return [];
     return XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[firstSheetName], {
       header: 1,
@@ -454,6 +456,12 @@ export default function ProductsAdmin() {
   const descriptionRedoStackRef = useRef<string[]>([]);
   const descriptionCustomUndoIsLatestRef = useRef(false);
   const descriptionDraftRef = useRef("");
+  // Initialize only when mounting: re-rendering the toolbar must not replace
+  // contentEditable's DOM, which would invalidate the saved insertion range.
+  const mountDescriptionEditor = useCallback((editor: HTMLDivElement | null) => {
+    descriptionEditorRef.current = editor;
+    if (editor) editor.innerHTML = descriptionDraftRef.current;
+  }, []);
   const productFormScrollRef = useRef<HTMLFormElement | null>(null);
   const hasSyncedProductPreviewRef = useRef(false);
   const bulkImportInputRef = useRef<HTMLInputElement | null>(null);
@@ -1200,15 +1208,14 @@ export default function ProductsAdmin() {
     if (!editor) return;
 
     pushDescriptionUndoSnapshot();
-    editor.focus();
-
     const range = document.createRange();
     const anchor = descriptionInsertAnchorRef.current;
-    if (anchor && editor.contains(anchor)) {
-      range.setStartAfter(anchor);
-    } else if (hasManualDescriptionSelectionRef.current && descriptionSelectionRef.current && isDescriptionRangeValid(descriptionSelectionRef.current)) {
+    if (descriptionSelectionRef.current && isDescriptionRangeValid(descriptionSelectionRef.current)) {
       range.setStart(descriptionSelectionRef.current.startContainer, descriptionSelectionRef.current.startOffset);
       range.setEnd(descriptionSelectionRef.current.endContainer, descriptionSelectionRef.current.endOffset);
+    } else if (anchor && editor.contains(anchor)) {
+      range.setStartAfter(anchor);
+      range.collapse(true);
     } else {
       range.selectNodeContents(editor);
       range.collapse(false);
@@ -1216,7 +1223,10 @@ export default function ProductsAdmin() {
 
     range.deleteContents();
 
-    const fragment = range.createContextualFragment(`${html}<br>`);
+    editor.focus({ preventScroll: true });
+    const fragment = range.createContextualFragment(html);
+    // Images are block-level already; don't add blank lines after insertion.
+    fragment.querySelectorAll('img').forEach(image => { image.style.margin = '0'; });
     const lastInsertedNode = fragment.lastChild;
     range.insertNode(fragment);
 
@@ -1743,105 +1753,29 @@ export default function ProductsAdmin() {
     }));
   };
 
-  const escapeExcelCell = (value: unknown) => {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  };
-
-  const formatSpecsForExport = (specs: Product["specs"] | undefined) => {
-    return Object.entries(specs || {})
-      .filter(([, value]) => String(value || "").trim())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join("\n");
-  };
-
-  const handleExportProductsExcel = () => {
+  const handleExportProductsExcel = async () => {
     const exportRows = filteredAdminProducts.length ? filteredAdminProducts : products;
-    if (!exportRows.length) {
-      showToast("Chưa có sản phẩm để xuất file.", "warning");
-      return;
+    if (!exportRows.length) { showToast("Chưa có sản phẩm để xuất file.", "warning"); return; }
+    try {
+      const XLSX = await import("xlsx");
+      const matrix = productWorkbookMatrix(exportRows);
+      const sheet = XLSX.utils.aoa_to_sheet(matrix);
+      sheet["!cols"] = matrix[0].map(label => ({ wch: /Mô tả|Thông số|Ảnh|Video|JSON/.test(String(label)) ? 45 : 24 }));
+      sheet["!autofilter"] = { ref: sheet["!ref"] || "A1" };
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, sheet, "Sản phẩm");
+      const guide = XLSX.utils.aoa_to_sheet(productWorkbookGuide);
+      guide["!cols"] = [{ wch: 28 }, { wch: 110 }];
+      XLSX.utils.book_append_sheet(wb, guide, "Hướng dẫn");
+      XLSX.writeFile(wb, `xuong-in-3d-products-${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast(`Đã xuất ${exportRows.length} sản phẩm, gồm giá đại lý, màu sắc và phân loại.`, "success");
+    } catch {
+      showToast("Không thể xuất Excel. Vui lòng thử lại.", "error");
     }
-
-    const columns: Array<[string, (product: Product) => unknown]> = [
-      ["ID", (product) => product.id],
-      ["Mã SP", (product) => product.sku || product.id],
-      ["Tên sản phẩm", (product) => product.name],
-      ["Danh mục", (product) => product.category],
-      ["Danh mục con", (product) => product.subCategory],
-      ["Thương hiệu", (product) => product.brand],
-      ["Kích thước / quy mô", (product) => product.voltage],
-      ["Màu sắc", (product) => (product.colors || []).join(", ")],
-      ["Ghi chú đặt hàng", (product) => product.orderNote],
-      ["Phân loại chọn sẵn", (product) => {
-        const index = (product.variants || []).findIndex((variant) => variant.id === product.defaultVariantId);
-        return index >= 0 ? index + 1 : "";
-      }],
-      ["Hình thức thực hiện", (product) => product.capacity],
-      ["Vật liệu", (product) => product.cellType],
-      ["Bảo hành", (product) => product.warranty],
-      ["Giá bán", (product) => product.price],
-      ["Giá giảm", (product) => product.salePrice],
-      ["Combo", (product) => (product.combos || []).map((combo) => [
-        combo.hidden ? "[Ẩn]" : "[Hiện]",
-        combo.name,
-        (combo.items || []).length ? `Items: ${(combo.items || []).map((item) => `${item.productId} x${item.quantity || 1}`).join(", ")}` : "",
-        combo.originalPrice ? `Giá gốc: ${combo.originalPrice}` : "",
-        combo.comboPrice ? `Giá combo: ${combo.comboPrice}` : "",
-        combo.startsAt ? `Bắt đầu: ${combo.startsAt}` : "",
-        combo.endsAt ? `Kết thúc: ${combo.endsAt}` : "",
-        combo.description,
-      ].filter(Boolean).join(" | ")).join("\n")],
-      ["SKU", (product) => product.sku],
-      ["Barcode", (product) => product.barcode],
-      ["Số tồn", (product) => product.stockQuantity],
-      ["Trạng thái kho", (product) => product.stockStatus],
-      ["Cho đồng bộ", (product) => product.syncEnabled ? "Có" : "Không"],
-      ["Kênh đồng bộ", (product) => product.syncChannel],
-      ["External Product ID", (product) => product.externalProductId || product.haravanProductId],
-      ["External Variant ID", (product) => product.externalVariantId || product.haravanVariantId],
-      ["Lần đồng bộ gần nhất", (product) => product.lastSyncedAt],
-      ["Trạng thái hiển thị", (product) => product.hidden ? "Đang ẩn" : "Đang hiện"],
-      ["Ảnh đại diện", (product) => product.image],
-      ["Ảnh bổ sung", (product) => (product.images || []).join("\n")],
-      ["Video", (product) => (product.videoUrls || []).join("\n")],
-      ["Mô tả", (product) => productDescriptionToExportText(product.description)],
-      ["Thông số kỹ thuật", (product) => formatSpecsForExport(product.specs)],
-      ["Ngày tạo", (product) => product.createdAt],
-      ["Ngày cập nhật", (product) => product.updatedAt],
-    ];
-
-    const variantCount = Math.max(3, ...exportRows.map((product) => product.variants?.length || 0));
-    const variantKeys = ["id", "name", "price", "salePrice", "sku", "stockQuantity", "image", "stockStatus", "size"] as const;
-    for (let index = 1; index <= variantCount; index += 1) {
-      variantExcelFields.forEach((field, fieldIndex) => {
-        columns.push([variantExcelHeader(index, field), (product) => product.variants?.[index - 1]?.[variantKeys[fieldIndex]] || ""]);
-      });
-    }
-
-    const headerCells = columns.map(([label]) => `<th>${escapeExcelCell(label)}</th>`).join("");
-    const bodyRows = exportRows.map((product) => (
-      `<tr>${columns.map(([, getter]) => `<td style="mso-number-format:'\\@'; white-space:pre-wrap;">${escapeExcelCell(getter(product))}</td>`).join("")}</tr>`
-    )).join("");
-    const workbook = `<!doctype html><html><head><meta charset="UTF-8" /></head><body><table border="1"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
-    const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const today = new Date().toISOString().slice(0, 10);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `xuong-in-3d-products-${today}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    showToast(`Đã xuất ${exportRows.length} sản phẩm ra Excel.`, "success");
   };
-
   const handleDownloadImportTemplate = () => {
     const link = document.createElement("a");
-    link.href = "/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx?v=20261005";
+    link.href = "/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx?v=20261006-2";
     link.download = "mau-nhap-san-pham-xuong-in-3d.xlsx";
     document.body.appendChild(link);
     link.click();
@@ -1932,7 +1866,7 @@ export default function ProductsAdmin() {
           cellType: keep("Vật liệu", existing?.cellType || "Theo yêu cầu"),
           warranty: keep("Bảo hành", existing?.warranty || "Hỗ trợ sau bàn giao"),
           price: keep("Giá bán", existing?.price || "Liên hệ"),
-          salePrice: keep("Giá giảm", existing?.salePrice || ""),
+          salePrice: cell(row, "Giá giảm") === '-' ? '' : keep("Giá giảm", existing?.salePrice || ""),
           image: keep("Ảnh đại diện", existing?.image || "/images/san-pham.webp"),
           images: imageLines.length ? imageLines : existing?.images || [],
           videoUrls: videoLines.length ? videoLines : existing?.videoUrls || [],
@@ -1946,6 +1880,7 @@ export default function ProductsAdmin() {
           createdAt: existing?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ...readProductExcelOptions(headers, (label) => cell(row, label), id, existing),
+          ...readProductWorkbookExtras((label) => cell(row, label), existing),
         };
         candidates.push(imported);
         existingById.set(id, imported);
@@ -2553,21 +2488,20 @@ export default function ProductsAdmin() {
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Giá bán</label>
-                  <input
-                    type="text"
+                  <PriceInput
                     value={productForm.price}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
+                    onValueChange={(value) => setProductForm(prev => ({ ...prev, price: value }))}
                     placeholder="VD: 600000 hoặc 600.000đ"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
+                  <p className="text-[10px] text-gray-500">Tự thêm dấu nghìn. Nhập 2 hoặc 35 để chọn nhanh mức giá.</p>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Giá giảm (nếu có)</label>
-                  <input
-                    type="text"
+                  <PriceInput
                     value={productForm.salePrice}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, salePrice: e.target.value }))}
+                    onValueChange={(value) => setProductForm(prev => ({ ...prev, salePrice: value }))}
                     placeholder="VD: 550000 hoặc 550.000đ"
                     className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
                   />
@@ -2636,8 +2570,8 @@ export default function ProductsAdmin() {
                               </select>
                               <input aria-label={`Tên phân loại ${index + 1}`} type="text" value={variant.name || ""} onChange={(e) => handleUpdateVariant(index, { name: e.target.value })} placeholder="Tên phân loại (có thể tự sửa)" className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
                             </div>
-                            <input type="text" value={variant.price || ""} onChange={(e) => handleUpdateVariant(index, { price: e.target.value })} placeholder={productForm.price || "Giá riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
-                            <input type="text" value={variant.salePrice || ""} onChange={(e) => handleUpdateVariant(index, { salePrice: e.target.value })} placeholder={productForm.salePrice || "Giá giảm riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
+                            <PriceInput aria-label={`Giá phân loại ${index + 1}`} value={variant.price || ""} onValueChange={(value) => handleUpdateVariant(index, { price: value })} placeholder={productForm.price || "Giá riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
+                            <PriceInput aria-label={`Giá giảm phân loại ${index + 1}`} value={variant.salePrice || ""} onValueChange={(value) => handleUpdateVariant(index, { salePrice: value })} placeholder={productForm.salePrice || "Giá giảm riêng"} className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
                             <input type="number" min="0" value={variant.stockQuantity || ""} onChange={(e) => handleUpdateVariant(index, { stockQuantity: e.target.value })} placeholder="Số tồn" className="w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none" />
                             <input aria-label={`URL ảnh phân loại ${index + 1}`} type="text" value={variant.image || ""} onChange={(e) => handleUpdateVariant(index, { image: e.target.value })} placeholder="Ảnh riêng (không bắt buộc)" className="md:col-span-3 w-full bg-[#050505] border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono" />
                           </div>
@@ -2686,13 +2620,13 @@ export default function ProductsAdmin() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                     <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá bán lẻ
-                      <input type="text" value={productForm.retailPrice || ""} onChange={(e) => setProductForm(prev => ({ ...prev, retailPrice: e.target.value }))} placeholder={productForm.salePrice || productForm.price || "Giá web"} className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
+                      <PriceInput value={productForm.retailPrice || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, retailPrice: value }))} placeholder={productForm.salePrice || productForm.price || "Giá web"} className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
                     </label>
                     <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá đại lý cấp 2
-                      <input type="text" value={productForm.dealerLevel2Price || ""} onChange={(e) => setProductForm(prev => ({ ...prev, dealerLevel2Price: e.target.value }))} placeholder="Thấp hơn 20–35%" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
+                      <PriceInput value={productForm.dealerLevel2Price || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, dealerLevel2Price: value }))} placeholder="Thấp hơn 20–35%" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
                     </label>
                     <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá đại lý cấp 1
-                      <input type="text" value={productForm.dealerLevel1Price || ""} onChange={(e) => setProductForm(prev => ({ ...prev, dealerLevel1Price: e.target.value }))} placeholder="Giá riêng cấp 1" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
+                      <PriceInput value={productForm.dealerLevel1Price || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, dealerLevel1Price: value }))} placeholder="Giá riêng cấp 1" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
                     </label>
                     <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">CK cấp 2 (% giá bán)
                       <input type="number" min="0" max="90" value={productForm.dealerLevel2DiscountPercent ?? ""} onChange={(e) => setProductForm(prev => ({ ...prev, dealerLevel2DiscountPercent: e.target.value === "" ? undefined : Number(e.target.value) }))} placeholder="Theo mức chung" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
@@ -3300,7 +3234,7 @@ export default function ProductsAdmin() {
                   ) : (
                     <div
                       key={`${productForm.id || "new"}-${isProductModalOpen ? "open" : "closed"}`}
-                      ref={descriptionEditorRef}
+                      ref={mountDescriptionEditor}
                       contentEditable
                       suppressContentEditableWarning
                       data-placeholder="Nhap hoac dan mo ta tu Word/Excel vao day..."
@@ -3308,11 +3242,11 @@ export default function ProductsAdmin() {
                       onKeyDown={handleDescriptionEditorKeyDown}
                       onKeyUp={rememberDescriptionSelection}
                       onMouseUp={rememberDescriptionSelection}
+                      onTouchEnd={rememberDescriptionSelection}
                       onPaste={handleDescriptionPaste}
                       title="Trình soạn thảo mô tả sản phẩm"
-                      onBlur={() => syncDescriptionFromEditor(true)}
+                      onBlur={() => { rememberDescriptionSelection(); syncDescriptionFromEditor(true); }}
                       className="product-description-content w-full bg-black border border-[#1A1A1A] text-xs px-3.5 py-2.5 text-[#ECECEC] focus:outline-none focus:border-gold-light leading-relaxed font-sans min-h-[260px]"
-                      dangerouslySetInnerHTML={{ __html: descriptionDraftRef.current || productForm.description || "" }}
                     />
                   )}
 

@@ -367,7 +367,7 @@ export default function Products() {
                     }`}
                   >
                     <Filter className="w-3.5 h-3.5" />
-                    <span>Bộ Lọc</span>
+                    <span>Danh mục</span>
                     {activeFiltersCount > 0 && (
                       <span className="bg-black text-white text-[9px] font-mono px-1.5 py-0.5 rounded-full font-black ml-1">
                         {activeFiltersCount}
@@ -844,7 +844,7 @@ export default function Products() {
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-gold-light" />
                 <h3 className="font-display font-extrabold text-xs text-white uppercase tracking-wider">
-                  BỘ LỌC TÌM KIẾM
+                  DANH MỤC & BỘ LỌC
                 </h3>
               </div>
               <button

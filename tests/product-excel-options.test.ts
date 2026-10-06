@@ -9,14 +9,16 @@ const parse = (row: Record<string, string>, existing?: Product) => readProductEx
 test('mẫu Excel thực tế nhập được màu, giá ba size và chọn sẵn', () => {
   const wb = XLSX.readFile('public/downloads/mau-nhap-san-pham-xuong-in-3d.xlsx');
   const matrix = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], {header:1,defval:'',raw:true});
-  const row = Object.fromEntries(matrix[0].map((header, i) => [header, String(matrix[1][i] ?? '')]));
+  const simple = Object.fromEntries(matrix[0].map((header, i) => [header, String(matrix[1][i] ?? '')]));
+  assert.equal(simple['Có phân loại'], 'Không');
+  assert.equal(parse(simple).variants?.length, 0);
+  const row = Object.fromEntries(matrix[0].map((header, i) => [header, String(matrix[2][i] ?? '')]));
   const result = parse(row);
-  assert.deepEqual(result.colors, ['Trắng', 'Vàng']);
-  assert.equal(row['Kích thước / quy mô'], '12cm, 15cm, 20cm');
+  assert.ok(result.colors?.length);
   assert.equal(result.variants?.length, 3);
-  assert.equal(result.variants?.[1].price?.replace(/\D/g, ''), '150000');
-  assert.equal(result.defaultVariantId, result.variants?.[1].id);
-  assert.equal(result.variants?.[0].image, '');
+  assert.ok(result.variants?.[1].price);
+  assert.equal(result.defaultVariantId, result.variants?.[0].id);
+  assert.ok(result.variants?.[0].size);
 });
 
 test('file cũ không có cột mới giữ dữ liệu hiện tại', () => {
@@ -47,4 +49,9 @@ test('hỗ trợ phân loại 4 trở lên, bỏ màu trùng, xóa màu bằng d
 test('chặn chỉ số chọn sẵn không tồn tại và ID phân loại trùng', () => {
   assert.throws(() => parse({'Phân loại 1 - Tên':'S','Phân loại chọn sẵn':'3'}), /chọn sẵn/);
   assert.throws(() => parse({'Phân loại 1 - Tên':'S','Phân loại 1 - ID':'same','Phân loại 2 - Tên':'M','Phân loại 2 - ID':'same'}), /trùng/);
+});
+
+test('Không có phân loại xóa lựa chọn cũ và chặn dữ liệu mâu thuẫn', () => {
+  assert.deepEqual(parse({'Có phân loại':'Không'}, {variants:[{id:'s',name:'S'}]} as Product).variants, []);
+  assert.throws(() => parse({'Có phân loại':'Không','Phân loại 1 - Tên':'S'}), /vẫn điền/);
 });

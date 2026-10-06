@@ -93,6 +93,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [activeImage, setActiveImage] = useState(gallery[0] || currentProduct.image);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const [activeInfoTab, setActiveInfoTab] = useState<"description" | "specs">("description");
 
   const descriptionHtml = useMemo(
@@ -234,20 +235,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       url: window.location.href,
     };
     try {
-      if (navigator.share) {
+      if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
         await navigator.share(shareData);
         return;
       }
-      await navigator.clipboard.writeText(shareData.url);
-      showToast("Đã sao chép liên kết sản phẩm.", "success");
+      setShareUrl(shareData.url);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      try {
-        await navigator.clipboard.writeText(shareData.url);
-        showToast("Đã sao chép liên kết sản phẩm.", "success");
-      } catch {
-        showToast("Không thể chia sẻ sản phẩm trên trình duyệt này.", "warning");
-      }
+      setShareUrl(shareData.url);
     }
   };
   const validateRequiredSelections = () => {
@@ -619,10 +614,22 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   className="inline-flex h-12 w-12 shrink-0 items-center justify-center border border-gold-dark/30 text-gold-light transition-colors hover:border-gold-light hover:text-white"
                   aria-label="Chia sẻ sản phẩm"
                   title="Chia sẻ"
+                  aria-expanded={Boolean(shareUrl)}
                 >
                   <Share2 className="h-5 w-5" />
                 </button>
               </div>
+              {shareUrl && (
+                <div role="region" aria-label="Chia sẻ sản phẩm" className="mt-3 border border-gold-dark/30 bg-[#101010] p-4 space-y-3">
+                  <div className="flex items-center justify-between"><span className="text-sm font-bold text-white">Chia sẻ sản phẩm</span><button type="button" onClick={() => setShareUrl('')} className="text-xs text-gray-300">Đóng</button></div>
+                  <div className="flex flex-wrap gap-3 text-sm text-gold-light">
+                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">Facebook</a>
+                    <a href={`mailto:?subject=${encodeURIComponent(currentProduct.name)}&body=${encodeURIComponent(shareUrl)}`}>Email</a>
+                    <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); showToast('Đã sao chép liên kết sản phẩm.', 'success'); } catch { showToast('Hãy chọn và sao chép liên kết trong ô bên dưới.', 'warning'); } }}>Sao chép liên kết</button>
+                  </div>
+                  <input aria-label="Liên kết chia sẻ sản phẩm" readOnly value={shareUrl} onFocus={e => e.target.select()} className="w-full border border-white/15 bg-black p-2 text-xs text-gray-200" />
+                </div>
+              )}
               <a
                 href={`tel:${contactSettings.hotline.replace(/[^\d+]/g, "")}`}
                 className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 border border-gold-dark/30 px-6 text-[11px] font-display font-bold uppercase tracking-widest text-gold-light transition-colors hover:border-gold-light hover:text-white"
