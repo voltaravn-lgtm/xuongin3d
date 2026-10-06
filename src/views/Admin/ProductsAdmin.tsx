@@ -3,6 +3,8 @@ import { ProductCategory, useApp } from "../../context/AppContext";
 import { Product, ProductVariant, ProductCombo } from "../../types";
 import { PRODUCTS_DATA } from "../../data";
 import { uploadImageToCloudinary, isCloudinaryConfigured } from "../../lib/cloudinary";
+import { watermarkImageFile, type WatermarkOptions } from "../../lib/watermark";
+import ProductWatermarkControls from "../../components/Admin/ProductWatermarkControls";
 import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
@@ -401,6 +403,10 @@ export default function ProductsAdmin() {
   const [isToolbarPreviewMode, setIsToolbarPreviewMode] = useState(false);
   const [isQuickImagePanelOpen, setIsQuickImagePanelOpen] = useState(false);
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+  const [watermarkLogoUrl, setWatermarkLogoUrl] = useState('/images/logo-x3d.webp');
+  const [watermarkOptions, setWatermarkOptions] = useState<WatermarkOptions>({position:'top-right',size:20,opacity:70,margin:3});
+  useEffect(() => () => { if (watermarkLogoUrl.startsWith('blob:')) URL.revokeObjectURL(watermarkLogoUrl); }, [watermarkLogoUrl]);
   const [variantImagePickerId, setVariantImagePickerId] = useState<string | null>(null);
   const [adminViewMode, setAdminViewMode] = useState<"grid" | "list">("grid");
   const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false);
@@ -1526,7 +1532,8 @@ export default function ProductsAdmin() {
     try {
       const urls: string[] = [];
       for (const file of selectedFiles) {
-        urls.push(await uploadImageToCloudinary(file, { convertToWebp: true, webpQuality: 0.7 }));
+        const uploadFile = watermarkEnabled ? await watermarkImageFile(file, watermarkLogoUrl, watermarkOptions, 0.7) : file;
+        urls.push(await uploadImageToCloudinary(uploadFile, { convertToWebp: true, webpQuality: 0.7 }));
       }
 
       if (target === "main") {
@@ -1579,7 +1586,7 @@ export default function ProductsAdmin() {
 
       const convertedCount = selectedFiles.filter(file => /^image\/(png|jpe?g)$/i.test(file.type)).length;
       showToast(
-        convertedCount > 0
+        watermarkEnabled ? `Đã đóng watermark, chuyển WebP và tải ${selectedFiles.length} ảnh lên.` : convertedCount > 0
           ? `Đã tự chuyển ${convertedCount} ảnh sang WebP 70% và tải lên.`
           : `Đã tải ${selectedFiles.length} ảnh lên.`,
         "success",
@@ -2360,6 +2367,7 @@ export default function ProductsAdmin() {
             </div>
 
             <form ref={productFormScrollRef} id="product-admin-form" onSubmit={handleSaveProduct} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:p-6 sm:pb-8 space-y-4">
+              <ProductWatermarkControls key={productForm.id} imageUrl={productForm.image} enabled={watermarkEnabled} onEnabledChange={setWatermarkEnabled} logoUrl={watermarkLogoUrl} onLogoChange={setWatermarkLogoUrl} options={watermarkOptions} onOptionsChange={setWatermarkOptions} disabled={Boolean(uploadingImageTarget)} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
                 <div className="space-y-1">
