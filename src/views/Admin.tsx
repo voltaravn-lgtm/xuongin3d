@@ -36,6 +36,7 @@ import {
 import HomePageAdmin from "./Admin/HomePageAdmin";
 import AboutPageAdmin from "./Admin/AboutPageAdmin";
 import ProductsAdmin from "./Admin/ProductsAdmin";
+import AICatalogueAdmin, { type CatalogueTransfer } from "./Admin/AICatalogueAdmin";
 import KnowledgeAdmin from "./Admin/KnowledgeAdmin";
 import ContactAdmin from "./Admin/ContactAdmin";
 import SolutionsAdmin from "./Admin/SolutionsAdmin";
@@ -65,7 +66,8 @@ export default function Admin() {
     deleteQuoteRequest
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "homepage" | "aboutpage" | "knowledge" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions">("hero");
+  const [activeTab, setActiveTab] = useState<"aiCatalogue" | "hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "homepage" | "aboutpage" | "knowledge" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions">("hero");
+  const [catalogueTransfer, setCatalogueTransfer] = useState<CatalogueTransfer | null>(null);
 
   // Hero config state & multi-slides control
   const [heroTitle, setHeroTitle] = useState(heroSettings.title);
@@ -448,6 +450,7 @@ export default function Admin() {
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "promoOverlay" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
 
+            <button onClick={() => setActiveTab("aiCatalogue")} className={`w-full text-left px-5 py-4 border font-bold text-xs ${activeTab === "aiCatalogue" ? "text-gold-light border-gold-light" : "text-gray-300 border-gray-700"}`}>BỘ TOOL AI · TẠO SẢN PHẨM TỪ ẢNH</button>
             {/* Quick Helper guidelines */}
             <div className="mt-8 p-4 bg-[#0A0A0A] border border-[#1A1A1A] select-none text-[#F5C45A]">
               <div className="flex items-center gap-1.5 mb-2 font-display text-[10px] tracking-widest uppercase font-bold">
@@ -853,7 +856,8 @@ export default function Admin() {
             )}
 
             {/* T3. INVENTORY PRODUCTS MANAGEMENT */}
-            {activeTab === "products" && <ProductsAdmin />}
+            {activeTab === "products" && <ProductsAdmin catalogueTransfer={catalogueTransfer} onCatalogueConsumed={() => setCatalogueTransfer(null)} />}
+            {activeTab === "aiCatalogue" && <AICatalogueAdmin onTransfer={draft => { setCatalogueTransfer(draft); setActiveTab("products"); }} />}
 
             {activeTab === "landingPages" && <LandingPagesAdmin />}
 

@@ -194,6 +194,10 @@ body.day-mode .fixed * {
   overflow-x: auto;
 }
 
+.product-detail-page .product-description-content p + p {
+  margin-top: 1.25rem;
+}
+
 /* Product details: soften the technical card system without losing its shape. */
 .product-detail-page {
   --product-detail-radius: 10px;

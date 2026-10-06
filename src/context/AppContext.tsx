@@ -6,7 +6,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch, runTransaction } from "firebase/firestore";
+import { availableProductSku } from "../lib/productSku";
 import { Product, ProductVariant, ProductCombo, SalesProgram, Solution, Article, Branch, Dealer, HomeContent, AboutContent, Job, ContactSubmission, WarrantyRecord, ToastMessage, QuoteRequest, Course, CartItem } from "../types";
 import { getProductSlug } from "../lib/productRoutes";
 import { isValidProductSize } from "../lib/productSize";
@@ -978,10 +979,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isFirebaseConfigured) {
       try {
-        await setDoc(doc(db, "products", nextProduct.id), nextProduct);
+          if (/^IN3D-\d{4}$/.test(nextProduct.sku || '')) {
+            // Include old/manual products. Registry + product are committed atomically
+            // so concurrent batch publishers cannot allocate the same short SKU.
+            const existing = await getDocs(collection(db, "products"));
+            const legacyCodes = existing.docs.flatMap(p => [String(p.data().sku || ''), p.id]);
+            const registryRef = doc(db, "productSkuRegistry", "shortCodes");
+            const productRef = doc(db, "products", nextProduct.id);
+            const assigned = await runTransaction(db, async transaction => {
+              const registry = await transaction.get(registryRef);
+              const saved = await transaction.get(productRef);
+              if (saved.exists()) {
+                const value = saved.data();
+                if (value.name === nextProduct.name && value.image === nextProduct.image && /^IN3D-\d{4}$/.test(value.sku || '')) return value.sku as string;
+                throw new Error('ID sản phẩm đã tồn tại.');
+              }
+              const owners = (registry.data()?.owners || {}) as Record<string, string>;
+              const sku = availableProductSku(nextProduct.sku || '', [...legacyCodes, ...Object.keys(owners)]);
+              transaction.set(registryRef, { owners: { ...owners, [sku]: nextProduct.id } });
+              transaction.set(productRef, { ...nextProduct, sku });
+              return sku;
+            });
+            nextProduct.sku = assigned;
+            newProduct.sku = assigned;
+          } else {
+            await setDoc(doc(db, "products", nextProduct.id), nextProduct);
+          }
       } catch (error) {
         console.error("Could not add product to Firestore:", error);
-        showToast("Không thể thêm sản phẩm lên Firebase.", "error");
+        showToast(error instanceof Error && error.message.startsWith('Đã hết 10.000 mã') ? error.message : "Không thể thêm sản phẩm lên Firebase.", "error");
         return false;
       }
     }

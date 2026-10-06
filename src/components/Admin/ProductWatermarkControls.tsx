@@ -14,19 +14,19 @@ interface Props {
 }
 
 export default function ProductWatermarkControls({enabled,onEnabledChange,logoUrl,onLogoChange,options,onOptionsChange,disabled,imageUrl}: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   return (
     <fieldset disabled={disabled} className="space-y-3 border border-gold-dark/25 bg-black/40 p-4 disabled:opacity-60">
       <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="flex cursor-pointer items-center gap-3 text-xs font-bold text-gold-light">
-        <input type="checkbox" checked={enabled} onChange={e => { onEnabledChange(e.target.checked); if (e.target.checked) setCollapsed(false); }} className="accent-gold-dark" />
+        <input type="checkbox" checked={enabled} onChange={e => onEnabledChange(e.target.checked)} className="accent-gold-dark" />
         Đóng watermark khi tải ảnh sản phẩm
       </label>
-      {enabled && <button type="button" aria-expanded={!collapsed} onClick={() => setCollapsed(value => !value)} className="border border-gold-dark/40 px-3 py-1.5 text-[11px] text-gold-light hover:border-gold-light">{collapsed ? 'Mở chỉnh / xem thử' : 'Thu gọn'}</button>}
+      <button type="button" aria-expanded={!collapsed} onClick={() => setCollapsed(value => !value)} className="border border-gold-dark/40 px-3 py-1.5 text-[11px] text-gold-light hover:border-gold-light">{collapsed ? 'Mở chỉnh / xem thử' : 'Thu gọn'}</button>
       </div>
-      {enabled && collapsed && <p className="text-[10px] text-gray-400">Watermark vẫn bật · Kích thước {options.size}% · Độ rõ {options.opacity}% · WebP 70%. Các thiết lập và ảnh xem thử được giữ nguyên.</p>}
-      <p hidden={enabled && collapsed} className="text-[10px] leading-relaxed text-gray-400">Bật và chọn logo trước khi tải ảnh từ máy. Áp dụng cho ảnh đại diện, ảnh bổ sung, phân loại, combo và ảnh mô tả. Ảnh được đóng dấu thật, giữ kích thước gốc rồi chuyển WebP 70% trước khi upload. Ảnh cũ và URL dán vào không tự thay đổi.</p>
-      {enabled && <div hidden={collapsed} className="space-y-3">
+      {collapsed && <p className="text-[10px] text-gray-400">Watermark {enabled ? 'đang bật' : 'đang tắt'} · Kích thước {options.size}% · Độ rõ {options.opacity}% · WebP 70%. Checkbox chỉ bật/tắt; nút bên phải mở/thu gọn phần chỉnh.</p>}
+      <p hidden={collapsed} className="text-[10px] leading-relaxed text-gray-400">{!enabled && 'Watermark đang tắt, bản xem thử không áp dụng khi upload. '}Bật và chọn logo trước khi tải ảnh từ máy. Áp dụng cho ảnh đại diện, ảnh bổ sung, phân loại, combo và ảnh mô tả. Ảnh được đóng dấu thật, giữ kích thước gốc rồi chuyển WebP 70% trước khi upload. Ảnh cũ và URL dán vào không tự thay đổi.</p>
+      <div hidden={collapsed} className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex h-16 w-24 items-center justify-center rounded border border-white/15 bg-white/10 p-2"><img src={logoUrl} alt="Logo watermark đang chọn" className="max-h-full max-w-full object-contain" /></div>
           <label className="cursor-pointer border border-gold-dark/40 px-3 py-2 text-[11px] text-gold-light">
@@ -53,7 +53,7 @@ export default function ProductWatermarkControls({enabled,onEnabledChange,logoUr
           </label>
         </div>
         <WatermarkPreview imageUrl={imageUrl} logoUrl={logoUrl} options={options} />
-      </div>}
+      </div>
     </fieldset>
   );
 }

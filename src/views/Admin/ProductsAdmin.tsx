@@ -13,6 +13,7 @@ import { readProductExcelOptions } from "../../lib/productExcelOptions";
 import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras } from "../../lib/productWorkbook";
 import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
 import PriceInput from "../../components/Admin/PriceInput";
+import type { CatalogueTransfer } from "./AICatalogueAdmin";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
   Bold, Italic,
@@ -385,7 +386,8 @@ function productDescriptionToExportText(description: string | undefined) {
     .trim();
 }
 
-export default function ProductsAdmin() {
+export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }: { catalogueTransfer?: CatalogueTransfer | null; onCatalogueConsumed?: () => void } = {}) {
+  const [catalogueFiles, setCatalogueFiles] = useState<File[]>([]);
   const {
     products,
     setProducts,
@@ -403,7 +405,7 @@ export default function ProductsAdmin() {
   const [isToolbarPreviewMode, setIsToolbarPreviewMode] = useState(false);
   const [isQuickImagePanelOpen, setIsQuickImagePanelOpen] = useState(false);
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null);
-  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [watermarkLogoUrl, setWatermarkLogoUrl] = useState('/images/logo-x3d.webp');
   const [watermarkOptions, setWatermarkOptions] = useState<WatermarkOptions>({position:'top-right',size:20,opacity:70,margin:3});
   useEffect(() => () => { if (watermarkLogoUrl.startsWith('blob:')) URL.revokeObjectURL(watermarkLogoUrl); }, [watermarkLogoUrl]);
@@ -783,6 +785,7 @@ export default function ProductsAdmin() {
   };
 
   const handleOpenProductModal = (product?: Product) => {
+    setCatalogueFiles([]);
     descriptionSelectionRef.current = null;
     hasDescriptionSelectionRef.current = false;
     hasManualDescriptionSelectionRef.current = false;
@@ -828,6 +831,15 @@ export default function ProductsAdmin() {
     }
     setIsProductModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!catalogueTransfer) return;
+    handleOpenProductModal();
+    descriptionDraftRef.current = catalogueTransfer.product.description || "";
+    setProductForm(prev => ({ ...prev, ...catalogueTransfer.product, hidden: true }));
+    setCatalogueFiles(catalogueTransfer.files);
+    onCatalogueConsumed?.();
+  }, [catalogueTransfer]);
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1512,7 +1524,7 @@ export default function ProductsAdmin() {
   };
 
   const handleCloudinaryUpload = async (
-    files: FileList | null,
+    files: FileList | File[] | null,
     target: "main" | "gallery" | "description" | `combo-${number}` | `variant-image:${string}`,
   ) => {
     const scrollTopBeforeUpload = productFormScrollRef.current?.scrollTop || 0;
@@ -1585,6 +1597,7 @@ export default function ProductsAdmin() {
       }
 
       const convertedCount = selectedFiles.filter(file => /^image\/(png|jpe?g)$/i.test(file.type)).length;
+      if (files === catalogueFiles) setCatalogueFiles([]);
       showToast(
         watermarkEnabled ? `Đã đóng watermark, chuyển WebP và tải ${selectedFiles.length} ảnh lên.` : convertedCount > 0
           ? `Đã tự chuyển ${convertedCount} ảnh sang WebP 70% và tải lên.`
@@ -2209,7 +2222,7 @@ export default function ProductsAdmin() {
                 <div className={`space-y-1 min-w-0 ${adminViewMode === "list" ? "flex-1" : ""}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[9px] font-mono text-gold-light tracking-wide bg-gold-dark/10 p-0.5">{[prod.voltage, prod.capacity].filter(Boolean).join(" / ")}</span>
-                    <span className="text-[9px] text-gray-500 font-mono">ID: {prod.id}</span>
+                    <span className="text-[9px] text-gray-500 font-mono" title={`ID nội bộ: ${prod.id}`}>Mã SP: {prod.sku || prod.id}</span>
                     {getProductSalesProgramCount(prod.id) > 0 && (
                       <span className="text-[9px] font-display font-bold uppercase px-2 py-0.5 border border-gold-dark/35 bg-gold-dark/10 text-gold-light">
                         Có combo ({getProductSalesProgramCount(prod.id)})
@@ -2368,6 +2381,11 @@ export default function ProductsAdmin() {
 
             <form ref={productFormScrollRef} id="product-admin-form" onSubmit={handleSaveProduct} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:p-6 sm:pb-8 space-y-4">
               <ProductWatermarkControls key={productForm.id} imageUrl={productForm.image} enabled={watermarkEnabled} onEnabledChange={setWatermarkEnabled} logoUrl={watermarkLogoUrl} onLogoChange={setWatermarkLogoUrl} options={watermarkOptions} onOptionsChange={setWatermarkOptions} disabled={Boolean(uploadingImageTarget)} />
+              {catalogueFiles.length > 0 && <div className="border border-gold-dark/30 p-4 text-sm space-y-2">
+                <p>Bản nháp từ AI đang để ẩn. Có {catalogueFiles.length} ảnh gốc chưa upload. Kiểm tra watermark ở trên, rồi tải ảnh lên khi sẵn sàng.</p>
+                <button type="button" disabled={Boolean(uploadingImageTarget)} className="border border-gold-light px-4 py-2 text-gold-light" onClick={() => { void handleCloudinaryUpload(catalogueFiles, "main"); }}>Tải bộ ảnh gốc vào sản phẩm (ảnh đầu làm đại diện)</button>
+                <button type="button" className="px-3 text-gray-400" onClick={() => setCatalogueFiles([])}>Bỏ qua ảnh nguồn</button>
+              </div>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
                 <div className="space-y-1">
