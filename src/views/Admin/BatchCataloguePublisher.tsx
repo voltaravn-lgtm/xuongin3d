@@ -11,6 +11,7 @@ import ProductWatermarkControls from '../../components/Admin/ProductWatermarkCon
 import QuickListingOptions, { emptyListingOptions } from '../../components/Admin/QuickListingOptions';
 import { quickCatalogueContext, quickCatalogueImageOrder, quickCatalogueMaxOutputTokens, quickCatalogueMaxDescription } from '../../lib/quickCatalogue';
 import CatalogueImagePicker from '../../components/Admin/CatalogueImagePicker';
+import { removeSelectedImage } from '../../lib/productImageSelection';
 
 const newRow = (): BatchCatalogueRow => ({ key: crypto.randomUUID(), name: '', description: '', facts: '', ...emptyListingOptions(), coverIndex: 0, files: [] });
 export default function BatchCataloguePublisher({ provider, configured, disabled, onBusy }: { provider: string; configured: boolean; disabled: boolean; onBusy: (value: boolean) => void }) {
@@ -100,7 +101,7 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
         <QuickListingOptions value={{ category: row.category, price: row.price, salePrice: row.salePrice || '', variants: row.variants || [] }} onChange={value => edit(row.key, value)} disabled={rowLocked} />
         {!published && pending.current.has(row.key) && <p className="text-xs text-gray-400">Thử tiếp giữ nội dung AI/ảnh đã upload. Sửa tên, mô tả, thông tin kỹ thuật hoặc chọn lại ảnh sẽ phân tích và upload lại; chỉ sửa giá/phân loại/danh mục thì không gọi AI thêm.</p>}
         <label className="block text-sm">Bộ ảnh sản phẩm {index + 1} (1–12 ảnh)<input className={box + ' mt-1'} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={rowLocked} onChange={e => { const files = Array.from(e.target.files || []); if (files.length) edit(row.key, { files, coverIndex: 0 }); e.target.value = ''; }} /></label>
-        <CatalogueImagePicker files={row.files} selected={row.coverIndex || 0} onSelect={coverIndex => edit(row.key, { coverIndex })} disabled={rowLocked} /><p className="text-xs text-gray-400">{row.files.length} ảnh đã chọn; bấm ảnh để chọn đại diện. Tất cả ảnh còn lại vẫn được giữ. AI đọc ảnh đại diện lúc tạo; đổi đại diện khi thử tiếp không gọi AI thêm.</p>
+        <CatalogueImagePicker files={row.files} selected={row.coverIndex || 0} onSelect={coverIndex => edit(row.key, { coverIndex })} onRemove={index => edit(row.key, removeSelectedImage(row.files, row.coverIndex || 0, index))} disabled={rowLocked} /><p className="text-xs text-gray-400">{row.files.length} ảnh đã chọn; bấm ảnh để chọn đại diện. Tất cả ảnh còn lại vẫn được giữ. AI đọc ảnh đại diện lúc tạo; đổi đại diện khi thử tiếp không gọi AI thêm. Xóa ảnh sẽ bỏ bản nháp AI của mục này để tạo lại với bộ ảnh mới.</p>
         {state && <p role="status" className={state.status === 'published' ? 'text-green-300' : state.status === 'error' ? 'text-red-300' : 'text-gold-light'}>{state.message}</p>}
         {state?.pending && <p className="text-xs text-gray-400">{state.pending.draft.name} · {state.pending.usage.input} input / {state.pending.usage.output} output token · {state.pending.urls.length}/{row.files.length} ảnh đã upload.</p>}
         {state?.pending && !published && <div className="border border-gold-dark/40 p-3 space-y-3">

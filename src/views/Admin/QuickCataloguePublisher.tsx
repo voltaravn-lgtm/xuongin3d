@@ -12,6 +12,7 @@ import ProductWatermarkControls from '../../components/Admin/ProductWatermarkCon
 import QuickListingOptions, { emptyListingOptions, type ListingOptions } from '../../components/Admin/QuickListingOptions';
 import type { Product } from '../../types';
 import CatalogueImagePicker from '../../components/Admin/CatalogueImagePicker';
+import { removeSelectedImage } from '../../lib/productImageSelection';
 
 type Pending = { draft: QuickCatalogue; id: string; files: File[]; urls: string[]; category: string; price: string; extras: ListingOptions & { coverIndex: number }; watermark: boolean; logo: string; options: WatermarkOptions; usage: { input: number; output: number }; product?: Product };
 export default function QuickCataloguePublisher({ provider, configured, disabled, onBusy }: { provider: string; configured: boolean; disabled: boolean; onBusy: (value: boolean) => void }) {
@@ -122,7 +123,12 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
     <QuickListingOptions value={listing} onChange={setListing} disabled={locked || !!published} />
     <ProductWatermarkControls enabled={watermark} onEnabledChange={setWatermark} logoUrl={logo} onLogoChange={setLogo} options={options} onOptionsChange={setOptions} disabled={locked} imageUrl={previews[coverIndex] || frames[0]} />
     <label className="block font-bold text-gold-light">THÊM ẢNH SẢN PHẨM<input className={box + ' mt-2'} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={locked} onChange={e => { choose(Array.from(e.target.files || [])); e.target.value = ''; }} /></label>
-    <CatalogueImagePicker files={files} selected={coverIndex} onSelect={setCoverIndex} disabled={locked || !!published} />
+    <CatalogueImagePicker files={files} selected={coverIndex} onSelect={setCoverIndex} onRemove={index => {
+      if (latch.current || published) return;
+      const next = removeSelectedImage(files, coverIndex, index);
+      setFiles(next.files); setCoverIndex(next.coverIndex); setFrames([]); invalidate();
+      setProgress('Đã gỡ ảnh chọn nhầm. Bấm Tạo nội dung lại để duyệt đúng bộ ảnh mới.');
+    }} disabled={locked || !!published} />
     <p className="text-xs text-gray-400">Bấm ảnh bất kỳ để chọn đại diện. Tất cả ảnh đều được giữ: 1 ảnh đại diện và {Math.max(0, files.length - 1)} ảnh bổ sung. AI đọc ảnh đại diện được chọn lúc tạo nội dung; đổi đại diện sau đó không gọi AI lại.</p>
     <p className="text-xs text-gray-400">{files.length} ảnh đã chọn. Tối đa 12 ảnh/bộ. AI đọc ảnh đại diện và mô tả bạn nhập, viết khoảng 4–5 đoạn; một request tối đa {quickCatalogueMaxOutputTokens} output token, thinking tắt. Mô tả dài hơn sẽ dùng thêm token. Dùng ảnh gốc chưa có logo để tránh đóng chồng. Ảnh/thông tin gửi API AI khi bấm tạo nội dung; ảnh đăng gửi Cloudinary và dữ liệu lưu Firebase khi bấm đăng.</p>
     <button type="button" disabled={locked || !configured || !files.length || !!published} className="border border-gold-light text-gold-light px-4 py-3 disabled:opacity-60" onClick={() => { pending.current = null; setSummary(null); void run(files, false); }}>1. Tạo nội dung để xem trước</button>

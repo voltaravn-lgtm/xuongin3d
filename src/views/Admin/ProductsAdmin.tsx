@@ -14,6 +14,7 @@ import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras 
 import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
 import PriceInput from "../../components/Admin/PriceInput";
 import { variantNameOptions } from "../../lib/variantNameOptions";
+import { selectProductCover, removeProductImage } from "../../lib/productImageSelection";
 import type { CatalogueTransfer } from "./AICatalogueAdmin";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
@@ -2865,6 +2866,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       >
                         Chèn ảnh này vào mô tả
                       </button>
+                      <button type="button" disabled={Boolean(uploadingImageTarget)} onClick={() => setProductForm(prev => ({ ...prev, ...removeProductImage(prev.image, prev.images, prev.image || '') }))} className="border border-red-900/50 px-3 py-2 text-xs text-red-300 disabled:opacity-40">Xóa ảnh đại diện</button>
                     </div>
                   )}
                 </div>
@@ -2917,10 +2919,13 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                           >
                             Chèn
                           </button>
+                          <button type="button" disabled={Boolean(uploadingImageTarget)} onClick={() => setProductForm(prev => ({ ...prev, ...selectProductCover(prev.image, prev.images, imageUrl) }))} className="block w-20 border border-gold-dark/40 py-1 text-[9px] text-gold-light disabled:opacity-40">Chọn đại diện</button>
+                          <button type="button" disabled={Boolean(uploadingImageTarget)} onClick={() => setProductForm(prev => ({ ...prev, ...removeProductImage(prev.image, prev.images, imageUrl) }))} className="block w-20 border border-red-900/50 py-1 text-[9px] text-red-300 disabled:opacity-40">Xóa ảnh</button>
                         </div>
                       ))}
                     </div>
                   )}
+                  <p className="text-[10px] text-gray-500">Chọn ảnh bất kỳ làm đại diện: ảnh đại diện cũ được giữ trong ảnh bổ sung. Xóa ảnh chỉ gỡ khỏi bộ ảnh, không xóa file Cloudinary hay ảnh đã chèn trong mô tả. Bấm Lưu sản phẩm để áp dụng.</p>
                 </div>
 
                 {/* Dynamic specs builder */}
