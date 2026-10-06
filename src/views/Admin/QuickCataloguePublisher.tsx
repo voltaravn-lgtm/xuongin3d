@@ -29,6 +29,7 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
   const [summary, setSummary] = useState<Pending | null>(null), [progress, setProgress] = useState(''), [error, setError] = useState('');
   const [published, setPublished] = useState<Product | null>(null), [cacheWarning, setCacheWarning] = useState(false);
   const pending = useRef<Pending | null>(null), latch = useRef(false), active = useRef(true), controller = useRef<AbortController | null>(null);
+  const nameInput = useRef<HTMLInputElement | null>(null);
   useEffect(() => { active.current = true; return () => { active.current = false; controller.current?.abort(); }; }, []);
   function ensureActive() { if (!active.current) throw new Error('Đã rời công cụ; dừng trước bước đăng sản phẩm.'); }
   async function save(d: Pending) {
@@ -94,6 +95,15 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
     setProgress('Đã chọn ảnh. Nhập mô tả đúng sản phẩm rồi bấm Tạo nội dung để xem trước.'); setError('');
   }
   function invalidate() { pending.current = null; setSummary(null); setError(''); setProgress('Nội dung đầu vào đã đổi. Bấm Tạo nội dung để phân tích lại.'); }
+  function createNew() {
+    if (latch.current || disabled || !published) return;
+    pending.current = null; controller.current = null;
+    setPublished(null); setSummary(null); setFiles([]); setFrames([]); setCoverIndex(0);
+    setName(''); setDescription(''); setFacts(''); setListing(emptyListingOptions());
+    setError(''); setCacheWarning(false);
+    setProgress('Sẵn sàng tạo sản phẩm mới. Đã giữ thiết lập watermark; chọn bộ ảnh và nhập nội dung mới.');
+    requestAnimationFrame(() => { nameInput.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); nameInput.current?.focus({ preventScroll: true }); });
+  }
   const box = 'w-full bg-black border border-gray-700 p-3 text-sm text-gray-100';
   const locked = disabled || running;
   return <div className="space-y-4">
@@ -102,7 +112,11 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
       <p className="text-sm">Chọn ảnh và mô tả → bấm Tạo nội dung → kiểm tra/sửa tên, mô tả → bấm Đăng lên web. Chọn ảnh không gọi AI, không tự đăng.</p>
       <p className="text-xs text-amber-300">Nhập rõ loại sản phẩm, ví dụ “Đèn ngủ, không phải chậu cây”. AI ưu tiên mô tả người bán nhưng vẫn có thể sai; hãy duyệt trước khi đăng.</p>
     </div>
-    <label className="block text-sm">Tên sản phẩm (nếu có)<input className={box + ' mt-2'} maxLength={140} value={name} disabled={locked || !!published} onChange={e => { setName(e.target.value); invalidate(); }} placeholder="Để trống: AI gợi ý tên" /></label>
+    {published && <div className="border border-green-700 p-4 flex flex-wrap items-center gap-3" role="status">
+      <span className="text-green-300">Đã đăng {published.sku || published.name}. Bạn có thể tạo sản phẩm tiếp theo ngay.</span>
+      <button type="button" disabled={locked} className="bg-gold-light text-black px-5 py-3 font-bold disabled:opacity-40" onClick={createNew}>+ Tạo sản phẩm mới</button>
+    </div>}
+    <label className="block text-sm">Tên sản phẩm (nếu có)<input ref={nameInput} className={box + ' mt-2'} maxLength={140} value={name} disabled={locked || !!published} onChange={e => { setName(e.target.value); invalidate(); }} placeholder="Để trống: AI gợi ý tên" /></label>
     <label className="block text-sm">Mô tả / loại sản phẩm để AI hiểu đúng (tùy chọn)<textarea className={box + ' mt-2'} rows={3} maxLength={1000} value={description} disabled={locked || !!published} onChange={e => { setDescription(e.target.value); invalidate(); }} placeholder="VD: Đây là đèn ngủ để bàn, chụp trắng và chân đỏ. Có thể dán mô tả ngoại ngữ để AI dịch sang tiếng Việt." /></label>
     <label className="block text-sm">Thông tin kỹ thuật đã xác nhận (không bắt buộc)<textarea className={box + ' mt-2'} rows={2} maxLength={1500} value={facts} disabled={locked || !!published} onChange={e => { setFacts(e.target.value); invalidate(); }} placeholder="VD: Chất liệu: PLA. Kích thước: 15 × 10 × 20 cm. Không biết thì để trống." /></label>
     <QuickListingOptions value={listing} onChange={setListing} disabled={locked || !!published} />
@@ -119,6 +133,7 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
     {summary && <div className="border border-gray-700 p-4 space-y-2 text-sm">
       <p className="font-bold">{published?.sku || quickCatalogueSku(summary.id)} · {published ? 'Sản phẩm đã đăng' : 'Xem trước nội dung'}</p>
       {!published && <p className="text-xs text-gray-400">Mã dự kiến; nếu trùng, hệ thống chọn 4 số khác khi lưu.</p>}
+      {!published && <p className="text-gold-light">Bạn có thể gõ trực tiếp vào tên và mô tả bên dưới để sửa, thêm nội dung hoặc xuống dòng. Bấm Đăng lên web sẽ dùng nội dung đã chỉnh, không gọi AI thêm.</p>}
       <label className="block">Tên đăng lên web<input className={box} maxLength={140} value={summary.draft.name} disabled={locked || !!published} onChange={e => { const d = pending.current; if (d) { d.draft = { ...d.draft, name: e.target.value }; setSummary({ ...d }); } }} /></label>
       <label className="block">Mô tả đăng lên web (giữ xuống dòng)<textarea className={box} rows={10} maxLength={quickCatalogueMaxDescription} value={summary.draft.description} disabled={locked || !!published} onChange={e => { const d = pending.current; if (d) { d.draft = { ...d.draft, description: e.target.value }; setSummary({ ...d }); } }} /></label>
       <p>Danh mục: {productCategories.find(c => c.id === (category || catalogueCategories[summary.draft.category]))?.name || summary.draft.category}</p>
@@ -127,6 +142,7 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
       {cacheWarning && <p className="text-amber-300">Đã lưu Firebase nhưng chưa làm mới cache web được. Không đăng lại; tải lại trang sản phẩm sau ít phút.</p>}
     </div>}
     <button type="button" disabled={locked || !!published || !summary || !summary.draft.name.trim() || !summary.draft.description.trim()} className="bg-gold-light text-black px-5 py-3 font-bold disabled:opacity-60" onClick={() => void run(files, true, true)}>{published ? 'Đã đăng lên web' : '2. Đăng lên web (không gọi AI thêm)'}</button>
+    {published && <button type="button" disabled={locked} className="border border-gold-light text-gold-light px-5 py-3 font-bold disabled:opacity-40" onClick={createNew}>+ Tạo sản phẩm mới</button>}
     {!published && <p className="text-xs text-gray-400">{!files.length ? 'Chọn ảnh để bật nút Tạo nội dung. Không tự phân tích hoặc đăng khi chọn ảnh.' : !summary ? 'Bấm Tạo nội dung để duyệt trước, hoặc chọn Tạo và đăng luôn để đăng trực tiếp.' : 'Chỉ khi bấm Đăng lên web hoặc Tạo và đăng luôn mới upload ảnh và lưu công khai.'}</p>}
   </div>;
 }

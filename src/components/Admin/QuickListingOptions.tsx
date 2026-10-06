@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import type { ProductVariant } from '../../types';
 import PriceInput from './PriceInput';
+import { variantNameOptions } from '../../lib/variantNameOptions';
 
 export type ListingOptions = { category: string; price: string; salePrice: string; variants: ProductVariant[] };
 export const emptyListingOptions = (): ListingOptions => ({ category: '', price: '', salePrice: '', variants: [] });
@@ -19,7 +20,13 @@ export default function QuickListingOptions({ value, onChange, disabled }: { val
       </div>
       <p className="text-xs text-gray-400">Phân loại tùy chọn do bạn nhập; AI không tự tạo size hoặc giá. Giá riêng để trống dùng giá chung. Phân loại đầu được chọn mặc định.</p>
       {value.variants.map(v => <div key={v.id} className="border border-gray-700 p-3 grid sm:grid-cols-2 gap-2">
-        <label>Tên phân loại<input className={box} value={v.name} maxLength={140} disabled={disabled} onChange={e => updateVariant(v.id, { name: e.target.value })} placeholder="VD: Size S / màu trắng" /></label>
+        <div>
+          <label>Chọn size / tên phân loại có sẵn<select className={box} value={variantNameOptions.includes(v.name) ? v.name : ''} disabled={disabled} onChange={e => updateVariant(v.id, { name: e.target.value })}>
+            <option value="">Tự nhập tên phân loại</option>
+            {variantNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
+          </select></label>
+          <label className="block mt-2">Tên phân loại<input className={box} value={v.name} maxLength={140} disabled={disabled} onChange={e => updateVariant(v.id, { name: e.target.value })} placeholder="Tên phân loại (có thể tự sửa)" /></label>
+        </div>
         <label>Kích thước đã xác nhận<input className={box} value={v.size || ''} maxLength={140} disabled={disabled} onChange={e => updateVariant(v.id, { size: e.target.value })} placeholder="Không biết để trống" /></label>
         <label>Giá riêng<PriceInput className={box} value={v.price || ''} disabled={disabled} onValueChange={price => updateVariant(v.id, { price })} /></label>
         <label>Giá giảm riêng<PriceInput className={box} value={v.salePrice || ''} disabled={disabled} onValueChange={salePrice => updateVariant(v.id, { salePrice })} /></label>

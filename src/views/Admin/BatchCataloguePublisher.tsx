@@ -9,7 +9,7 @@ import { revalidateProductCache } from '../../lib/productCacheClient';
 import { getProductHref } from '../../lib/productRoutes';
 import ProductWatermarkControls from '../../components/Admin/ProductWatermarkControls';
 import QuickListingOptions, { emptyListingOptions } from '../../components/Admin/QuickListingOptions';
-import { quickCatalogueContext, quickCatalogueImageOrder, quickCatalogueMaxOutputTokens } from '../../lib/quickCatalogue';
+import { quickCatalogueContext, quickCatalogueImageOrder, quickCatalogueMaxOutputTokens, quickCatalogueMaxDescription } from '../../lib/quickCatalogue';
 import CatalogueImagePicker from '../../components/Admin/CatalogueImagePicker';
 
 const newRow = (): BatchCatalogueRow => ({ key: crypto.randomUUID(), name: '', description: '', facts: '', ...emptyListingOptions(), coverIndex: 0, files: [] });
@@ -33,15 +33,23 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
     if (changes.files || changes.name !== undefined || changes.description !== undefined || changes.facts !== undefined) { pending.current.delete(key); setStatuses(prev => { const next = { ...prev }; delete next[key]; return next; }); }
     setRows(prev => prev.map(r => r.key === key ? { ...r, ...changes } : r));
   }
-  async function run(onlyKey?: string) {
+  function editDraft(key: string, field: 'name' | 'description', value: string) {
+    const draft = pending.current.get(key);
+    if (latch.current || !draft || draft.product) return;
+    draft.draft = { ...draft.draft, [field]: value };
+    if (field === 'name') setRows(prev => prev.map(row => row.key === key ? { ...row, name: value } : row));
+    setStatuses(prev => ({ ...prev, [key]: { status: 'preview', message: 'Đã chỉnh nội dung. Bấm đăng để lưu, không gọi AI thêm.', pending: { ...draft } } }));
+  }
+  async function run(onlyKey?: string, previewOnly = false) {
     if (latch.current) return;
     if (!configured || !isCloudinaryConfigured() || !isFirebaseConfigured) { setMessage('Cần API key, Cloudinary và Firebase trước khi đăng hàng loạt.'); return; }
     const queue = rows.filter(r => (!onlyKey || r.key === onlyKey) && !pending.current.get(r.key)?.product && (r.files.length || r.name || r.description || r.facts || r.price || r.category || r.variants?.length));
     if (!queue.length) { setMessage('Thêm ảnh cho ít nhất một sản phẩm chưa đăng.'); return; }
-    latch.current = true; stop.current = false; setRunning(true); onBusy(true); setMessage('Đang đăng hàng loạt. Hãy ở lại công cụ; mỗi bộ ảnh là một sản phẩm.');
+    latch.current = true; stop.current = false; setRunning(true); onBusy(true); setMessage(previewOnly ? 'Đang tạo bản xem trước, chưa đăng. Hãy ở lại công cụ.' : 'Đang đăng hàng loạt. Hãy ở lại công cụ; mỗi bộ ảnh là một sản phẩm.');
     const successfulBefore = Array.from(pending.current.values()).filter(p => p.product).length;
     try {
       await publishCatalogueBatch(queue, pending.current, { enabled: watermark, logo, options }, {
+        previewOnly,
         categoryAvailable: id => productCategories.some(c => c.id === id && !c.hidden),
         newId: () => 'IN3D-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase(),
         shouldStop: () => stop.current || !active.current,
@@ -73,7 +81,7 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
       const successful = Array.from(pending.current.values()).filter(p => p.product).length;
       let refreshed = true;
       if (successful > successfulBefore) refreshed = await revalidateProductCache();
-      if (active.current) setMessage(`${stop.current ? 'Đã dừng' : 'Đã xử lý xong đợt này'}. Tổng ${successful} sản phẩm đã đăng. Mục lỗi/chưa xong có thể thử tiếp; mục đã đăng không chạy lại.${refreshed ? '' : ' Đã lưu Firebase, nhưng cache chưa làm mới được — không đăng lại mục thành công.'}`);
+      if (active.current) setMessage(previewOnly ? 'Đã xử lý bản xem trước. Kiểm tra trạng thái và sửa nội dung từng sản phẩm rồi bấm đăng. Chưa upload ảnh/chưa đăng lên web.' : `${stop.current ? 'Đã dừng' : 'Đã xử lý xong đợt này'}. Tổng ${successful} sản phẩm đã đăng. Mục lỗi/chưa xong có thể thử tiếp; mục đã đăng không chạy lại.${refreshed ? '' : ' Đã lưu Firebase, nhưng cache chưa làm mới được — không đăng lại mục thành công.'}`);
     } catch { if (active.current) setMessage('Đợt đăng bị dừng. Xem trạng thái từng sản phẩm và thử tiếp nếu cần.'); }
     finally { latch.current = false; if (active.current) setRunning(false); onBusy(false); }
   }
@@ -95,11 +103,19 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
         <CatalogueImagePicker files={row.files} selected={row.coverIndex || 0} onSelect={coverIndex => edit(row.key, { coverIndex })} disabled={rowLocked} /><p className="text-xs text-gray-400">{row.files.length} ảnh đã chọn; bấm ảnh để chọn đại diện. Tất cả ảnh còn lại vẫn được giữ. AI đọc ảnh đại diện lúc tạo; đổi đại diện khi thử tiếp không gọi AI thêm.</p>
         {state && <p role="status" className={state.status === 'published' ? 'text-green-300' : state.status === 'error' ? 'text-red-300' : 'text-gold-light'}>{state.message}</p>}
         {state?.pending && <p className="text-xs text-gray-400">{state.pending.draft.name} · {state.pending.usage.input} input / {state.pending.usage.output} output token · {state.pending.urls.length}/{row.files.length} ảnh đã upload.</p>}
+        {state?.pending && !published && <div className="border border-gold-dark/40 p-3 space-y-3">
+          <h5 className="font-bold text-gold-light">Xem trước — chỉnh sửa nội dung đăng lên web</h5>
+          <label className="block text-sm">Tên đăng lên web<input className={box + ' mt-1'} maxLength={140} value={state.pending.draft.name} disabled={rowLocked} onChange={e => editDraft(row.key, 'name', e.target.value)} /></label>
+          <label className="block text-sm">Mô tả đăng lên web (giữ xuống dòng)<textarea className={box + ' mt-1'} rows={10} maxLength={quickCatalogueMaxDescription} value={state.pending.draft.description} disabled={rowLocked} onChange={e => editDraft(row.key, 'description', e.target.value)} /></label>
+          <p className="text-xs text-gray-400">Chỉnh trong bảng này không gọi AI thêm. Nội dung đã sửa được dùng khi đăng.</p>
+          <button type="button" disabled={rowLocked || !state.pending.draft.name.trim() || !state.pending.draft.description.trim()} className="bg-gold-light text-black px-4 py-2 disabled:opacity-40" onClick={() => void run(row.key)}>Đăng sản phẩm này (không gọi AI thêm)</button>
+        </div>}
         {published && <a className="text-green-300 underline" href={getProductHref(published)} target="_blank" rel="noopener noreferrer">Xem sản phẩm đã đăng →</a>}
         {state?.status === 'error' && !published && <button type="button" disabled={locked} className="border border-gold-light px-3 py-2 text-gold-light disabled:opacity-40" onClick={() => void run(row.key)}>Thử tiếp sản phẩm này{pending.current.has(row.key) ? ' (không gọi AI thêm)' : ''}</button>}
       </section>;
     })}
     <div className="flex flex-wrap gap-3"><button type="button" disabled={locked || rows.length >= 20} className="border border-gold-light px-4 py-3 text-gold-light disabled:opacity-40" onClick={() => setRows(prev => [...prev, newRow()])}>+ Thêm sản phẩm</button><button type="button" disabled={locked || !configured || !rows.some(r => r.files.length && !pending.current.get(r.key)?.product)} className="bg-gold-light text-black px-5 py-3 font-bold disabled:opacity-40" onClick={() => void run()}>Đăng tất cả sản phẩm chưa xong</button>{running && <button type="button" className="border border-red-400 px-4 py-3 text-red-300" onClick={() => { stop.current = true; setMessage('Đang dừng; bước upload/lưu đang chạy có thể hoàn tất. Không bắt đầu sản phẩm tiếp theo.'); }}>Dừng hàng đợi</button>}</div>
+    <button type="button" disabled={locked || !configured || !rows.some(r => r.files.length && !pending.current.get(r.key)?.product)} className="border border-gold-light text-gold-light px-4 py-3 disabled:opacity-40" onClick={() => void run(undefined, true)}>Tạo nội dung tất cả để xem / sửa trước</button>
     {message && <p role="status" className="text-sm text-gold-light">{message}</p>}
     <p className="text-xs text-gray-400">Không tự retry API khi lỗi. Cooldown giữa lượt AI để tránh giới hạn tốc độ. Giữ trang mở đến khi xong; hàng đợi/ảnh gốc chỉ nằm trong phiên này. Bỏ ô hoặc rời trang không xóa sản phẩm đã đăng hay ảnh đã upload.</p>
   </div>;

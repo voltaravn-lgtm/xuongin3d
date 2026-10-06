@@ -6,7 +6,7 @@ import type { WatermarkOptions } from './watermark.ts';
 export type BatchCatalogueRow = QuickListingExtras & { key: string; name: string; description?: string; facts: string; category: string; price: string; files: File[] };
 export type BatchWatermark = { enabled: boolean; logo: string; options: WatermarkOptions };
 export type BatchPending = { id: string; draft: QuickCatalogue; urls: string[]; watermark: BatchWatermark; usage: { input: number; output: number }; product?: Product };
-export type BatchProgress = { status: 'working' | 'published' | 'error'; message: string; pending?: BatchPending };
+export type BatchProgress = { status: 'working' | 'preview' | 'published' | 'error'; message: string; pending?: BatchPending };
 type Dependencies = {
   identify: (row: BatchCatalogueRow) => Promise<{ draft: QuickCatalogue; usage: { input: number; output: number } }>;
   upload: (file: File, watermark: BatchWatermark) => Promise<string>;
@@ -15,6 +15,7 @@ type Dependencies = {
   newId: () => string;
   shouldStop: () => boolean;
   progress: (key: string, progress: BatchProgress) => void;
+  previewOnly?: boolean;
 };
 // Each row owns its draft, partial uploaded URLs and stable ID. No AI retries after draft creation.
 export async function publishCatalogueBatch(rows: BatchCatalogueRow[], pending: Map<string, BatchPending>, watermark: BatchWatermark, deps: Dependencies) {
@@ -33,12 +34,17 @@ export async function publishCatalogueBatch(rows: BatchCatalogueRow[], pending: 
       if (!d) {
         deps.progress(row.key, { status: 'working', message: 'AI đang đọc ảnh đầu tiên, thinking tắt…' });
         const analysis = await deps.identify(row);
-        d = { id: deps.newId(), draft: analysis.draft, urls: [], watermark: { ...watermark, options: { ...watermark.options } }, usage: analysis.usage };
+        d = { id: deps.newId(), draft: { ...analysis.draft, name: row.name.trim() || analysis.draft.name }, urls: [], watermark: { ...watermark, options: { ...watermark.options } }, usage: analysis.usage };
         pending.set(row.key, d);
       }
       ensureActive();
+      if (!d.draft.name.trim() || !d.draft.description.trim()) throw new Error('Điền tên và mô tả trong bản xem trước trước khi đăng.');
       const category = row.category || catalogueCategories[d.draft.category];
       if (!deps.categoryAvailable(category)) throw new Error('Danh mục AI chọn không có hoặc đang ẩn. Chọn lại danh mục rồi thử tiếp.');
+      if (deps.previewOnly) {
+        deps.progress(row.key, { status: 'preview', message: 'Đã tạo bản xem trước. Có thể sửa nội dung trước khi đăng.', pending: d });
+        continue;
+      }
       for (let i = d.urls.length; i < row.files.length; i++) {
         ensureActive();
         deps.progress(row.key, { status: 'working', message: `Đang xử lý/upload ảnh ${i + 1}/${row.files.length}…`, pending: d });

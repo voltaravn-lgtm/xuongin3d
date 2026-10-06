@@ -13,6 +13,7 @@ import { readProductExcelOptions } from "../../lib/productExcelOptions";
 import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras } from "../../lib/productWorkbook";
 import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
 import PriceInput from "../../components/Admin/PriceInput";
+import { variantNameOptions } from "../../lib/variantNameOptions";
 import type { CatalogueTransfer } from "./AICatalogueAdmin";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
@@ -22,7 +23,6 @@ import {
   Loader2, Search, LayoutGrid, Rows3, EyeOff, Download, Undo2, Redo2, ChevronRight
 } from "lucide-react";
 const fulfillmentOptions = ["Có sẵn", "In theo yêu cầu", "Thiết kế + in", "In + sơn hoàn thiện", "Thiết kế + in + sơn hoàn thiện"];
-const variantNameOptions = ["Size XS", "Size S", "Size M", "Size L", "Size XL", "Size XXL", "Nhỏ", "Trung", "Lớn"];
 const defaultSpecTemplate: Product["specs"] = {
   "Công suất tối đa": "",
   "Trọng lượng thân máy": "",

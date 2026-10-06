@@ -21,6 +21,18 @@ function harness() {
   };
   return { calls, deps, pending: new Map<string, BatchPending>() };
 }
+test('preview does not upload or publish; edited draft publishes without another AI call', async () => {
+  const h = harness(); const r = row('preview', 2);
+  await publishCatalogueBatch([r], h.pending, wm, { ...h.deps, previewOnly: true });
+  assert.equal(h.calls.ai, 1); assert.equal(h.calls.uploads.length, 0); assert.equal(h.calls.saved.length, 0);
+  assert.ok(h.calls.states.some(s => s.status === 'preview'));
+  const pending = h.pending.get(r.key)!;
+  pending.draft = { ...pending.draft, name: 'Tên đã sửa', description: 'Đoạn do người bán chỉnh.\n\nNội dung bổ sung.' };
+  await publishCatalogueBatch([r], h.pending, wm, h.deps);
+  assert.equal(h.calls.ai, 1); assert.equal(h.calls.saved[0].name, 'Tên đã sửa');
+  assert.match(h.calls.saved[0].description, /<p>Nội dung bổ sung\.<\/p>/);
+});
+
 test('SKU stays IN3D for every category, including custom categories', () => {
   assert.equal(quickCatalogueSku('IN3D-ABCD12345678'), 'IN3D-9896');
   for (const category of [...Object.values(catalogueCategories), 'custom']) {
