@@ -78,9 +78,6 @@ export default function Products() {
 
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeSubCategory, setActiveSubCategory] = useState("all");
-  const [filterBrand, setFilterBrand] = useState("all");
-  const [filterVoltage, setFilterVoltage] = useState("all");
-  const [filterCapacity, setFilterCapacity] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -95,9 +92,6 @@ export default function Products() {
   const activeFiltersCount = 
     (activeCategory !== "all" ? 1 : 0) +
     (activeSubCategory !== "all" ? 1 : 0) +
-    (filterBrand !== "all" ? 1 : 0) + 
-    (filterVoltage !== "all" ? 1 : 0) + 
-    (filterCapacity !== "all" ? 1 : 0) +
     (searchQuery ? 1 : 0);
 
   const visibleProductCategories = useMemo(
@@ -152,18 +146,10 @@ export default function Products() {
     }
   }, [selectedIdFromUrl, visibleProducts]);
 
-  // Extract option list dynamically for filters
-  const brands = ["all", ...Array.from(new Set(visibleProducts.map(p => p.brand)))];
-  const voltages = ["all", ...Array.from(new Set(visibleProducts.map(p => p.voltage)))];
-  const capacities = ["all", ...Array.from(new Set(visibleProducts.map(p => p.capacity).filter((value) => String(value || "").trim())))];
-
   // Filter and sort products
   const filteredProducts = visibleProducts.filter(prod => {
     const matchesCategory = activeCategory === "all" || prod.category === activeCategory;
     const matchesSubCategory = activeSubCategory === "all" || prod.subCategory === activeSubCategory;
-    const matchesBrand = filterBrand === "all" || prod.brand === filterBrand;
-    const matchesVoltage = filterVoltage === "all" || prod.voltage === filterVoltage;
-    const matchesCapacity = filterCapacity === "all" || prod.capacity === filterCapacity;
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const matchesSearch = !normalizedQuery ||
                           prod.name.toLowerCase().includes(normalizedQuery) ||
@@ -174,7 +160,7 @@ export default function Products() {
                           prod.voltage.toLowerCase().includes(normalizedQuery) ||
                           prod.capacity.toLowerCase().includes(normalizedQuery);
 
-    return matchesCategory && matchesSubCategory && matchesBrand && matchesVoltage && matchesCapacity && matchesSearch;
+    return matchesCategory && matchesSubCategory && matchesSearch;
   }).sort((a, b) => {
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -188,7 +174,7 @@ export default function Products() {
 
   useEffect(() => {
     setVisibleProductCount(PRODUCTS_PAGE_SIZE);
-  }, [activeCategory, activeSubCategory, filterBrand, filterVoltage, filterCapacity, searchQuery, sortBy, viewMode]);
+  }, [activeCategory, activeSubCategory, searchQuery, sortBy, viewMode]);
 
   const handleSelectProduct = (product: any) => {
     setSelectedProduct(product);
@@ -203,9 +189,6 @@ export default function Products() {
   };
 
   const resetFilters = () => {
-    setFilterBrand("all");
-    setFilterVoltage("all");
-    setFilterCapacity("all");
     setSearchQuery("");
     setActiveCategory("all");
     setActiveSubCategory("all");
@@ -240,7 +223,7 @@ export default function Products() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Sidebar on left - Hidden on mobile, visible on desktop */}
-          <div className="hidden lg:block lg:col-span-3 space-y-6" id="products-sidebar">
+          <div className="hidden lg:block lg:col-span-3 lg:sticky lg:top-28 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto lg:overscroll-contain space-y-6" id="products-sidebar" tabIndex={0} aria-label="Tìm kiếm và danh mục sản phẩm">
             
             {/* Search Input inline */}
             <div className="bg-[#121212] border border-white/5 p-4 rounded-lg">
@@ -404,69 +387,9 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* Desktop Filters (Always visible on lg screens) */}
-              <div className="hidden lg:flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              {/* Desktop sorting and view controls */}
+              <div className="hidden lg:flex items-center justify-end gap-4">
                 
-                {/* Filter inputs dropdowns */}
-                <div className="flex flex-wrap items-center gap-3">
-                  
-                  {/* Brand */}
-                  <div className="flex flex-col">
-                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Thương hiệu</label>
-                    <select
-                      value={filterBrand}
-                      onChange={(e) => setFilterBrand(e.target.value)}
-                      className="bg-black border border-white/10 text-xs text-gray-300 h-9 px-3 rounded-md focus:outline-none focus:border-gold-light"
-                    >
-                      <option value="all">Tất cả thương hiệu</option>
-                      {brands.filter(b => b !== "all").map(b => (
-                        <option key={b} value={b}>{b}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Voltage */}
-                  <div className="flex flex-col">
-                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Kích thước / quy mô</label>
-                    <select
-                      value={filterVoltage}
-                      onChange={(e) => setFilterVoltage(e.target.value)}
-                      className="bg-black border border-white/10 text-xs text-gray-300 h-9 px-3 rounded-md focus:outline-none focus:border-gold-light"
-                    >
-                      <option value="all">Tất cả kích thước</option>
-                      {voltages.filter(v => v !== "all").map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Capacity */}
-                  <div className="flex flex-col">
-                    <label className="text-[8.5px] font-display font-bold text-gray-600 uppercase mb-1">Hình thức thực hiện</label>
-                    <select
-                      value={filterCapacity}
-                      onChange={(e) => setFilterCapacity(e.target.value)}
-                      className="bg-black border border-white/10 text-xs text-gray-300 h-9 px-3 rounded-md focus:outline-none focus:border-gold-light"
-                    >
-                      <option value="all">Tất cả hình thức</option>
-                      {capacities.filter(c => c !== "all").map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Reset button only shows if filtered */}
-                  {(filterBrand !== "all" || filterVoltage !== "all" || filterCapacity !== "all" || searchQuery) && (
-                    <button
-                      onClick={resetFilters}
-                      className="mt-4 p-2 text-gray-500 hover:text-gold-light transition-colors"
-                      title="Xóa bộ lọc"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  )}
-
-                </div>
 
                 {/* View options grid/list and sorting */}
                 <div className="flex items-center justify-between md:justify-end gap-4">
@@ -911,71 +834,6 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* Brands Selectors */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-display font-bold text-gray-400 uppercase tracking-wider border-l-2 border-gold-light pl-2">
-                  THƯƠNG HIỆU
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {brands.map((b) => (
-                    <button
-                      key={b}
-                      onClick={() => setFilterBrand(b)}
-                      className={`px-2.5 py-1.5 text-[10px] font-display uppercase tracking-wider border cursor-pointer ${
-                        filterBrand === b
-                          ? "bg-gold-light border-transparent text-black font-bold"
-                          : "bg-black border-white/10 text-gray-400"
-                      }`}
-                    >
-                      {b === "all" ? "Tất cả" : b}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Voltage Selectors */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-display font-bold text-gray-400 uppercase tracking-wider border-l-2 border-gold-light pl-2">
-                  KÍCH THƯỚC / QUY MÔ
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {voltages.map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setFilterVoltage(v)}
-                      className={`px-2.5 py-1.5 text-[10px] font-display tracking-wider border cursor-pointer ${
-                        filterVoltage === v
-                          ? "bg-gold-light border-transparent text-black font-bold"
-                          : "bg-black border-white/10 text-gray-400"
-                      }`}
-                    >
-                      {v === "all" ? "Tất cả" : v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Capacity Selectors */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-display font-bold text-gray-400 uppercase tracking-wider border-l-2 border-gold-light pl-2">
-                  HÌNH THỨC THỰC HIỆN
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {capacities.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setFilterCapacity(c)}
-                      className={`px-2.5 py-1.5 text-[10px] font-display tracking-wider border cursor-pointer ${
-                        filterCapacity === c
-                          ? "bg-gold-light border-transparent text-black font-bold"
-                          : "bg-black border-white/10 text-gray-400"
-                      }`}
-                    >
-                      {c === "all" ? "Tất cả" : c}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
             </div>
 
