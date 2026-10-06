@@ -4,13 +4,18 @@ import type { ProductVariant } from '../../types';
 import PriceInput from './PriceInput';
 import { variantNameOptions } from '../../lib/variantNameOptions';
 
-export type ListingOptions = { category: string; price: string; salePrice: string; variants: ProductVariant[] };
-export const emptyListingOptions = (): ListingOptions => ({ category: '', price: '', salePrice: '', variants: [] });
+export type ListingOptions = { category: string; price: string; salePrice: string; variants: ProductVariant[]; appendDescriptionImages?: boolean };
+export const emptyListingOptions = (): ListingOptions => ({ category: '', price: '', salePrice: '', variants: [], appendDescriptionImages: true });
 export default function QuickListingOptions({ value, onChange, disabled }: { value: ListingOptions; onChange: (value: ListingOptions) => void; disabled: boolean }) {
   const { productCategories } = useApp();
   const box = 'w-full bg-black border border-gray-700 p-2 mt-1 text-sm text-gray-100';
   const updateVariant = (id: string, changes: Partial<ProductVariant>) => onChange({ ...value, variants: value.variants.map(v => v.id === id ? { ...v, ...changes } : v) });
-  return <details className="border border-gray-700 p-3">
+  return <>
+    <label className="block border border-gray-700 p-3 text-sm">
+      <span className="flex items-center gap-2"><input type="checkbox" checked={!!value.appendDescriptionImages} disabled={disabled} onChange={e => onChange({ ...value, appendDescriptionImages: e.target.checked })} />Chèn bộ ảnh vào cuối mô tả</span>
+      <span className="block mt-1 text-xs text-gray-400">Chữ ở trên, ảnh đại diện trước rồi đến các ảnh bổ sung bên dưới. Dùng ảnh đã upload/watermark, không gọi AI thêm.</span>
+    </label>
+    <details className="border border-gray-700 p-3">
     <summary className="cursor-pointer text-gold-light font-bold">Thông tin bổ sung · danh mục, giá, phân loại ({value.variants.length}) — mở / thu gọn</summary>
     <div className="space-y-3 mt-3">
       <div className="grid sm:grid-cols-3 gap-3">
@@ -34,5 +39,5 @@ export default function QuickListingOptions({ value, onChange, disabled }: { val
       </div>)}
       <button type="button" disabled={disabled || value.variants.length >= 20} className="border border-gold-light text-gold-light p-2 disabled:opacity-40" onClick={() => onChange({ ...value, variants: [...value.variants, { id: crypto.randomUUID(), name: '' }] })}>+ Thêm phân loại</button>
     </div>
-  </details>;
+  </details></>;
 }

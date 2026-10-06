@@ -8,6 +8,7 @@ import { getProductHref } from "../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../lib/video";
 import { Product, ProductCombo, ProductVariant } from "../types";
 import ProductPromoImage from "./ProductPromoImage";
+import { productNameWithSku } from "../lib/productDisplayName";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -312,7 +313,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             <span>/</span>
             <a href="/san-pham" className="hover:text-gold-light transition-colors">Sản phẩm</a>
             <span>/</span>
-            <span className="text-gold-light line-clamp-1">{currentProduct.name}</span>
+            <span className="text-gold-light line-clamp-1">{productNameWithSku(currentProduct.name, currentProduct.sku)}</span>
           </div>
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
@@ -382,7 +383,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               </div>
 
               <h1 className="max-w-3xl text-2xl font-display font-black uppercase leading-tight text-white sm:text-3xl lg:text-4xl">
-                {currentProduct.name}
+                {productNameWithSku(currentProduct.name, currentProduct.sku)}
               </h1>
 
               <div className="my-6 h-[2px] w-28 bg-gradient-to-r from-gold-dark to-transparent" />

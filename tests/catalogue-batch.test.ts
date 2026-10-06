@@ -28,9 +28,11 @@ test('preview does not upload or publish; edited draft publishes without another
   assert.ok(h.calls.states.some(s => s.status === 'preview'));
   const pending = h.pending.get(r.key)!;
   pending.draft = { ...pending.draft, name: 'Tên đã sửa', description: 'Đoạn do người bán chỉnh.\n\nNội dung bổ sung.' };
+  r.appendDescriptionImages = true;
   await publishCatalogueBatch([r], h.pending, wm, h.deps);
   assert.equal(h.calls.ai, 1); assert.equal(h.calls.saved[0].name, 'Tên đã sửa');
   assert.match(h.calls.saved[0].description, /<p>Nội dung bổ sung\.<\/p>/);
+  assert.equal((h.calls.saved[0].description.match(/<img /g) || []).length, 2);
 });
 
 test('SKU stays IN3D for every category, including custom categories', () => {

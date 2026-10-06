@@ -12,7 +12,7 @@ Không nhận diện chắc sản phẩm thì identified=false, tên/mô tả r�
 Chỉ JSON: {"identified":true,"name":"tên ngắn đúng sản phẩm","category":"DEC","description":"Đoạn giới thiệu.\\n\\nĐoạn thiết kế.\\n\\nCác đoạn gợi ý phù hợp.","specs":[{"label":"Chất liệu","value":"PLA","evidence":"Chất liệu: PLA"}]}`;
 
 export type QuickCatalogue = { name: string; category: string; description: string; specs: Record<string, string> };
-export type QuickListingExtras = { salePrice?: string; variants?: ProductVariant[]; coverIndex?: number };
+export type QuickListingExtras = { salePrice?: string; variants?: ProductVariant[]; coverIndex?: number; appendDescriptionImages?: boolean };
 export function quickCatalogueImageOrder<T>(images: T[], coverIndex = 0): T[] {
   if (!images.length || !Number.isInteger(coverIndex) || coverIndex < 0 || coverIndex >= images.length) throw new Error('Chọn ảnh đại diện hợp lệ trong bộ ảnh.');
   return [images[coverIndex], ...images.filter((_, index) => index !== coverIndex)];
@@ -81,8 +81,9 @@ export function quickCatalogueProduct(draft: QuickCatalogue, id: string, urls: s
   if (!urls.length || urls.some(url => !/^https:\/\//.test(url))) throw new Error('Chưa upload đầy đủ ảnh sản phẩm.');
   const orderedImages = quickCatalogueImageOrder(urls, extras.coverIndex);
   const category = categoryOverride || catalogueCategories[draft.category];
+  const descriptionImages = extras.appendDescriptionImages ? Array.from(new Set(orderedImages)).map((url, index) => `<p><img src="${html(url)}" alt="${html(draft.name)} — ảnh ${index + 1}" loading="lazy" style="max-width:100%;height:auto;display:block;margin:16px auto" /></p>`).join('') : '';
   return { id, sku: quickCatalogueSku(id), name: draft.name, category,
-    description: quickCatalogueDescriptionHtml(draft.description), specs: { ...draft.specs }, image: orderedImages[0], images: orderedImages.slice(1),
+    description: quickCatalogueDescriptionHtml(draft.description) + descriptionImages, specs: { ...draft.specs }, image: orderedImages[0], images: orderedImages.slice(1),
     voltage: '', capacity: '', brand: 'Xưởng In 3D', cellType: '', warranty: '',
     price: quickCataloguePrice(price), hidden: false,
     ...quickCatalogueExtras(price, extras), colors: [], videoUrls: [], combos: [], createdAt: new Date().toISOString() };

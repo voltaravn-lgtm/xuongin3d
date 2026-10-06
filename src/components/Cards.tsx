@@ -156,7 +156,7 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         <div>
           <div className="mb-1 text-[9px] sm:text-[10px] font-semibold text-gold-light">Xưởng In 3D</div>
           <h3 className="text-xs sm:text-[13px] font-sans font-semibold text-[#ECECEC] line-clamp-2 leading-4 h-8 mb-1 group-hover:text-gold-light transition-colors">
-            {productDisplayName(product.name)}
+            {productDisplayName(product.name, product.sku)}
           </h3>
 
           <div className="min-h-6">

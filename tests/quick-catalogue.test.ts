@@ -4,6 +4,19 @@ import { parseQuickCatalogue, quickCatalogueProduct, quickCataloguePrice, quickC
 import { providerRequest, catalogueProviders } from '../src/lib/aiCatalogueProviders.ts';
 
 const raw = { identified: true, name: 'Bình hoa gân dọc', category: 'DEC', description: 'Bình hoa có thân tròn với các đường gân dọc.', specs: [] };
+test('optional description gallery follows text, cover first, escapes attributes and avoids duplicates', () => {
+  const draft = parseQuickCatalogue(raw, '');
+  const urls = ['https://cdn.example/a.webp', 'https://cdn.example/b.webp', 'https://cdn.example/a.webp'];
+  const product = quickCatalogueProduct(draft, 'IN3D-ABCD12345678', urls, '', '', { appendDescriptionImages: true, coverIndex: 1 });
+  assert.equal((product.description.match(/<img /g) || []).length, 2);
+  assert.ok(product.description.indexOf('</p>') < product.description.indexOf('<img '));
+  assert.ok(product.description.indexOf('b.webp') < product.description.indexOf('a.webp'));
+  const off = quickCatalogueProduct(draft, 'IN3D-ABCD12345678', urls, '', '', { appendDescriptionImages: false });
+  assert.equal(off.description.includes('<img '), false);
+  const escaped = quickCatalogueProduct({ ...draft, name: 'Tên "<test>' }, 'IN3D-ABCD12345678', ['https://cdn.example/a.webp?x="&y=1'], '', '', { appendDescriptionImages: true });
+  assert.ok(escaped.description.includes('alt="Tên &quot;&lt;test&gt;'));
+  assert.ok(escaped.description.includes('?x=&quot;&amp;y=1'));
+});
 test('seller description guides identity/translation and context stays within server limit', () => {
   const facts = quickCatalogueContext('Đèn ngủ', 'Bedside lamp, not a planter', 'Chất liệu: PLA');
   assert.ok(facts.includes('Đèn ngủ')); assert.ok(facts.includes('Bedside lamp, not a planter'));

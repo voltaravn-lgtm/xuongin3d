@@ -562,7 +562,7 @@ export default function Products() {
                           <span>{[prod.voltage, prod.capacity].filter(Boolean).join(" • ")}</span>
                         </div>
                         <h3 className="text-sm font-sans font-semibold text-[#ECECEC] mb-2 group-hover:text-gold-light transition-colors">
-                          {productDisplayName(prod.name)}
+                          {productDisplayName(prod.name, prod.sku)}
                         </h3>
                         <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
                           {getProductDescriptionExcerpt(prod.description, prod.name, 150)}

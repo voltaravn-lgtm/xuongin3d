@@ -1631,6 +1631,25 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     setIsToolbarPreviewMode(false);
   };
 
+  const appendAllImagesToDescription = () => {
+    if (uploadingImageTarget || !quickInsertImages.length) return;
+    const existing = getDescriptionEditorHtml() || productForm.description || '';
+    const parsed = new DOMParser().parseFromString(existing, 'text/html');
+    const inserted = new Set(Array.from(parsed.querySelectorAll('img')).map(img => img.getAttribute('src')));
+    const missing = quickInsertImages.filter(url => !inserted.has(url) && /^https?:\/\//i.test(url));
+    if (!missing.length) { showToast('Các ảnh đã có trong mô tả.', 'success'); return; }
+    const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const appended = missing.map((url, index) => `<p><img src="${escape(url)}" alt="${escape(productForm.name || 'Ảnh sản phẩm')} — ảnh ${index + 1}" loading="lazy" style="max-width:100%;height:auto;display:block;margin:16px auto" referrerpolicy="no-referrer" /></p>`).join('');
+    pushDescriptionUndoSnapshot();
+    descriptionCustomUndoIsLatestRef.current = true;
+    const next = existing + appended;
+    descriptionDraftRef.current = next;
+    if (descriptionEditorRef.current) setDescriptionEditorHtml(next);
+    else setProductForm(prev => ({ ...prev, description: next }));
+    setIsToolbarPreviewMode(false);
+    showToast(`Đã chèn ${missing.length} ảnh vào cuối mô tả. Bấm Lưu sản phẩm để áp dụng.`, 'success');
+  };
+
   const handleDescriptionPaste = (event: React.ClipboardEvent<HTMLDivElement> | ClipboardEvent) => {
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;
@@ -2925,6 +2944,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       ))}
                     </div>
                   )}
+                  <button type="button" disabled={Boolean(uploadingImageTarget) || !quickInsertImages.length} onMouseDown={event => event.preventDefault()} onClick={appendAllImagesToDescription} className="border border-gold-dark/40 text-gold-light px-3 py-2 text-xs disabled:opacity-40">Chèn bộ ảnh vào cuối mô tả</button>
                   <p className="text-[10px] text-gray-500">Chọn ảnh bất kỳ làm đại diện: ảnh đại diện cũ được giữ trong ảnh bổ sung. Xóa ảnh chỉ gỡ khỏi bộ ảnh, không xóa file Cloudinary hay ảnh đã chèn trong mô tả. Bấm Lưu sản phẩm để áp dụng.</p>
                 </div>
 
