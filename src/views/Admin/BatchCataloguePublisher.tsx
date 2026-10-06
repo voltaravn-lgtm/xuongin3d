@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { auth, isFirebaseConfigured } from '../../lib/firebase';
 import { isCloudinaryConfigured, uploadImageToCloudinary } from '../../lib/cloudinary';
 import { catalogueMedia } from '../../lib/catalogueMedia';
+import { confirmedSpecText } from '../../lib/productSpecsPaste';
 import { publishCatalogueBatch, type BatchCatalogueRow, type BatchPending, type BatchProgress } from '../../lib/catalogueBatch';
 import { watermarkImageFile, type WatermarkOptions } from '../../lib/watermark';
 import { revalidateProductCache } from '../../lib/productCacheClient';
@@ -12,10 +13,11 @@ import QuickListingOptions, { emptyListingOptions } from '../../components/Admin
 import { quickCatalogueContext, quickCatalogueImageOrder, quickCatalogueMaxOutputTokens, quickCatalogueMaxDescription } from '../../lib/quickCatalogue';
 import CatalogueImagePicker from '../../components/Admin/CatalogueImagePicker';
 import { removeSelectedImage } from '../../lib/productImageSelection';
+import useCatalogueSession from '../../components/Admin/useCatalogueSession';
 
 const newRow = (): BatchCatalogueRow => ({ key: crypto.randomUUID(), name: '', description: '', facts: '', ...emptyListingOptions(), coverIndex: 0, files: [] });
 export default function BatchCataloguePublisher({ provider, configured, disabled, onBusy }: { provider: string; configured: boolean; disabled: boolean; onBusy: (value: boolean) => void }) {
-  const { addProduct, productCategories } = useApp();
+  const { addProduct, productCategories, products } = useApp();
   const [rows, setRows] = useState<BatchCatalogueRow[]>(() => [newRow()]);
   const [statuses, setStatuses] = useState<Record<string, BatchProgress>>({});
   const [running, setRunning] = useState(false), [message, setMessage] = useState('');
@@ -24,11 +26,29 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
   const [preview, setPreview] = useState('');
   const pending = useRef(new Map<string, BatchPending>()), latch = useRef(false), stop = useRef(false), active = useRef(true);
   const apiAvailableAt = useRef(0), controller = useRef<AbortController | null>(null);
+  const session = useCatalogueSession('batch', () => ({ rows: rows.map(row => pending.current.get(row.key)?.product ? { ...row, files: [] } : row), pending: Array.from(pending.current.entries()), watermark, logo, options }), saved => {
+    setRows(saved.rows); pending.current = new Map(saved.pending);
+    setWatermark(saved.watermark); setLogo(saved.logo); setOptions(saved.options);
+    setStatuses(Object.fromEntries(saved.pending.map(([key, value]) => [key, { status: value.product ? 'published' : 'preview', message: value.product ? 'Đã đăng (khôi phục phiên).' : 'Bản nháp đã khôi phục. Kiểm tra và thử tiếp.', pending: value }])));
+  }, [rows, statuses, watermark, logo, options, running, message]);
+  useEffect(() => {
+    if (!session.ready) return;
+    const recovered: Record<string, BatchProgress> = {};
+    for (const [key, draft] of pending.current) {
+      if (draft.product) continue;
+      const saved = products.find(product => product.id === draft.id);
+      if (saved) { draft.product = saved; recovered[key] = { status: 'published', message: 'Sản phẩm đã lưu trên web; không đăng lại.', pending: draft }; }
+    }
+    if (Object.keys(recovered).length) {
+      setStatuses(previous => ({ ...previous, ...recovered }));
+      setRows(previous => previous.map(row => recovered[row.key] ? { ...row, files: [] } : row));
+    }
+  }, [products, session.ready]);
   const previewRow = rows.find(row => row.files.length);
   const firstFile = previewRow?.files[previewRow.coverIndex || 0];
   useEffect(() => { if (!firstFile) { setPreview(''); return; } const url = URL.createObjectURL(firstFile); setPreview(url); return () => URL.revokeObjectURL(url); }, [firstFile]);
   useEffect(() => { active.current = true; return () => { active.current = false; stop.current = true; controller.current?.abort(); }; }, []);
-  const locked = disabled || running;
+  const locked = disabled || running || !session.ready;
   function edit(key: string, changes: Partial<BatchCatalogueRow>) {
     if (latch.current || pending.current.get(key)?.product) return;
     if (changes.files || changes.name !== undefined || changes.description !== undefined || changes.facts !== undefined) { pending.current.delete(key); setStatuses(prev => { const next = { ...prev }; delete next[key]; return next; }); }
@@ -51,6 +71,7 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
     try {
       await publishCatalogueBatch(queue, pending.current, { enabled: watermark, logo, options }, {
         previewOnly,
+        checkpoint: session.persist,
         categoryAvailable: id => productCategories.some(c => c.id === id && !c.hidden),
         newId: () => 'IN3D-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase(),
         shouldStop: () => stop.current || !active.current,
@@ -88,6 +109,10 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
   }
   const box = 'w-full bg-black border border-gray-700 p-3 text-sm text-gray-100';
   return <div className="space-y-4">
+    <div className="flex flex-wrap items-center gap-3"><p role="status" className="text-xs text-gray-400">{session.status}</p><button type="button" disabled={locked} className="text-xs text-red-300 disabled:opacity-40" onClick={() => {
+      if (!window.confirm('Xóa phiên hàng loạt lưu trên máy? Sản phẩm đã đăng và file Cloudinary không bị xóa.')) return;
+      pending.current.clear(); setStatuses({}); setRows([newRow()]); setMessage('Đã xóa phiên lưu tạm, sẵn sàng cho đợt mới.');
+    }}>Xóa phiên lưu tạm</button></div>
     <div className="border border-gold-dark/30 p-4 space-y-2"><h3 className="font-bold text-gold-light">Đăng hàng loạt — mỗi ô là một sản phẩm</h3><p className="text-sm">Thêm ảnh SP 1, SP 2… Tên để trống thì AI đặt; tên bạn nhập sẽ được giữ. Chọn ảnh chưa gọi AI/chưa đăng. Bấm “Đăng tất cả” sẽ đăng công khai lần lượt.</p><p className="text-xs text-amber-300">Mã sản phẩm/SKU dùng chung dạng IN3D-… với hậu tố duy nhất, không phụ thuộc danh mục. Chưa có giá thì “Liên hệ”; không tự tạo size hay thông số chưa xác nhận. Tối đa 20 sản phẩm/đợt.</p></div>
     <ProductWatermarkControls enabled={watermark} onEnabledChange={setWatermark} logoUrl={logo} onLogoChange={setLogo} options={options} onOptionsChange={setOptions} disabled={locked} imageUrl={preview} />
     <p className="text-xs text-gray-400">Watermark áp dụng chung cho cả đợt, ghép trước khi chuyển WebP/upload. AI đọc ảnh đại diện và mô tả riêng, viết khoảng 4–5 đoạn; một request tối đa {quickCatalogueMaxOutputTokens} output token, thinking tắt. Mô tả dài hơn dùng thêm token. Lượt đã có nội dung/ảnh giữ watermark cũ khi thử lại. Ảnh/thông tin gửi API AI, ảnh đăng gửi Cloudinary, dữ liệu lưu Firebase.</p>
@@ -98,6 +123,7 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
         <label className="block text-sm">Tên (tùy chọn)<input className={box + ' mt-1'} maxLength={140} value={row.name} disabled={rowLocked} onChange={e => edit(row.key, { name: e.target.value })} placeholder="Để trống: AI tạo tên" /></label>
         <label className="block text-sm">Mô tả / loại sản phẩm để AI hiểu đúng<textarea className={box + ' mt-1'} rows={3} maxLength={1000} value={row.description || ''} disabled={rowLocked} onChange={e => edit(row.key, { description: e.target.value })} placeholder="VD: Đây là đèn ngủ, không phải chậu cây. Có thể dán mô tả ngoại ngữ để AI dịch sát." /></label>
         <label className="block text-sm">Thông tin kỹ thuật đã xác nhận<textarea className={box + ' mt-1'} rows={2} maxLength={1500} value={row.facts} disabled={rowLocked} onChange={e => edit(row.key, { facts: e.target.value })} placeholder="Chất liệu/kích thước đã biết; không biết để trống" /></label>
+        <p className="text-xs text-gray-400">Dán bảng 2 cột hoặc mỗi dòng “Tên thông số: Giá trị”. Đã tách {Object.keys(confirmedSpecText(row.facts)).length} thông số xác nhận trên máy, không gọi AI thêm. Bỏ qua dòng đề xuất/chưa xác nhận.</p>
         <QuickListingOptions value={{ category: row.category, price: row.price, salePrice: row.salePrice || '', variants: row.variants || [], appendDescriptionImages: row.appendDescriptionImages }} onChange={value => edit(row.key, value)} disabled={rowLocked} />
         {!published && pending.current.has(row.key) && <p className="text-xs text-gray-400">Thử tiếp giữ nội dung AI/ảnh đã upload. Sửa tên, mô tả, thông tin kỹ thuật hoặc chọn lại ảnh sẽ phân tích và upload lại; chỉ sửa giá/phân loại/danh mục thì không gọi AI thêm.</p>}
         <label className="block text-sm">Bộ ảnh sản phẩm {index + 1} (1–12 ảnh)<input className={box + ' mt-1'} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={rowLocked} onChange={e => { const files = Array.from(e.target.files || []); if (files.length) edit(row.key, { files, coverIndex: 0 }); e.target.value = ''; }} /></label>
@@ -118,6 +144,6 @@ export default function BatchCataloguePublisher({ provider, configured, disabled
     <div className="flex flex-wrap gap-3"><button type="button" disabled={locked || rows.length >= 20} className="border border-gold-light px-4 py-3 text-gold-light disabled:opacity-40" onClick={() => setRows(prev => [...prev, newRow()])}>+ Thêm sản phẩm</button><button type="button" disabled={locked || !configured || !rows.some(r => r.files.length && !pending.current.get(r.key)?.product)} className="bg-gold-light text-black px-5 py-3 font-bold disabled:opacity-40" onClick={() => void run()}>Đăng tất cả sản phẩm chưa xong</button>{running && <button type="button" className="border border-red-400 px-4 py-3 text-red-300" onClick={() => { stop.current = true; setMessage('Đang dừng; bước upload/lưu đang chạy có thể hoàn tất. Không bắt đầu sản phẩm tiếp theo.'); }}>Dừng hàng đợi</button>}</div>
     <button type="button" disabled={locked || !configured || !rows.some(r => r.files.length && !pending.current.get(r.key)?.product)} className="border border-gold-light text-gold-light px-4 py-3 disabled:opacity-40" onClick={() => void run(undefined, true)}>Tạo nội dung tất cả để xem / sửa trước</button>
     {message && <p role="status" className="text-sm text-gold-light">{message}</p>}
-    <p className="text-xs text-gray-400">Không tự retry API khi lỗi. Cooldown giữa lượt AI để tránh giới hạn tốc độ. Giữ trang mở đến khi xong; hàng đợi/ảnh gốc chỉ nằm trong phiên này. Bỏ ô hoặc rời trang không xóa sản phẩm đã đăng hay ảnh đã upload.</p>
+    <p className="text-xs text-gray-400">Phiên, ảnh gốc và bản nháp được lưu bằng IndexedDB trên trình duyệt này; ảnh tạm của mục thành công được bỏ khỏi phiên. Không tự chạy lại khi khôi phục. Xóa dữ liệu trình duyệt sẽ mất phiên; giữ trang mở trong khi upload/lưu để tránh gián đoạn.</p>
   </div>;
 }

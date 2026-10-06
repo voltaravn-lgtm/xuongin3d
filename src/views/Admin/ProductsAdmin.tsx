@@ -15,6 +15,7 @@ import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, typ
 import PriceInput from "../../components/Admin/PriceInput";
 import { variantNameOptions } from "../../lib/variantNameOptions";
 import { selectProductCover, removeProductImage } from "../../lib/productImageSelection";
+import { parseSpecsClipboard } from "../../lib/productSpecsPaste";
 import type { CatalogueTransfer } from "./AICatalogueAdmin";
 import {
   Battery, Plus, Edit, Trash2, X, Save, Copy,
@@ -1684,36 +1685,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const extractSpecsFromClipboard = (clipboardData: DataTransfer) => {
     const html = clipboardData.getData("text/html");
     const text = clipboardData.getData("text/plain");
-    const rows: Array<[string, string]> = [];
-
-    if (html && /<table[\s>]/i.test(html)) {
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      doc.querySelectorAll("tr").forEach((row) => {
-        const cells = Array.from(row.querySelectorAll("th,td"))
-          .map((cell) => (cell.textContent || "").replace(/\s+/g, " ").trim())
-          .filter(Boolean);
-        if (cells.length >= 2) rows.push([cells[0], cells.slice(1).join(" ")]);
-      });
-    }
-
-    if (!rows.length && text) {
-      text.split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .forEach((line) => {
-          const cells = line.includes("\t")
-            ? line.split("\t")
-            : line.split(/\s{2,}/);
-          const cleanCells = cells.map((cell) => cell.replace(/\s+/g, " ").trim()).filter(Boolean);
-          if (cleanCells.length >= 2) rows.push([cleanCells[0], cleanCells.slice(1).join(" ")]);
-        });
-    }
-
-    return rows.filter(([key, value]) => {
-      const normalizedKey = key.toLowerCase();
-      const normalizedValue = value.toLowerCase();
-      return key && value && !(normalizedKey.includes("thông số") && normalizedValue.includes("chi tiết"));
-    });
+    return parseSpecsClipboard(text, html);
   };
 
   const handleSpecsPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
@@ -2432,6 +2404,9 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   />
                 </div>
 
+                <details className="sm:col-span-2 border border-white/10 p-3">
+                  <summary className="cursor-pointer text-xs text-gray-400">Nâng cao · ID hệ thống và URL SEO</summary>
+                  <div className="grid sm:grid-cols-2 gap-3 mt-3">
                 <div className="space-y-1 sm:col-span-2">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-500">ID hệ thống (độc nhất)</label>
                   <input
@@ -2467,6 +2442,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                     URL: /san-pham/{productForm.slug || slugifyProductText(`${productForm.name || ""}-${productForm.id || ""}`) || "slug-san-pham"}
                   </p>
                 </div>
+                  </div>
+                </details>
 
                 <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Kích thước / quy mô</label>
@@ -2585,7 +2562,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   {(productForm.variants || []).length > 0 ? (
                     <div className="space-y-3">
                       {(productForm.variants || []).map((variant, index) => (
-                        <div key={variant.id || index} className="border border-white/10 bg-black/70 p-3 space-y-3">
+                        <details key={variant.id || index} className="border border-white/10 bg-black/70 p-3 space-y-3">
+                          <summary className="cursor-pointer text-xs text-gold-light">{variant.name || `Phân loại ${index + 1}`} · {variant.size || 'Chưa có kích thước'} · {variant.salePrice || variant.price || 'Giá chung'} — mở / thu gọn</summary>
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">Phân loại {index + 1}</span>
                             <div className="flex items-center gap-3">
@@ -2651,7 +2629,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                               <img src={variant.image} alt={variant.name || ""} className="h-full w-full object-contain" referrerPolicy="no-referrer" />
                             </div>
                           )}
-                        </div>
+                        </details>
                       ))}
                     </div>
                   ) : (
@@ -2659,29 +2637,6 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   )}
                 </div>
 
-                <div className="col-span-1 sm:col-span-2 border border-gold-dark/25 bg-[#080808] p-4">
-                  <div className="mb-3">
-                    <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-gold-light">Bảng giá đại lý</h3>
-                    <p className="mt-1 text-[10px] text-gray-500">Giá bán lẻ là giá web/cửa hàng. Cấp 1 lấy trực tiếp từ NSX nên giá phải thấp hơn cấp 2.</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-                    <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá bán lẻ
-                      <PriceInput value={productForm.retailPrice || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, retailPrice: value }))} placeholder={productForm.salePrice || productForm.price || "Giá web"} className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
-                    </label>
-                    <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá đại lý cấp 2
-                      <PriceInput value={productForm.dealerLevel2Price || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, dealerLevel2Price: value }))} placeholder="Thấp hơn 20–35%" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
-                    </label>
-                    <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">Giá đại lý cấp 1
-                      <PriceInput value={productForm.dealerLevel1Price || ""} onValueChange={(value) => setProductForm(prev => ({ ...prev, dealerLevel1Price: value }))} placeholder="Giá riêng cấp 1" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
-                    </label>
-                    <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">CK cấp 2 (% giá bán)
-                      <input type="number" min="0" max="90" value={productForm.dealerLevel2DiscountPercent ?? ""} onChange={(e) => setProductForm(prev => ({ ...prev, dealerLevel2DiscountPercent: e.target.value === "" ? undefined : Number(e.target.value) }))} placeholder="Theo mức chung" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
-                    </label>
-                    <label className="space-y-1 text-[9px] font-bold uppercase text-gray-400">CK cấp 1 (% giá bán)
-                      <input type="number" min="0" max="90" value={productForm.dealerLevel1DiscountPercent ?? ""} onChange={(e) => setProductForm(prev => ({ ...prev, dealerLevel1DiscountPercent: e.target.value === "" ? undefined : Number(e.target.value) }))} placeholder="Theo mức chung" className="w-full bg-black border border-[#1A1A1A] px-3 py-2.5 text-xs text-white focus:border-gold-light focus:outline-none" />
-                    </label>
-                  </div>
-                </div>
 
                 {activeProductSubCategories.length > 0 && (
                   <div className="space-y-1">
@@ -2721,108 +2676,6 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   />
                 </div>
 
-                <div className="col-span-1 sm:col-span-2 border border-gold-dark/20 bg-[#080808] p-4 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Thông tin kho & đồng bộ</h3>
-                      <p className="mt-1 text-[10px] text-gray-500">Chuan bi du lieu de sau nay lien ket Nhanh.vn, Haravan, Shopee, Tiki, TikTok Shop.</p>
-                    </div>
-                    <label className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(productForm.syncEnabled)}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, syncEnabled: e.target.checked }))}
-                        className="w-3.5 h-3.5 accent-gold-dark"
-                      />
-                      Cho dong bo
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Barcode</label>
-                      <input
-                        type="text"
-                        value={productForm.barcode}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, barcode: e.target.value }))}
-                        placeholder="EAN/UPC neu co"
-                        className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">So ton</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={productForm.stockQuantity}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, stockQuantity: e.target.value }))}
-                        placeholder="VD: 20"
-                        className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Trạng thái kho</label>
-                      <select
-                        value={productForm.stockStatus}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, stockStatus: e.target.value as Product["stockStatus"] }))}
-                        className="w-full bg-black border border-[#1A1A1A] text-xs px-3.5 py-2.5 text-[#ECECEC] focus:outline-none uppercase font-bold"
-                      >
-                        <option value="">Chua dat</option>
-                        <option value="in-stock">Con hang</option>
-                        <option value="low-stock">Sap het</option>
-                        <option value="out-of-stock">Het hang</option>
-                        <option value="preorder">Cho dat truoc</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-white/5 pt-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Kenh dong bo</label>
-                      <select
-                        value={productForm.syncChannel}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, syncChannel: e.target.value as Product["syncChannel"] }))}
-                        className="w-full bg-black border border-[#1A1A1A] text-xs px-3.5 py-2.5 text-[#ECECEC] focus:outline-none uppercase font-bold"
-                      >
-                        <option value="">Chua chon</option>
-                        <option value="nhanh">Nhanh.vn</option>
-                        <option value="haravan">Haravan</option>
-                        <option value="kiotviet">KiotViet</option>
-                        <option value="sapo">Sapo</option>
-                        <option value="other">Khac</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">External Product ID</label>
-                      <input
-                        type="text"
-                        value={productForm.externalProductId}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, externalProductId: e.target.value }))}
-                        placeholder="De trong neu chua lien ket"
-                        className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">External Variant ID</label>
-                      <input
-                        type="text"
-                        value={productForm.externalVariantId}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, externalVariantId: e.target.value }))}
-                        placeholder="Ma bien the kho"
-                        className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Lan dong bo gan nhat</label>
-                      <input
-                        type="text"
-                        value={productForm.lastSyncedAt || "Chua dong bo"}
-                        readOnly
-                        className="w-full bg-black/60 border border-[#1A1A1A] text-gray-500 px-3.5 py-2.5 text-xs focus:outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
 
                 <label className="col-span-1 sm:col-span-2 flex items-center justify-between gap-4 border border-[#1A1A1A] bg-black/70 px-4 py-3 cursor-pointer">
                   <div className="space-y-1">
@@ -2951,7 +2804,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 {/* Dynamic specs builder */}
                 <div className="col-span-1 sm:col-span-2 border border-[#1A1A1A] p-4 bg-black/50 space-y-3">
                   <p className="text-[10px] text-gray-500">
-                    Copy bảng 2 cột từ Word/Excel rồi dán vào ô tên thông số hoặc giá trị để nhập hàng loạt. Dòng nào không có giá trị sẽ tự ẩn và không lưu.
+                    Dán bảng 2 cột hoặc các dòng “Tên thông số: Giá trị” vào một trong hai ô để nhập hàng loạt. Có thể có dấu đầu dòng. Dòng không có giá trị sẽ bỏ qua.
                   </p>
                   <span className="text-[9px] font-display font-extrabold uppercase tracking-widest text-[#F5C45A] block leading-none">Thông số kỹ thuật đi kèm</span>
                   

@@ -35,6 +35,16 @@ test('preview does not upload or publish; edited draft publishes without another
   assert.equal((h.calls.saved[0].description.match(/<img /g) || []).length, 2);
 });
 
+test('explicit pasted technical rows survive even when AI omits every spec', async () => {
+  const h = harness(); const r = row('specs');
+  r.facts = '• Chất liệu: PLA\nKích thước\t20 cm\nDung tích đề xuất: 300 ml';
+  await publishCatalogueBatch([r], h.pending, wm, { ...h.deps, previewOnly: true });
+  assert.deepEqual(h.pending.get(r.key)?.draft.specs, { 'Chất liệu': 'PLA', 'Kích thước': '20 cm' });
+  await publishCatalogueBatch([r], h.pending, wm, h.deps);
+  assert.deepEqual(h.calls.saved[0].specs, { 'Chất liệu': 'PLA', 'Kích thước': '20 cm' });
+  assert.equal(h.calls.ai, 1);
+});
+
 test('SKU stays IN3D for every category, including custom categories', () => {
   assert.equal(quickCatalogueSku('IN3D-ABCD12345678'), 'IN3D-9896');
   for (const category of [...Object.values(catalogueCategories), 'custom']) {

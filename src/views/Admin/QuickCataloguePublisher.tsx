@@ -4,6 +4,7 @@ import { auth, isFirebaseConfigured } from '../../lib/firebase';
 import { isCloudinaryConfigured, uploadImageToCloudinary } from '../../lib/cloudinary';
 import { catalogueMedia } from '../../lib/catalogueMedia';
 import { catalogueCategories } from '../../lib/aiCatalogue';
+import { confirmedSpecText } from '../../lib/productSpecsPaste';
 import { quickCatalogueContext, quickCatalogueExtras, quickCatalogueImageOrder, quickCatalogueProduct, quickCatalogueSku, quickCatalogueMaxDescription, quickCatalogueMaxOutputTokens, type QuickCatalogue } from '../../lib/quickCatalogue';
 import { watermarkImageFile, type WatermarkOptions } from '../../lib/watermark';
 import { revalidateProductCache } from '../../lib/productCacheClient';
@@ -13,10 +14,11 @@ import QuickListingOptions, { emptyListingOptions, type ListingOptions } from '.
 import type { Product } from '../../types';
 import CatalogueImagePicker from '../../components/Admin/CatalogueImagePicker';
 import { removeSelectedImage } from '../../lib/productImageSelection';
+import useCatalogueSession from '../../components/Admin/useCatalogueSession';
 
 type Pending = { draft: QuickCatalogue; id: string; files: File[]; urls: string[]; category: string; price: string; extras: ListingOptions & { coverIndex: number }; watermark: boolean; logo: string; options: WatermarkOptions; usage: { input: number; output: number }; product?: Product };
 export default function QuickCataloguePublisher({ provider, configured, disabled, onBusy }: { provider: string; configured: boolean; disabled: boolean; onBusy: (value: boolean) => void }) {
-  const { addProduct, productCategories } = useApp();
+  const { addProduct, productCategories, products } = useApp();
   const [running, setRunning] = useState(false);
   const [facts, setFacts] = useState(''), [name, setName] = useState(''), [description, setDescription] = useState('');
   const [listing, setListing] = useState<ListingOptions>(emptyListingOptions);
@@ -31,6 +33,17 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
   const [published, setPublished] = useState<Product | null>(null), [cacheWarning, setCacheWarning] = useState(false);
   const pending = useRef<Pending | null>(null), latch = useRef(false), active = useRef(true), controller = useRef<AbortController | null>(null);
   const nameInput = useRef<HTMLInputElement | null>(null);
+  const session = useCatalogueSession('quick', () => ({ name, description, facts, listing, watermark, logo, options, files: published ? [] : files, coverIndex, pending: pending.current ? { ...pending.current, files: published ? [] : pending.current.files } : null, published }), saved => {
+    setName(saved.name); setDescription(saved.description); setFacts(saved.facts); setListing(saved.listing);
+    setWatermark(saved.watermark); setLogo(saved.logo); setOptions(saved.options); setFiles(saved.files); setCoverIndex(saved.coverIndex);
+    pending.current = saved.pending; setSummary(saved.pending); setPublished(saved.published);
+  }, [name, description, facts, listing, watermark, logo, options, files, coverIndex, summary, published, progress, running]);
+  useEffect(() => {
+    const draft = pending.current;
+    if (!session.ready || !draft || draft.product) return;
+    const saved = products.find(product => product.id === draft.id);
+    if (saved) { draft.product = saved; draft.files = []; setFiles([]); setPublished(saved); setSummary({ ...draft }); }
+  }, [products, session.ready]);
   useEffect(() => { active.current = true; return () => { active.current = false; controller.current?.abort(); }; }, []);
   function ensureActive() { if (!active.current) throw new Error('Đã rời công cụ; dừng trước bước đăng sản phẩm.'); }
   async function save(d: Pending) {
@@ -43,12 +56,15 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
       const uploadFile = d.watermark ? await watermarkImageFile(d.files[i], d.logo, d.options, 0.7) : d.files[i];
       ensureActive();
       d.urls.push(await uploadImageToCloudinary(uploadFile, { convertToWebp: true, webpQuality: 0.7 }));
+      await session.persist();
     }
     ensureActive();
     const product = quickCatalogueProduct(d.draft, d.id, d.urls, d.category, d.price, d.extras);
     setProgress('Đang lưu sản phẩm công khai lên website…');
     if (!await addProduct(product)) throw new Error('Chưa lưu được sản phẩm. Ảnh đã upload được giữ lại trong lượt này; bấm thử đăng lại, không gọi AI thêm.');
     d.product = product;
+    d.files = [];
+    await session.persist();
     if (active.current) { setPublished(product); setSummary({ ...d }); setProgress('Đã đăng sản phẩm lên website.'); }
     const refreshed = await revalidateProductCache();
     if (active.current) setCacheWarning(!refreshed);
@@ -76,8 +92,9 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Không tạo được nội dung sản phẩm.');
         ensureActive();
-        d = { draft: { ...data.draft, name: name.trim() || data.draft.name }, id: 'IN3D-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase(), files: selected, urls: [], category, price, extras: { ...listing, coverIndex }, watermark, logo, options: { ...options }, usage: data.usage };
+        d = { draft: { ...data.draft, name: name.trim() || data.draft.name, specs: { ...data.draft.specs, ...confirmedSpecText(facts) } }, id: 'IN3D-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase(), files: selected, urls: [], category, price, extras: { ...listing, coverIndex }, watermark, logo, options: { ...options }, usage: data.usage };
         pending.current = d; setSummary({ ...d });
+        await session.persist();
       }
       if (d.product) { setPublished(d.product); return; }
       // Category/price can be corrected after a stopped publish, without another AI call.
@@ -97,7 +114,7 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
   }
   function invalidate() { pending.current = null; setSummary(null); setError(''); setProgress('Nội dung đầu vào đã đổi. Bấm Tạo nội dung để phân tích lại.'); }
   function createNew() {
-    if (latch.current || disabled || !published) return;
+    if (latch.current || disabled) return;
     pending.current = null; controller.current = null;
     setPublished(null); setSummary(null); setFiles([]); setFrames([]); setCoverIndex(0);
     setName(''); setDescription(''); setFacts(''); setListing(emptyListingOptions());
@@ -106,8 +123,9 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
     requestAnimationFrame(() => { nameInput.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); nameInput.current?.focus({ preventScroll: true }); });
   }
   const box = 'w-full bg-black border border-gray-700 p-3 text-sm text-gray-100';
-  const locked = disabled || running;
+  const locked = disabled || running || !session.ready;
   return <div className="space-y-4">
+    <div className="flex flex-wrap items-center gap-3"><p role="status" className="text-xs text-gray-400">{session.status}</p><button type="button" disabled={locked} className="text-xs text-red-300 disabled:opacity-40" onClick={() => { if (window.confirm('Xóa phiên đăng nhanh trên máy? Không xóa sản phẩm đã đăng hoặc file Cloudinary.')) createNew(); }}>Xóa phiên lưu tạm</button></div>
     <div className="border border-gold-dark/30 bg-black/40 p-4 space-y-2">
       <h3 className="font-bold text-gold-light">Đăng nhanh từ ảnh — xem trước rồi đăng</h3>
       <p className="text-sm">Chọn ảnh và mô tả → bấm Tạo nội dung → kiểm tra/sửa tên, mô tả → bấm Đăng lên web. Chọn ảnh không gọi AI, không tự đăng.</p>
@@ -120,6 +138,8 @@ export default function QuickCataloguePublisher({ provider, configured, disabled
     <label className="block text-sm">Tên sản phẩm (nếu có)<input ref={nameInput} className={box + ' mt-2'} maxLength={140} value={name} disabled={locked || !!published} onChange={e => { setName(e.target.value); invalidate(); }} placeholder="Để trống: AI gợi ý tên" /></label>
     <label className="block text-sm">Mô tả / loại sản phẩm để AI hiểu đúng (tùy chọn)<textarea className={box + ' mt-2'} rows={3} maxLength={1000} value={description} disabled={locked || !!published} onChange={e => { setDescription(e.target.value); invalidate(); }} placeholder="VD: Đây là đèn ngủ để bàn, chụp trắng và chân đỏ. Có thể dán mô tả ngoại ngữ để AI dịch sang tiếng Việt." /></label>
     <label className="block text-sm">Thông tin kỹ thuật đã xác nhận (không bắt buộc)<textarea className={box + ' mt-2'} rows={2} maxLength={1500} value={facts} disabled={locked || !!published} onChange={e => { setFacts(e.target.value); invalidate(); }} placeholder="VD: Chất liệu: PLA. Kích thước: 15 × 10 × 20 cm. Không biết thì để trống." /></label>
+    <p className="text-xs text-gray-400">Dán bảng 2 cột hoặc mỗi dòng “Tên thông số: Giá trị”. Tự tách trên máy, không gọi AI thêm. Chỉ nhập thông tin đã xác nhận; dòng đề xuất/chưa xác nhận không tự thêm.</p>
+    {Object.keys(confirmedSpecText(facts)).length > 0 && <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs border border-white/10 p-3">{Object.entries(confirmedSpecText(facts)).map(([key, value]) => <React.Fragment key={key}><dt className="text-gray-400">{key}</dt><dd>{value}</dd></React.Fragment>)}</dl>}
     <QuickListingOptions value={listing} onChange={setListing} disabled={locked || !!published} />
     <ProductWatermarkControls enabled={watermark} onEnabledChange={setWatermark} logoUrl={logo} onLogoChange={setLogo} options={options} onOptionsChange={setOptions} disabled={locked} imageUrl={previews[coverIndex] || frames[0]} />
     <label className="block font-bold text-gold-light">THÊM ẢNH SẢN PHẨM<input className={box + ' mt-2'} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={locked} onChange={e => { choose(Array.from(e.target.files || [])); e.target.value = ''; }} /></label>
