@@ -600,6 +600,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       .map((variant, index) => ({
         id: String(variant.id || `variant-${index + 1}`).trim() || `variant-${index + 1}`,
         name: String(variant.name || "").trim(),
+        hidden: Boolean(variant.hidden),
         size: String(variant.size || "").trim(),
         price: String(variant.price || "").trim(),
         salePrice: String(variant.salePrice || "").trim(),
@@ -937,9 +938,9 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   images: galleryImageUrls,
   videoUrls: productVideoUrls,
   variants: productVariants,
-  defaultVariantId: productVariants.some((variant) => variant.id === productForm.defaultVariantId)
+  defaultVariantId: productVariants.some((variant) => !variant.hidden && variant.id === productForm.defaultVariantId)
     ? productForm.defaultVariantId
-    : productVariants[0]?.id || "",
+    : productVariants.find(variant => !variant.hidden)?.id || "",
   combos: productCombos,
   colors: Array.from(new Set(productColorsDraft.split(/[,|\n]/).map((color) => color.trim()).filter(Boolean))),
   orderNote: String(productForm.orderNote || "").trim(),
@@ -1054,6 +1055,9 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     }
     setProductForm(prev => ({
       ...prev,
+      defaultVariantId: updates.hidden && prev.defaultVariantId === prev.variants?.[index]?.id
+        ? prev.variants?.find((item, itemIndex) => itemIndex !== index && !item.hidden)?.id || ''
+        : prev.defaultVariantId,
       variants: (prev.variants || []).map((variant, variantIndex) =>
         variantIndex === index ? { ...variant, ...updates } : variant
       ),
@@ -1067,7 +1071,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       return {
         ...prev,
         variants,
-        defaultVariantId: prev.defaultVariantId === removedId ? variants[0]?.id || "" : prev.defaultVariantId,
+        defaultVariantId: prev.defaultVariantId === removedId ? variants.find(variant => !variant.hidden)?.id || "" : prev.defaultVariantId,
       };
     });
   };
@@ -2677,10 +2681,14 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                     <div className="space-y-3">
                       {(productForm.variants || []).map((variant, index) => (
                         <details key={variant.id || index} className="border border-white/10 bg-black/70 p-3 space-y-3">
-                          <summary className="cursor-pointer text-xs text-gold-light">{variant.name || `Phân loại ${index + 1}`} · {variant.size || 'Chưa có kích thước'} · {variant.salePrice || variant.price || 'Giá chung'} — mở / thu gọn</summary>
+                          <summary className={`cursor-pointer text-xs ${variant.hidden ? 'text-gray-500' : 'text-gold-light'}`}>{variant.hidden ? '[Đang ẩn] ' : ''}{variant.name || `Phân loại ${index + 1}`} · {variant.size || 'Chưa có kích thước'} · {variant.salePrice || variant.price || 'Giá chung'} — mở / thu gọn</summary>
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-[10px] font-display font-bold uppercase tracking-widest text-gray-400">Phân loại {index + 1}</span>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <label className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] text-orange-300">
+                                <input type="checkbox" checked={Boolean(variant.hidden)} onChange={event => handleUpdateVariant(index, { hidden: event.target.checked })} className="h-3.5 w-3.5 accent-orange-400" />
+                                Ẩn phân loại
+                              </label>
                               <label className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] text-gray-300">
                                 <input type="checkbox" checked={Boolean(variantTemplates[variant.id])} onChange={(e) => handleRememberVariant(variant, e.target.checked)} className="h-3.5 w-3.5 accent-gold-dark" />
                                 Lưu mẫu trên máy
@@ -2689,6 +2697,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                                 <input
                                   type="radio"
                                   name="default-product-variant"
+                                  disabled={Boolean(variant.hidden)}
                                   checked={productForm.defaultVariantId === variant.id}
                                   onChange={() => setProductForm(prev => ({ ...prev, defaultVariantId: variant.id }))}
                                   className="h-3.5 w-3.5 accent-gold-dark"

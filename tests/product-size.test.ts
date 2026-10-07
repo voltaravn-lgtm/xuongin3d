@@ -20,3 +20,15 @@ test('nhận dạng ID giỏ hàng có màu/size và chặn ID không hợp lệ
   assert.equal(isValidProductSize(product,'fake','Cao 16 cm'),false);
   assert.equal(isValidProductSize(product,undefined,'15cm'),false);
 });
+test('phân loại ẩn không được chọn kể cả dùng ID giỏ hàng cũ; hiện lại thì dùng được', () => {
+  const changed = { ...product, variants: product.variants!.map(v => ({ ...v, hidden: v.id === 'small' })) };
+  assert.equal(resolveProductVariant(changed, 'small--color-trang'), undefined);
+  assert.equal(isValidProductSize(changed, 'small--size-cao16', 'Cao 16 cm'), false);
+  assert.equal(isValidProductSize(changed, 'large', 'Cao 30 cm'), true);
+  changed.variants[0].hidden = false;
+  assert.equal(isValidProductSize(changed, 'small', 'Cao 16 cm'), true);
+});
+test('ẩn hết phân loại không biến sản phẩm thành loại không có phân loại để mua', () => {
+  const changed = { ...product, variants: product.variants!.map(v => ({ ...v, hidden: true })) };
+  assert.equal(isValidProductSize(changed, undefined, '15cm'), false);
+});

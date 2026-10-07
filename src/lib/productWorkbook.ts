@@ -47,7 +47,7 @@ export function productWorkbookMatrix(products: Product[]) {
   ];
   const keys = ['id','name','price','salePrice','sku','stockQuantity','image','stockStatus','size'] as const;
   for (let index = 1; index <= Math.max(3, ...products.map(p => p.variants?.length || 0)); index++) {
-    variantExcelFields.forEach((field, i) => columns.push([variantExcelHeader(index, field), p => p.variants?.[index - 1]?.[keys[i]]]));
+    variantExcelFields.forEach((field, i) => columns.push([variantExcelHeader(index, field), p => field === 'Ẩn' ? (p.variants?.[index - 1]?.hidden === undefined ? '' : p.variants[index - 1].hidden ? 'Có' : 'Không') : p.variants?.[index - 1]?.[keys[i]]]));
   }
   return [columns.map(([label]) => label), ...products.map(p => columns.map(([label, getter]) => {
     const v = getter(p);

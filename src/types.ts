@@ -53,6 +53,7 @@ export interface Product {
 }
 
 export interface ProductVariant {
+  hidden?: boolean;
   size?: string;
   selectedSize?: string;
   selectedColor?: string;

@@ -1,7 +1,7 @@
 import type { Product, ProductVariant } from "../types";
 
 export function resolveProductVariant(product: Product, variantId?: string): ProductVariant | undefined {
-  return (product.variants || []).filter((v) => v.name.trim())
+  return (product.variants || []).filter((v) => !v.hidden && v.name.trim())
     .sort((a, b) => b.id.length - a.id.length)
     .find((v) => v.id === variantId || variantId?.startsWith(`${v.id}--size-`) || variantId?.startsWith(`${v.id}--color-`));
 }

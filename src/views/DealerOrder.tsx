@@ -29,6 +29,7 @@ function retailOf(product: Product) {
   const productPrice = parsePrice(product.retailPrice || product.salePrice || product.price);
   if (productPrice) return productPrice;
   const variantPrices = (product.variants || [])
+    .filter(variant => !variant.hidden)
     .map((variant) => parsePrice(variant.salePrice || variant.price))
     .filter((price) => price > 0);
   return variantPrices.length ? Math.min(...variantPrices) : 0;

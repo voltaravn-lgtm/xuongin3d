@@ -8,7 +8,8 @@ import { announceOrderSuccess } from '../../lib/orderSuccess';
 interface FormItem { productId: string; variantId?: string; quantity: number; }
 const newRequestId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export default function LandingOrderForm({ block, page, products, editorMode }: { block: OrderFormLandingBlock; page: LandingPage; products: Product[]; editorMode?: boolean }) {
+export default function LandingOrderForm({ block, page, products: sourceProducts, editorMode }: { block: OrderFormLandingBlock; page: LandingPage; products: Product[]; editorMode?: boolean }) {
+  const products = useMemo(() => sourceProducts.map(product => ({ ...product, variants: product.variants?.filter(variant => !variant.hidden) })), [sourceProducts]);
   const type = block.formType || 'order';
   const initialItems = useMemo<FormItem[]>(() => {
     const combo = page.blocks.find((item): item is ComboLandingBlock => item.type === 'combo' && !item.hidden);
@@ -24,6 +25,10 @@ export default function LandingOrderForm({ block, page, products, editorMode }: 
   const submit = async (event: FormEvent) => {
     event.preventDefault(); if (editorMode || submitting) return; setSubmitting(true); setError('');
     try {
+      if (type === 'order') for (const item of items) {
+        const product = sourceProducts.find(product => product.id === item.productId);
+        if (product?.variants?.length && !product.variants.some(variant => !variant.hidden && variant.id === item.variantId)) throw new Error('Vui lòng chọn phân loại đang hiện. Phân loại đã ẩn không thể đặt hàng.');
+      }
       const response = await fetch('/api/landing-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ landingPageId: page.id, ...fields, items, requestId }) });
       const result = await response.json() as { error?: string; orderCode?: string; total?: number; currency?: string };
       if (!response.ok || !result.orderCode) throw new Error(result.error || 'Không thể gửi đơn hàng.');

@@ -75,7 +75,7 @@ export async function createLandingOrder(input: LandingOrderRequestInput): Promi
   const combo = exactCombo(input.items, combos);
   let snapshots: LandingOrderItemSnapshot[] = input.items.map((item) => {
     const product = products.get(item.productId)!; const variants = product.variants || [];
-    const variant = item.variantId ? variants.find((entry) => entry.id === item.variantId) : undefined;
+    const variant = item.variantId ? variants.find((entry) => !entry.hidden && entry.id === item.variantId) : undefined;
     if (variants.length && !item.variantId) throw new LandingOrderError(`Vui lòng chọn phân loại cho ${product.name}.`);
     if (item.variantId && !variant) throw new LandingOrderError(`Phân loại của ${product.name} không hợp lệ.`);
     const priceBlock = landing.blocks.find((block): block is PriceLandingBlock => block.type === 'price' && !block.hidden && (block.productId || landing.primaryProductId) === product.id && block.displayPrice != null);

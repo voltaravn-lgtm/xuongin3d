@@ -29,7 +29,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   ).slice(0, 12);
   const relatedProductsRef = useRef<HTMLDivElement | null>(null);
   const productVariants = useMemo(
-    () => (currentProduct.variants || []).filter((variant) => String(variant.name || "").trim()),
+    () => (currentProduct.variants || []).filter((variant) => !variant.hidden && String(variant.name || "").trim()),
     [currentProduct.variants],
   );
   const productColors = useMemo(
@@ -247,6 +247,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     }
   };
   const validateRequiredSelections = () => {
+    if ((currentProduct.variants || []).some(variant => String(variant.name || '').trim()) && productVariants.length === 0) {
+      showToast('Sản phẩm hiện không có phân loại đang bán. Vui lòng liên hệ xưởng.', 'warning');
+      return false;
+    }
     if (productSizes.length > 0 && !effectiveSize) {
       showToast("Vui lòng chọn kích thước trước khi đặt hàng.", "warning");
       return false;
@@ -413,6 +417,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </div>
               )}
 
+              {productVariants.length === 0 && (currentProduct.variants || []).some(variant => variant.name?.trim()) && <p className="mt-6 text-sm text-orange-300">Hiện chưa có phân loại đang bán. Vui lòng liên hệ xưởng.</p>}
               {productVariants.length > 0 && (
                 <div className="mt-6">
                   <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">Chọn phân loại</div>

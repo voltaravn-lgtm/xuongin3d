@@ -10,7 +10,7 @@ function moneyValue(price: string | undefined): number | null {
 /** Keep the original price paired with the cheapest purchasable variant. */
 export function getProductCardPrice(product: Product) {
   const candidates = (product.variants || [])
-    .filter((variant) => variant.name?.trim())
+    .filter((variant) => !variant.hidden && variant.name?.trim())
     .map((variant) => ({
       price: variant.price || product.price,
       salePrice: variant.salePrice || product.salePrice,
@@ -26,6 +26,7 @@ export function getProductCardPrice(product: Product) {
     .sort((a, b) => a.value! - b.value!);
   const lowest = numericCandidates[0];
   if (lowest) return { price: lowest.price, salePrice: lowest.discounted ? lowest.salePrice : "" };
+  if (!candidates.length && (product.variants || []).some(variant => variant.name?.trim())) return { price: 'Liên hệ', salePrice: '' };
 
   const regular = moneyValue(product.price);
   const sale = moneyValue(product.salePrice);

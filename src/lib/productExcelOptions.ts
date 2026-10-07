@@ -1,6 +1,6 @@
 import type { Product, ProductVariant } from "../types";
 
-export const variantExcelFields = ["ID", "Tên", "Giá bán", "Giá giảm", "SKU", "Số tồn", "Ảnh", "Trạng thái kho", "Kích thước"] as const;
+export const variantExcelFields = ["ID", "Tên", "Giá bán", "Giá giảm", "SKU", "Số tồn", "Ảnh", "Trạng thái kho", "Kích thước", "Ẩn"] as const;
 export const variantExcelHeader = (index: number, field: string) => `Phân loại ${index} - ${field}`;
 
 export function splitProductChoices(value: string): string[] {
@@ -32,6 +32,7 @@ export function readProductExcelOptions(
     indexed.push({ index, variant: {
       ...previous,
       id, name,
+      ...(read('Ẩn') ? { hidden: /^(có|co|yes|true|1|ẩn|an)$/i.test(read('Ẩn')) } : previous?.hidden === undefined ? {} : { hidden: previous.hidden }),
       size: optional("Kích thước", previous?.size),
       price: optional("Giá bán", previous?.price),
       salePrice: optional("Giá giảm", previous?.salePrice),
@@ -56,6 +57,6 @@ export function readProductExcelOptions(
     colors: colors === "-" ? [] : colors ? splitProductChoices(colors) : existing?.colors || [],
     orderNote: cell("Ghi chú đặt hàng") === "-" ? "" : cell("Ghi chú đặt hàng") || existing?.orderNote || "",
     variants,
-    defaultVariantId: requestedDefault || (variants.some((v) => v.id === existing?.defaultVariantId) ? existing?.defaultVariantId : variants[0]?.id || ""),
+    defaultVariantId: variants.find(v => !v.hidden && v.id === requestedDefault)?.id || (variants.some((v) => !v.hidden && v.id === existing?.defaultVariantId) ? existing?.defaultVariantId : variants.find(v => !v.hidden)?.id || ""),
   };
 }
