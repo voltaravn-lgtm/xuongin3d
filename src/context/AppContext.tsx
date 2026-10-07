@@ -14,6 +14,8 @@ import { isValidProductSize } from "../lib/productSize";
 import { PRODUCTS_DATA, SOLUTIONS_DATA, ARTICLES_DATA, BRANCHES_DATA, DEALERS_DATA, JOBS_DATA, COURSES_DATA } from "../data";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { isAdminEmail } from "../lib/adminAuth";
+import { trashProduct } from "../lib/productTrash";
+import { revalidateProductCache } from "../lib/productCacheClient";
 
 export interface MenuItem {
   name: string;
@@ -177,7 +179,7 @@ interface AppContextType {
   // Dynamic State Modifiers for Easy Administration
   updateProduct: (product: Product) => Promise<boolean>;
   addProduct: (product: Product) => Promise<boolean>;
-  deleteProduct: (id: string) => void;
+  deleteProduct: (id: string) => Promise<boolean>;
   updateMenuItem: (index: number, updatedItem: MenuItem) => void;
   addMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (index: number) => void;
@@ -1017,16 +1019,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = async (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-
-    if (isFirebaseConfigured) {
-      try {
-        await deleteDoc(doc(db, "products", id));
-      } catch (error) {
-        console.error("Could not delete product from Firestore:", error);
-        showToast("Không thể xóa sản phẩm trên Firebase.", "error");
-      }
+    const product = products.find(p => p.id === id);
+    if (!product) return false;
+    if (!isFirebaseConfigured) {
+      showToast("Cần kết nối Firebase để lưu lịch sử xóa 7 ngày. Sản phẩm chưa bị xóa.", "error");
+      return false;
     }
+    try {
+      await trashProduct(product);
+    } catch (error) {
+      console.error("Could not move product to trash:", error);
+      showToast(error instanceof Error ? error.message : "Không thể chuyển sản phẩm vào mục Đã xóa.", "error");
+      return false;
+    }
+    setProducts(prev => prev.filter(p => p.id !== id));
+    showToast("Đã chuyển vào mục Đã xóa. Có thể khôi phục trong 7 ngày.", "success");
+    if (!await revalidateProductCache()) showToast("Đã xóa tạm nhưng chưa làm mới cache web được. Không cần xóa lại.", "warning");
+    return true;
   };
 
   const updateMenuItem = (index: number, updatedItem: MenuItem) => {

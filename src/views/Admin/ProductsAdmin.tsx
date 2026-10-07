@@ -5,6 +5,7 @@ import { PRODUCTS_DATA } from "../../data";
 import { uploadImageToCloudinary, isCloudinaryConfigured } from "../../lib/cloudinary";
 import { watermarkImageFile, type WatermarkOptions } from "../../lib/watermark";
 import ProductWatermarkControls from "../../components/Admin/ProductWatermarkControls";
+import ProductTrashPanel from "../../components/Admin/ProductTrashPanel";
 import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
@@ -403,6 +404,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   } = useApp();
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const deletingProductIds = useRef(new Set<string>());
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isToolbarPreviewMode, setIsToolbarPreviewMode] = useState(false);
   const [isQuickImagePanelOpen, setIsQuickImagePanelOpen] = useState(false);
@@ -897,7 +899,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       if (isChangingId) {
         const didAdd = await addProduct(currentForm);
         if (!didAdd) return;
-        deleteProduct(originalId);
+        if (!await deleteProduct(originalId)) return;
       } else {
         const didUpdate = await updateProduct(currentForm);
         if (!didUpdate) return;
@@ -915,10 +917,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     setIsProductModalOpen(false);
   };
 
-  const handleDeleteProductPrompt = (id: string, name: string) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${name}" khỏi kho?`)) {
-      deleteProduct(id);
-    }
+  const handleDeleteProductPrompt = async (id: string, name: string) => {
+    if (deletingProductIds.current.has(id)) return;
+    if (!window.confirm(`Chuyển sản phẩm “${name}” vào mục Đã xóa?\n\nSản phẩm sẽ được gỡ khỏi website. Bạn có thể khôi phục trong 7 ngày; hết hạn bản lưu sẽ bị xóa tự động. Ảnh Cloudinary không bị xóa.`)) return;
+    deletingProductIds.current.add(id);
+    try { await deleteProduct(id); }
+    finally { deletingProductIds.current.delete(id); }
   };
 
   const handleCopyProduct = (prod: Product) => {
@@ -2080,6 +2084,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
         )}
       </div>
 
+      <ProductTrashPanel />
       <div className="border border-white/5 bg-black/40 p-4 space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
           <div className="lg:col-span-4 relative">

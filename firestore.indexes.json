@@ -50,5 +50,7 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "productTrash", "fieldPath": "expiresAt", "ttl": true, "indexes": [] }
+  ]
 }

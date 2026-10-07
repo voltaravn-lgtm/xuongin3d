@@ -10,11 +10,9 @@ export async function getBuildProducts(): Promise<Product[]> {
   try {
     const snapshot = await getDocs(collection(db, "products"));
     const remoteProducts = snapshot.docs.map((item) => item.data() as Product);
-    const byId = new Map<string, Product>();
-    [...PRODUCTS_DATA, ...remoteProducts].forEach((product) => {
-      if (product?.id) byId.set(product.id, product);
-    });
-    return Array.from(byId.values());
+    // Firestore is authoritative, including an empty catalog. Merging static
+    // examples back in would resurrect deleted products in pages and sitemap.
+    return remoteProducts.filter(product => Boolean(product?.id));
   } catch (error) {
     console.error("Could not load products for static product routes:", error);
     return PRODUCTS_DATA;

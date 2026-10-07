@@ -20,6 +20,20 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /productTrash/{productId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.product.id == productId
+        && request.resource.data.deletedAt == request.time
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
+      allow update: if false;
+      // Admins can permanently delete backups, including expired ones.
+      // The restore workflow separately checks the deadline before recreating a product.
+      allow delete: if isAdmin();
+    }
+
     match /articles/{articleId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
@@ -90,8 +104,8 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    match /{collectionName}/{document=**} {
+      allow read, write: if collectionName != 'productTrash' && isAdmin();
     }
   }
 }
