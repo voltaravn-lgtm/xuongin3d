@@ -7,6 +7,7 @@ import { watermarkImageFile, type WatermarkOptions } from "../../lib/watermark";
 import ProductWatermarkControls from "../../components/Admin/ProductWatermarkControls";
 import ProductTrashPanel from "../../components/Admin/ProductTrashPanel";
 import ProductPagination from "../../components/Admin/ProductPagination";
+import ProductPrintFileButton from "../../components/Admin/ProductPrintFileButton";
 import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
@@ -2346,12 +2347,13 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 </div>
               </div>
 
-              <div className={`${adminViewMode === "grid" ? "mt-2.5 pt-2 border-t border-[#1A1A1A] flex items-center justify-between gap-2" : "flex items-center justify-end gap-2 shrink-0"}`}>
+              <div className={`${adminViewMode === "grid" ? "mt-2.5 pt-2 border-t border-[#1A1A1A] flex flex-wrap items-center justify-between gap-2" : "flex flex-wrap items-center justify-end gap-2 shrink-0"}`}>
                 {adminViewMode === "grid" && (
                   <span className="min-w-0 truncate text-[8px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 font-bold uppercase">{getCategoryDisplayName(prod.category, prod.subCategory)}</span>
                 )}
 
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                  <ProductPrintFileButton product={prod} />
                   <button
                     type="button"
                     onClick={() => handleToggleProductVisibility(prod)}

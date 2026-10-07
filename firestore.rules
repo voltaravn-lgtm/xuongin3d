@@ -20,6 +20,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // File links are internal admin data, not part of the public product document.
+    match /productPrintFiles/{productId} {
+      allow read, write: if isAdmin();
+    }
+
     match /productTrash/{productId} {
       allow read: if isAdmin();
       allow create: if isAdmin()
