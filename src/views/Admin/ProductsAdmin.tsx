@@ -450,6 +450,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [productPriceFilter, setProductPriceFilter] = useState<"all" | "missing" | "complete" | "variants">("all");
   const [productPageSize, setProductPageSize] = useState(ADMIN_PRODUCTS_PAGE_SIZE);
   const [productPage, setProductPage] = useState(1);
+  const [legacyProductOrder, setLegacyProductOrder] = useState(false);
   const paginationTopRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setProductPage(1);
@@ -464,7 +465,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       const ids = new Set(items.map(item => item.id));
       return [...previous.filter(item => !ids.has(item.id)), ...items];
     });
-  });
+  }, legacyProductOrder);
   const confirmFullCatalog = () => window.confirm('Tìm theo tên/lọc nâng cao cần đọc toàn bộ kho vì chưa có chỉ mục tìm kiếm. Dữ liệu sẽ được lưu tạm 5 phút. Tiếp tục? Tìm đúng mã IN3D-xxxx không cần đọc toàn kho.');
   const applyProductSearch = () => {
     const value = productSearchQuery.trim();
@@ -2264,7 +2265,11 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       {/* Catalog lists */}
       <div ref={paginationTopRef} className="scroll-mt-28">
         <ProductPagination total={productPages.total} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} disabled={productPages.loading} maxPage={productPages.knownPage} />
-        <p className="mt-2 text-[11px] text-gray-500">{productPages.advanced ? 'Đang tìm/lọc nâng cao; bản đọc toàn kho lưu tạm 5 phút.' : 'Tải từng trang theo ID, không đọc toàn kho. Dùng Sau để tải trang mới; trang đã tải lưu tạm 5 phút, kể cả F5.'}</p>
+        <p className="mt-2 text-[11px] text-gray-500">{productPages.advanced ? 'Đang tìm/lọc nâng cao; bản đọc toàn kho lưu tạm 5 phút.' : `${legacyProductOrder ? 'Kho đầy đủ theo ID' : 'Mới nhất trước'} · tải từng trang, không đọc toàn kho. Trang đã tải lưu tạm 5 phút; có sản phẩm mới sẽ làm mới danh sách.`}</p>
+        {!productPages.advanced && (productPages.undatedTotal > 0 || legacyProductOrder) && <p className="mt-2 text-xs text-orange-300">
+          {productPages.undatedTotal > 0 && `${productPages.undatedTotal} sản phẩm cũ chưa có ngày tạo, chưa nằm trong thứ tự mới nhất. `}
+          <button type="button" onClick={() => { setLegacyProductOrder(value => !value); setProductPage(1); }} className="underline">{legacyProductOrder ? 'Xem mới nhất trước' : 'Xem kho đầy đủ theo ID'}</button>
+        </p>}
         <button type="button" disabled={productPages.loading} onClick={() => { if (productPages.advanced && !confirmFullCatalog()) return; invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
       </div>
       {productPages.error && <p role="alert" className="border border-red-400/30 p-3 text-sm text-red-300">{productPages.error}</p>}

@@ -45,7 +45,7 @@ import NewsletterAdmin from "./Admin/NewsletterAdmin";
 import SiteContactAdmin from "./Admin/SiteContactAdmin";
 import LandingPagesAdmin from "./Admin/LandingPagesAdmin";
 import LandingOrdersAdmin from "./Admin/LandingOrdersAdmin";
-import { ADMIN_PRODUCT_CACHE_EVENT, loadAdminProductCatalogue, loadAdminProductTotal } from '../lib/adminProductPages';
+import { ADMIN_PRODUCT_CACHE_EVENT, loadAdminProductCatalogue, loadAdminProductTotal, subscribeAdminNewestProduct } from '../lib/adminProductPages';
 import { subscribeNewLandingOrderCount } from '../lib/landing/landingOrderRepository';
 
 export default function Admin() {
@@ -89,6 +89,9 @@ export default function Admin() {
   useEffect(() => subscribeNewLandingOrderCount(count => {
     setNewOrderCount(count); setOrderBadgeError(false);
   }, () => { setOrderBadgeError(true); }), []);
+  useEffect(() => subscribeAdminNewestProduct(() => {
+    // Manual Firebase refresh remains available if live updates disconnect.
+  }), []);
   const setActiveTab = async (tab: typeof activeTab) => {
     if (loadingProductTool) return;
     if (tab === 'aiCatalogue' || tab === 'promoOverlay') {

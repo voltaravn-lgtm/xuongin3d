@@ -1,10 +1,11 @@
-import { collection, doc, documentId, getCountFromServer, getDoc, getDocs, limit, orderBy, query, startAfter, where } from 'firebase/firestore';
+import { collection, doc, documentId, getCountFromServer, getDoc, getDocs, limit, onSnapshot, orderBy, query, startAfter, where } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import type { Product } from '../types';
 
 export const ADMIN_PRODUCT_CACHE_MS = 5 * 60 * 1000;
 export const ADMIN_PRODUCT_CACHE_EVENT = 'admin-product-pages-invalidated';
-const prefix = 'in3d-admin-product-pages-v1:';
+const prefix = 'in3d-admin-product-pages-v2:';
+export type AdminProductCursor = { id: string; createdAt?: string };
 const pending = new Map<string, Promise<any>>();
 let generation = 0;
 function key(name: string) { return `${prefix}${auth.currentUser?.uid || 'admin'}:${name}`; }
@@ -30,11 +31,11 @@ export function invalidateAdminProductPages() {
   try { Object.keys(sessionStorage).filter(item => item.startsWith(prefix)).forEach(item => sessionStorage.removeItem(item)); } catch { /* Optional cache. */ }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(ADMIN_PRODUCT_CACHE_EVENT));
 }
-export function adminProductPageQuery(pageSize: number, cursor?: string) {
+export function adminProductPageQuery(pageSize: number, cursor?: AdminProductCursor, legacy = false) {
   if (![12, 24, 48].includes(pageSize)) throw new Error('Số sản phẩm mỗi trang không hợp lệ.');
-  // ID ordering includes legacy documents without createdAt. Never use offset:
-  // Firestore charges skipped documents when using offsets.
-  return query(collection(db, 'products'), orderBy(documentId(), 'desc'), ...(cursor ? [startAfter(cursor)] : []), limit(pageSize));
+  return query(collection(db, 'products'),
+    ...(legacy ? [] : [orderBy('createdAt', 'desc')]), orderBy(documentId(), 'desc'),
+    ...(cursor ? [legacy ? startAfter(cursor.id) : startAfter(cursor.createdAt, cursor.id)] : []), limit(pageSize));
 }
 /** Legacy link discovery is bounded to the visible page, never the whole catalog. */
 export async function loadAdminPrintFileStatuses(products: Product[]) {
@@ -64,11 +65,28 @@ export function cacheAdminPrintFileStatus(id: string, hasPrintFile: boolean) {
     }
   } catch { /* Optional cache. */ }
 }
-export async function loadAdminProductPage(pageSize: number, cursor?: string) {
-  return cached(`page:${pageSize}:${cursor || ''}`, async () => {
-    const snapshot = await getDocs(adminProductPageQuery(pageSize, cursor));
-    return { products: snapshot.docs.map(item => ({ ...item.data(), id: item.id } as Product)), cursor: snapshot.docs.at(-1)?.id };
+export async function loadAdminProductPage(pageSize: number, cursor?: AdminProductCursor, legacy = false) {
+  return cached(`page:${legacy ? 'id' : 'newest'}:${pageSize}:${JSON.stringify(cursor || null)}`, async () => {
+    const snapshot = await getDocs(adminProductPageQuery(pageSize, cursor, legacy));
+    const last = snapshot.docs.at(-1);
+    return { products: snapshot.docs.map(item => ({ ...item.data(), id: item.id } as Product)), cursor: last ? { id: last.id, ...(legacy ? {} : { createdAt: last.data().createdAt as string }) } : undefined };
   });
+}
+export async function loadAdminDatedProductTotal() {
+  return cached('dated-count', async () => (await getCountFromServer(query(collection(db, 'products'), orderBy('createdAt', 'desc')))).data().count);
+}
+/** One-document listener catches new products, including creations in another tab. */
+export function subscribeAdminNewestProduct(onError?: (error: Error) => void) {
+  const markerKey = `in3d-admin-product-head:${auth.currentUser?.uid || 'admin'}`;
+  let previous: string | null = null;
+  try { previous = sessionStorage.getItem(markerKey); } catch { /* Optional storage. */ }
+  return onSnapshot(query(collection(db, 'products'), orderBy('createdAt', 'desc'), orderBy(documentId(), 'desc'), limit(1)), snapshot => {
+    const first = snapshot.docs[0];
+    const marker = JSON.stringify(first ? [first.id, first.data().createdAt] : []);
+    if (previous !== null && marker !== previous) invalidateAdminProductPages();
+    previous = marker;
+    try { sessionStorage.setItem(markerKey, marker); } catch { /* Optional storage. */ }
+  }, onError);
 }
 export async function loadAdminProductTotal() {
   return cached('count', async () => (await getCountFromServer(collection(db, 'products'))).data().count);
