@@ -447,7 +447,6 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [appliedProductSearch, setAppliedProductSearch] = useState('');
   const [searchComposing, setSearchComposing] = useState(false);
-  const [loadingSearchCatalogue, setLoadingSearchCatalogue] = useState(false);
   useEffect(() => {
     if (searchComposing) return;
     const timer = window.setTimeout(() => { setAppliedProductSearch(normalizeAdminProductSearch(productSearchQuery)); setProductPage(1); }, 500);
@@ -476,13 +475,6 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const applyProductSearch = () => {
     const value = normalizeAdminProductSearch(productSearchQuery);
     setAppliedProductSearch(value); setProductPage(1);
-  };
-  const loadSearchCatalogue = async () => {
-    if (loadingSearchCatalogue) return;
-    setLoadingSearchCatalogue(true);
-    try { await loadAdminProductCatalogue(); setProductPage(1); productPages.refresh(); }
-    catch { showToast('Không tải được dữ liệu tìm kiếm. Vui lòng thử lại.', 'error'); }
-    finally { setLoadingSearchCatalogue(false); }
   };
   const [printFileStatuses, setPrintFileStatuses] = useState<Record<string, boolean>>({});
   const printFileOverrides = useRef<Record<string, boolean>>({});
@@ -2270,7 +2262,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
             />
 
             <div className="flex items-center px-3 border border-[#1A1A1A] bg-black text-[10px] text-gray-500 font-mono uppercase">
-              {productPages.needsCatalogue ? 'Chưa tải dữ liệu tìm kiếm' : `${productPages.total} sản phẩm phù hợp`}
+              {productPages.loading ? 'Đang tìm…' : `${productPages.total} sản phẩm phù hợp`}
             </div>
           </div>
         </div>
@@ -2284,14 +2276,10 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
           {productPages.undatedTotal > 0 && `${productPages.undatedTotal} sản phẩm cũ chưa có ngày tạo, chưa nằm trong thứ tự mới nhất. `}
           <button type="button" onClick={() => { setLegacyProductOrder(value => !value); setProductPage(1); }} className="underline">{legacyProductOrder ? 'Xem mới nhất trước' : 'Xem kho đầy đủ theo ID'}</button>
         </p>}
-        <button type="button" disabled={productPages.loading || loadingSearchCatalogue} onClick={() => { invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
-        {productPages.needsCatalogue && <div role="status" className="mt-3 border border-gold-dark/30 p-3 text-xs text-gray-300">
-          Tìm theo tên/bộ lọc cần tải dữ liệu toàn kho một lần (khoảng {productPages.catalogueTotal ?? 'tổng số'} sản phẩm). Dữ liệu dùng lại 5 phút; hết hạn sẽ hỏi tại đây, không tự tải lại.
-          <button type="button" disabled={loadingSearchCatalogue} onClick={() => void loadSearchCatalogue()} className="ml-3 text-gold-light underline disabled:opacity-40">{loadingSearchCatalogue ? 'Đang tải…' : 'Tải dữ liệu tìm kiếm'}</button>
-        </div>}
+        <button type="button" disabled={productPages.loading} onClick={() => { invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
       </div>
       {productPages.error && <p role="alert" className="border border-red-400/30 p-3 text-sm text-red-300">{productPages.error}</p>}
-      {productPages.loading || loadingSearchCatalogue ? <p role="status" className="py-8 text-center text-gray-400">Đang tải trang sản phẩm…</p> : !productPages.error && !productPages.needsCatalogue && visibleAdminProducts.length === 0 ? (
+      {productPages.loading ? <p role="status" className="py-8 text-center text-gray-400">{productPages.advanced ? 'Đang tìm sản phẩm…' : 'Đang tải trang sản phẩm…'}</p> : !productPages.error && visibleAdminProducts.length === 0 ? (
         <div className="border border-white/5 bg-black/50 py-14 text-center">
           <Search className="w-9 h-9 text-gray-600 mx-auto mb-3" />
           <p className="text-xs text-gray-400 font-display font-bold uppercase tracking-widest">Không tìm thấy sản phẩm phù hợp</p>

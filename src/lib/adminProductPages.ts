@@ -105,7 +105,7 @@ export function subscribeAdminNewestProduct(onError?: (error: Error) => void) {
 export async function loadAdminProductTotal() {
   return cached('count', async () => (await getCountFromServer(collection(db, 'products'))).data().count);
 }
-/** Deliberate full-catalog actions only: name/price filters, Excel, bulk tools. */
+/** Name/price search loads once on demand; Excel and bulk tools share this cache. */
 export async function loadAdminProductCatalogue() {
   const storageKey = key('catalogue');
   const memory = catalogueMemory.get(storageKey);
@@ -129,4 +129,10 @@ export async function findAdminProductCode(code: string) {
     if (direct.exists() && !results.some(item => item.id === direct.id)) results.unshift({ ...direct.data(), id: direct.id } as Product);
     return results;
   });
+}
+export async function loadAdminProductSearch(search: string) {
+  const normalized = normalizeAdminProductSearch(search);
+  return /^IN3D-[A-Z0-9]+$/i.test(normalized)
+    ? findAdminProductCode(normalized)
+    : loadAdminProductCatalogue();
 }

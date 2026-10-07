@@ -142,6 +142,29 @@ test('explicit catalog search remains usable without session storage and expires
   assert.equal(h.api.peekAdminProductCatalogue(), null);
   assert.equal(h.stats.documents, 2000);
 });
+test('typing a name auto-loads once, shares concurrent reads, while short codes never scan catalog', async () => {
+  const h = harness();
+  assert.equal((await h.api.loadAdminProductSearch('0042'))[0].id, 'IN3D-0042');
+  assert.equal(h.stats.documents, 2);
+  await Promise.all([h.api.loadAdminProductSearch('BÀN'), h.api.loadAdminProductSearch('chậu')]);
+  assert.equal(h.stats.documents, 2002);
+  await h.api.loadAdminProductSearch('đèn');
+  assert.equal(h.stats.documents, 2002);
+  h.advance(h.api.ADMIN_PRODUCT_CACHE_MS + 1);
+  await h.api.loadAdminProductSearch('bàn');
+  assert.equal(h.stats.documents, 4002);
+});
+test('name search accepts uppercase, accents or no accents, and short SKU matches same product', () => {
+  const h = harness();
+  const module = { exports: {} as any };
+  const code = ts.transpileModule(readFileSync(new URL('../src/components/Admin/useAdminProductPages.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  vm.runInNewContext(code, { module, exports: module.exports, require: (name: string) => name === 'react' ? {} : h.api });
+  const products = [{ id: 'random-id', sku: 'IN3D-25758', name: 'Kệ để bàn đựng đồ', category: 'Đồ dùng', variants: [] }];
+  for (const search of ['BÀN', 'bàn', 'ban', 'DUNG DO', '25758', 'IN3D-25758']) {
+    assert.equal(module.exports.filterAdminProducts(products, { search, visibility: 'all', price: 'all' }).length, 1, search);
+  }
+  assert.equal(module.exports.filterAdminProducts(products, { search: 'không tồn tại', visibility: 'all', price: 'all' }).length, 0);
+});
 test('legacy print flags query only visible IDs, cache results, and update without page rereads', async () => {
   const h = harness();
   const page = await h.api.loadAdminProductPage(48, undefined, true);

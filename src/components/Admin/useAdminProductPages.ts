@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Product } from '../../types';
-import { ADMIN_PRODUCT_CACHE_EVENT, findAdminProductCode, peekAdminProductCatalogue, normalizeAdminProductSearch, loadAdminProductPage, loadAdminProductTotal, loadAdminDatedProductTotal, type AdminProductCursor } from '../../lib/adminProductPages';
+import { ADMIN_PRODUCT_CACHE_EVENT, loadAdminProductSearch, normalizeAdminProductSearch, loadAdminProductPage, loadAdminProductTotal, loadAdminDatedProductTotal, type AdminProductCursor } from '../../lib/adminProductPages';
 
 export type AdminProductFilters = { search: string; visibility: string; price: string };
+const searchableText = (value: unknown) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
 export function filterAdminProducts(products: Product[], filters: AdminProductFilters) {
-  const search = normalizeAdminProductSearch(filters.search).toLowerCase();
+  const search = searchableText(normalizeAdminProductSearch(filters.search));
   const price = (value?: string) => Number(String(value || '').replace(/[^\d]/g, '')) || 0;
   return products.filter(product => {
-    if (search && ![product.name, product.id, product.sku, product.category, product.subCategory, product.brand].some(value => String(value || '').toLowerCase().includes(search))) return false;
+    if (search && ![product.name, product.id, product.sku, product.category, product.subCategory, product.brand].some(value => searchableText(value).includes(search))) return false;
     if (filters.visibility === 'hidden' && !product.hidden || filters.visibility === 'visible' && product.hidden) return false;
     const variants = product.variants || [];
     const missing = variants.length ? variants.some(item => !price(item.salePrice || item.price)) : !price(product.retailPrice || product.salePrice || product.price);
@@ -19,7 +20,6 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
   const [rows, setRows] = useState<Product[]>([]), [total, setTotal] = useState(0), [catalogueTotal, setCatalogueTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [revision, setRevision] = useState(0);
   const [undatedTotal, setUndatedTotal] = useState(0);
-  const [needsCatalogue, setNeedsCatalogue] = useState(false);
   const cursors = useRef<Record<number, AdminProductCursor | undefined>>({});
   const mergeRef = useRef(merge); mergeRef.current = merge;
   const [knownPage, setKnownPage] = useState(1);
@@ -33,16 +33,12 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
   useEffect(() => { cursors.current = {}; setKnownPage(1); }, [pageSize, filters.search, filters.visibility, filters.price, legacy]);
   useEffect(() => {
     let cancelled = false;
-    setLoading(true); setError(''); setRows([]); setNeedsCatalogue(false);
+    setLoading(true); setError(''); setRows([]);
     (async () => {
       try {
         let items: Product[], count: number;
         if (advanced) {
-          const catalogue = exactCode ? await findAdminProductCode(filters.search) : peekAdminProductCatalogue();
-          if (!catalogue) {
-            if (!cancelled) { setNeedsCatalogue(true); setTotal(0); setKnownPage(1); }
-            return;
-          }
+          const catalogue = await loadAdminProductSearch(filters.search);
           if (!exactCode && !cancelled) setCatalogueTotal(catalogue.length);
           const filtered = filterAdminProducts(catalogue, filters);
           count = filtered.length;
@@ -66,5 +62,5 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
     })();
     return () => { cancelled = true; };
   }, [pageSize, page, filters.search, filters.visibility, filters.price, revision, legacy]);
-  return { rows, total, catalogueTotal, undatedTotal, needsCatalogue, loading, error, knownPage, advanced, refresh: () => { cursors.current = {}; setKnownPage(1); setRevision(value => value + 1); } };
+  return { rows, total, catalogueTotal, undatedTotal, loading, error, knownPage, advanced, refresh: () => { cursors.current = {}; setKnownPage(1); setRevision(value => value + 1); } };
 }
