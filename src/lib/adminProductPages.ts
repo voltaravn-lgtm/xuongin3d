@@ -7,8 +7,21 @@ export const ADMIN_PRODUCT_CACHE_EVENT = 'admin-product-pages-invalidated';
 const prefix = 'in3d-admin-product-pages-v2:';
 export type AdminProductCursor = { id: string; createdAt?: string };
 const pending = new Map<string, Promise<any>>();
+const catalogueMemory = new Map<string, { expiresAt: number; value: Product[] }>();
 let generation = 0;
 function key(name: string) { return `${prefix}${auth.currentUser?.uid || 'admin'}:${name}`; }
+export function normalizeAdminProductSearch(value: string) {
+  const trimmed = value.trim();
+  return /^\d{4,5}$/.test(trimmed) ? `IN3D-${trimmed}` : trimmed;
+}
+export function peekAdminProductCatalogue(): Product[] | null {
+  try {
+    const entry = JSON.parse(sessionStorage.getItem(key('catalogue')) || 'null');
+    if (entry?.expiresAt > Date.now() && Array.isArray(entry.value)) return entry.value;
+  } catch { /* Session storage may be unavailable. */ }
+  const memory = catalogueMemory.get(key('catalogue'));
+  return memory && memory.expiresAt > Date.now() ? memory.value : null;
+}
 async function cached<T>(name: string, fetcher: () => Promise<T>): Promise<T> {
   const storageKey = key(name);
   try {
@@ -27,7 +40,7 @@ async function cached<T>(name: string, fetcher: () => Promise<T>): Promise<T> {
   return request;
 }
 export function invalidateAdminProductPages() {
-  generation++; pending.clear();
+  generation++; pending.clear(); catalogueMemory.clear();
   try { Object.keys(sessionStorage).filter(item => item.startsWith(prefix)).forEach(item => sessionStorage.removeItem(item)); } catch { /* Optional cache. */ }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(ADMIN_PRODUCT_CACHE_EVENT));
 }
@@ -54,6 +67,7 @@ export async function loadAdminPrintFileStatuses(products: Product[]) {
   return statuses;
 }
 export function cacheAdminPrintFileStatus(id: string, hasPrintFile: boolean) {
+  catalogueMemory.get(key('catalogue'))?.value.forEach(product => { if (product.id === id) product.hasPrintFile = hasPrintFile; });
   try {
     for (const storageKey of Object.keys(sessionStorage).filter(item => item.startsWith(key('')))) {
       const entry = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
@@ -93,13 +107,19 @@ export async function loadAdminProductTotal() {
 }
 /** Deliberate full-catalog actions only: name/price filters, Excel, bulk tools. */
 export async function loadAdminProductCatalogue() {
+  const storageKey = key('catalogue');
+  const memory = catalogueMemory.get(storageKey);
+  if (memory && memory.expiresAt > Date.now()) return memory.value;
+  const version = generation;
   return cached('catalogue', async () => {
     const snapshot = await getDocs(collection(db, 'products'));
-    return snapshot.docs.map(item => ({ ...item.data(), id: item.id } as Product));
+    const products = snapshot.docs.map(item => ({ ...item.data(), id: item.id } as Product));
+    if (version === generation) catalogueMemory.set(storageKey, { expiresAt: Date.now() + ADMIN_PRODUCT_CACHE_MS, value: products });
+    return products;
   });
 }
 export async function findAdminProductCode(code: string) {
-  const normalized = code.trim().toUpperCase();
+  const normalized = normalizeAdminProductSearch(code).toUpperCase();
   return cached(`code:${normalized}`, async () => {
     const [direct, matches] = await Promise.all([
       getDoc(doc(db, 'products', normalized)),

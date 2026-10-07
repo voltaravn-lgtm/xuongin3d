@@ -4,12 +4,12 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function harness() {
+function harness(storageAvailable = true) {
   const products = Array.from({ length: 2000 }, (_, i) => ({ id: `IN3D-${String(i).padStart(4, '0')}`, sku: `IN3D-${String(i).padStart(4, '0')}`, name: `SP ${i}`, createdAt: new Date(Date.UTC(2025, 0, 1) + Math.floor((1999 - i) / 2) * 1000).toISOString() as string | undefined }));
   const stats = { documents: 0, counts: 0, queries: [] as any[] };
   const auth = { currentUser: { uid: 'employee-a' } };
   let time = 1000, fail = false;
-  const storage: any = { getItem(key: string) { return this[key] ?? null; }, setItem(key: string, value: string) { this[key] = value; }, removeItem(key: string) { delete this[key]; } };
+  const storage: any = { getItem(key: string) { if (!storageAvailable) throw new Error('storage blocked'); return this[key] ?? null; }, setItem(key: string, value: string) { if (!storageAvailable) throw new Error('storage blocked'); this[key] = value; }, removeItem(key: string) { delete this[key]; } };
   const events: any[] = [];
   let deliver: any, listenerQuery: any, stopped = false;
   const firestore = {
@@ -113,6 +113,34 @@ test('exact SKU lookup avoids full scan; full catalog is a separate deliberate a
   assert.equal(h.stats.documents, 2);
   const all = await h.api.loadAdminProductCatalogue(); assert.equal(all.length, 2000);
   await h.api.loadAdminProductCatalogue(); assert.equal(h.stats.documents, 2002);
+});
+test('short SKU input uses bounded exact lookup, and name search cache expires without fetching', async () => {
+  const h = harness();
+  assert.equal(h.api.normalizeAdminProductSearch(' 25758 '), 'IN3D-25758');
+  assert.equal(h.api.normalizeAdminProductSearch('25'), '25');
+  assert.equal(h.api.normalizeAdminProductSearch(' chậu cây '), 'chậu cây');
+  assert.equal(h.api.peekAdminProductCatalogue(), null);
+  assert.equal(h.stats.documents, 0);
+  assert.equal((await h.api.findAdminProductCode('0042'))[0].id, 'IN3D-0042');
+  assert.equal(h.stats.documents, 2);
+  await h.api.findAdminProductCode('IN3D-0042'); assert.equal(h.stats.documents, 2);
+  await h.api.loadAdminProductCatalogue();
+  for (let i = 0; i < 10; i++) assert.equal(h.api.peekAdminProductCatalogue().length, 2000);
+  assert.equal(h.stats.documents, 2002);
+  h.advance(h.api.ADMIN_PRODUCT_CACHE_MS + 1);
+  assert.equal(h.api.peekAdminProductCatalogue(), null);
+  assert.equal(h.stats.documents, 2002);
+});
+test('explicit catalog search remains usable without session storage and expires without auto-fetch', async () => {
+  const h = harness(false);
+  assert.equal(h.api.peekAdminProductCatalogue(), null);
+  await h.api.loadAdminProductCatalogue();
+  assert.equal(h.api.peekAdminProductCatalogue().length, 2000);
+  await h.api.loadAdminProductCatalogue();
+  assert.equal(h.stats.documents, 2000);
+  h.advance(h.api.ADMIN_PRODUCT_CACHE_MS + 1);
+  assert.equal(h.api.peekAdminProductCatalogue(), null);
+  assert.equal(h.stats.documents, 2000);
 });
 test('legacy print flags query only visible IDs, cache results, and update without page rereads', async () => {
   const h = harness();

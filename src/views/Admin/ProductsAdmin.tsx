@@ -10,7 +10,7 @@ import ProductPagination from "../../components/Admin/ProductPagination";
 import ProductPrintFileButton from "../../components/Admin/ProductPrintFileButton";
 import { normalizePrintFileUrl } from "../../lib/productPrintFile";
 import useAdminProductPages, { filterAdminProducts } from "../../components/Admin/useAdminProductPages";
-import { ADMIN_PRODUCT_CACHE_EVENT, invalidateAdminProductPages, loadAdminProductCatalogue, loadAdminPrintFileStatuses } from "../../lib/adminProductPages";
+import { ADMIN_PRODUCT_CACHE_EVENT, invalidateAdminProductPages, loadAdminProductCatalogue, loadAdminPrintFileStatuses, normalizeAdminProductSearch } from "../../lib/adminProductPages";
 import { collection, doc, getDoc, getDocs, limit, query, where, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
@@ -446,6 +446,13 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [comboProductQueries, setComboProductQueries] = useState<Record<number, string>>({});
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [appliedProductSearch, setAppliedProductSearch] = useState('');
+  const [searchComposing, setSearchComposing] = useState(false);
+  const [loadingSearchCatalogue, setLoadingSearchCatalogue] = useState(false);
+  useEffect(() => {
+    if (searchComposing) return;
+    const timer = window.setTimeout(() => { setAppliedProductSearch(normalizeAdminProductSearch(productSearchQuery)); setProductPage(1); }, 500);
+    return () => window.clearTimeout(timer);
+  }, [productSearchQuery, searchComposing]);
   const [productVisibilityFilter, setProductVisibilityFilter] = useState<"all" | "visible" | "hidden">("all");
   const [productPriceFilter, setProductPriceFilter] = useState<"all" | "missing" | "complete" | "variants">("all");
   const [productPageSize, setProductPageSize] = useState(ADMIN_PRODUCTS_PAGE_SIZE);
@@ -466,11 +473,16 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       return [...previous.filter(item => !ids.has(item.id)), ...items];
     });
   }, legacyProductOrder);
-  const confirmFullCatalog = () => window.confirm('Tìm theo tên/lọc nâng cao cần đọc toàn bộ kho vì chưa có chỉ mục tìm kiếm. Dữ liệu sẽ được lưu tạm 5 phút. Tiếp tục? Tìm đúng mã IN3D-xxxx không cần đọc toàn kho.');
   const applyProductSearch = () => {
-    const value = productSearchQuery.trim();
-    if (value && !/^IN3D-[A-Z0-9]+$/i.test(value) && !confirmFullCatalog()) return;
+    const value = normalizeAdminProductSearch(productSearchQuery);
     setAppliedProductSearch(value); setProductPage(1);
+  };
+  const loadSearchCatalogue = async () => {
+    if (loadingSearchCatalogue) return;
+    setLoadingSearchCatalogue(true);
+    try { await loadAdminProductCatalogue(); setProductPage(1); productPages.refresh(); }
+    catch { showToast('Không tải được dữ liệu tìm kiếm. Vui lòng thử lại.', 'error'); }
+    finally { setLoadingSearchCatalogue(false); }
   };
   const [printFileStatuses, setPrintFileStatuses] = useState<Record<string, boolean>>({});
   const printFileOverrides = useRef<Record<string, boolean>>({});
@@ -2168,17 +2180,19 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
               type="search"
               value={productSearchQuery}
               onChange={(e) => setProductSearchQuery(e.target.value)}
-              onKeyDown={event => { if (event.key === 'Enter') applyProductSearch(); }}
+              onCompositionStart={() => setSearchComposing(true)}
+              onCompositionEnd={() => setSearchComposing(false)}
+              onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) applyProductSearch(); }}
               placeholder="Tìm theo tên, ID, thương hiệu hoặc danh mục..."
               className="w-full bg-black border border-[#1A1A1A] text-[#ECECEC] pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:border-gold-light"
             />
-            <button type="button" disabled={productPages.loading} onClick={applyProductSearch} className="mt-2 border border-gold-dark/40 px-3 py-1 text-xs text-gold-light disabled:opacity-40">Tìm kiếm</button>
+            <span className="mt-2 inline-block text-[10px] text-gray-500">Tự tìm sau 0,5 giây · nhập mã đầy đủ hoặc 4–5 số cuối</span>
             <button type="button" disabled={productPages.loading} onClick={() => { setProductSearchQuery(''); setAppliedProductSearch(''); setProductVisibilityFilter('all'); setProductPriceFilter('all'); setProductPage(1); }} className="ml-2 text-xs text-gray-400">Bỏ lọc</button>
           </div>
 
           <select
             value={productVisibilityFilter}
-            onChange={(e) => { if (e.target.value !== 'all' && !confirmFullCatalog()) return; setProductVisibilityFilter(e.target.value as "all" | "visible" | "hidden"); setProductPage(1); }}
+            onChange={(e) => { setProductVisibilityFilter(e.target.value as "all" | "visible" | "hidden"); setProductPage(1); }}
             className="lg:col-span-2 bg-black border border-[#1A1A1A] text-[#ECECEC] px-3 py-2.5 text-xs focus:outline-none focus:border-gold-light font-display font-bold uppercase"
           >
             <option value="all">Tất cả trạng thái</option>
@@ -2188,7 +2202,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
           <select
             value={productPriceFilter}
-            onChange={(e) => { if (e.target.value !== 'all' && !confirmFullCatalog()) return; setProductPriceFilter(e.target.value as "all" | "missing" | "complete" | "variants"); setProductPage(1); }}
+            onChange={(e) => { setProductPriceFilter(e.target.value as "all" | "missing" | "complete" | "variants"); setProductPage(1); }}
             className="lg:col-span-2 bg-black border border-[#1A1A1A] text-[#ECECEC] px-3 py-2.5 text-xs focus:outline-none focus:border-gold-light font-display font-bold uppercase"
           >
             <option value="all">Tất cả giá</option>
@@ -2256,7 +2270,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
             />
 
             <div className="flex items-center px-3 border border-[#1A1A1A] bg-black text-[10px] text-gray-500 font-mono uppercase">
-              {productPages.total} sản phẩm phù hợp
+              {productPages.needsCatalogue ? 'Chưa tải dữ liệu tìm kiếm' : `${productPages.total} sản phẩm phù hợp`}
             </div>
           </div>
         </div>
@@ -2265,15 +2279,19 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       {/* Catalog lists */}
       <div ref={paginationTopRef} className="scroll-mt-28">
         <ProductPagination total={productPages.total} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} disabled={productPages.loading} maxPage={productPages.knownPage} />
-        <p className="mt-2 text-[11px] text-gray-500">{productPages.advanced ? 'Đang tìm/lọc nâng cao; bản đọc toàn kho lưu tạm 5 phút.' : `${legacyProductOrder ? 'Kho đầy đủ theo ID' : 'Mới nhất trước'} · tải từng trang, không đọc toàn kho. Trang đã tải lưu tạm 5 phút; có sản phẩm mới sẽ làm mới danh sách.`}</p>
+        <p className="mt-2 text-[11px] text-gray-500">{productPages.advanced ? (/^IN3D-[A-Z0-9]+$/i.test(appliedProductSearch) ? 'Tìm đúng mã sản phẩm, không đọc toàn kho.' : 'Tìm/lọc trong dữ liệu toàn kho đã tải; lưu tạm 5 phút, không đọc lại mỗi lần gõ.') : `${legacyProductOrder ? 'Kho đầy đủ theo ID' : 'Mới nhất trước'} · tải từng trang, không đọc toàn kho. Trang đã tải lưu tạm 5 phút; có sản phẩm mới sẽ làm mới danh sách.`}</p>
         {!productPages.advanced && (productPages.undatedTotal > 0 || legacyProductOrder) && <p className="mt-2 text-xs text-orange-300">
           {productPages.undatedTotal > 0 && `${productPages.undatedTotal} sản phẩm cũ chưa có ngày tạo, chưa nằm trong thứ tự mới nhất. `}
           <button type="button" onClick={() => { setLegacyProductOrder(value => !value); setProductPage(1); }} className="underline">{legacyProductOrder ? 'Xem mới nhất trước' : 'Xem kho đầy đủ theo ID'}</button>
         </p>}
-        <button type="button" disabled={productPages.loading} onClick={() => { if (productPages.advanced && !confirmFullCatalog()) return; invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
+        <button type="button" disabled={productPages.loading || loadingSearchCatalogue} onClick={() => { invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
+        {productPages.needsCatalogue && <div role="status" className="mt-3 border border-gold-dark/30 p-3 text-xs text-gray-300">
+          Tìm theo tên/bộ lọc cần tải dữ liệu toàn kho một lần (khoảng {productPages.catalogueTotal ?? 'tổng số'} sản phẩm). Dữ liệu dùng lại 5 phút; hết hạn sẽ hỏi tại đây, không tự tải lại.
+          <button type="button" disabled={loadingSearchCatalogue} onClick={() => void loadSearchCatalogue()} className="ml-3 text-gold-light underline disabled:opacity-40">{loadingSearchCatalogue ? 'Đang tải…' : 'Tải dữ liệu tìm kiếm'}</button>
+        </div>}
       </div>
       {productPages.error && <p role="alert" className="border border-red-400/30 p-3 text-sm text-red-300">{productPages.error}</p>}
-      {productPages.loading ? <p role="status" className="py-8 text-center text-gray-400">Đang tải trang sản phẩm…</p> : !productPages.error && visibleAdminProducts.length === 0 ? (
+      {productPages.loading || loadingSearchCatalogue ? <p role="status" className="py-8 text-center text-gray-400">Đang tải trang sản phẩm…</p> : !productPages.error && !productPages.needsCatalogue && visibleAdminProducts.length === 0 ? (
         <div className="border border-white/5 bg-black/50 py-14 text-center">
           <Search className="w-9 h-9 text-gray-600 mx-auto mb-3" />
           <p className="text-xs text-gray-400 font-display font-bold uppercase tracking-widest">Không tìm thấy sản phẩm phù hợp</p>

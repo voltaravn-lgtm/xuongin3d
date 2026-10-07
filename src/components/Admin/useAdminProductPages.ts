@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Product } from '../../types';
-import { ADMIN_PRODUCT_CACHE_EVENT, findAdminProductCode, loadAdminProductCatalogue, loadAdminProductPage, loadAdminProductTotal, loadAdminDatedProductTotal, type AdminProductCursor } from '../../lib/adminProductPages';
+import { ADMIN_PRODUCT_CACHE_EVENT, findAdminProductCode, peekAdminProductCatalogue, normalizeAdminProductSearch, loadAdminProductPage, loadAdminProductTotal, loadAdminDatedProductTotal, type AdminProductCursor } from '../../lib/adminProductPages';
 
 export type AdminProductFilters = { search: string; visibility: string; price: string };
 export function filterAdminProducts(products: Product[], filters: AdminProductFilters) {
-  const search = filters.search.trim().toLowerCase();
+  const search = normalizeAdminProductSearch(filters.search).toLowerCase();
   const price = (value?: string) => Number(String(value || '').replace(/[^\d]/g, '')) || 0;
   return products.filter(product => {
     if (search && ![product.name, product.id, product.sku, product.category, product.subCategory, product.brand].some(value => String(value || '').toLowerCase().includes(search))) return false;
@@ -19,11 +19,12 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
   const [rows, setRows] = useState<Product[]>([]), [total, setTotal] = useState(0), [catalogueTotal, setCatalogueTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [revision, setRevision] = useState(0);
   const [undatedTotal, setUndatedTotal] = useState(0);
+  const [needsCatalogue, setNeedsCatalogue] = useState(false);
   const cursors = useRef<Record<number, AdminProductCursor | undefined>>({});
   const mergeRef = useRef(merge); mergeRef.current = merge;
   const [knownPage, setKnownPage] = useState(1);
   const advanced = !!filters.search || filters.visibility !== 'all' || filters.price !== 'all';
-  const exactCode = /^IN3D-[A-Z0-9]+$/i.test(filters.search.trim()) && filters.visibility === 'all' && filters.price === 'all';
+  const exactCode = /^IN3D-[A-Z0-9]+$/i.test(normalizeAdminProductSearch(filters.search));
   useEffect(() => {
     const reset = () => { cursors.current = {}; setKnownPage(1); setRevision(value => value + 1); };
     window.addEventListener(ADMIN_PRODUCT_CACHE_EVENT, reset);
@@ -32,12 +33,16 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
   useEffect(() => { cursors.current = {}; setKnownPage(1); }, [pageSize, filters.search, filters.visibility, filters.price, legacy]);
   useEffect(() => {
     let cancelled = false;
-    setLoading(true); setError(''); setRows([]);
+    setLoading(true); setError(''); setRows([]); setNeedsCatalogue(false);
     (async () => {
       try {
         let items: Product[], count: number;
         if (advanced) {
-          const catalogue = exactCode ? await findAdminProductCode(filters.search) : await loadAdminProductCatalogue();
+          const catalogue = exactCode ? await findAdminProductCode(filters.search) : peekAdminProductCatalogue();
+          if (!catalogue) {
+            if (!cancelled) { setNeedsCatalogue(true); setTotal(0); setKnownPage(1); }
+            return;
+          }
           if (!exactCode && !cancelled) setCatalogueTotal(catalogue.length);
           const filtered = filterAdminProducts(catalogue, filters);
           count = filtered.length;
@@ -61,5 +66,5 @@ export default function useAdminProductPages(pageSize: number, page: number, fil
     })();
     return () => { cancelled = true; };
   }, [pageSize, page, filters.search, filters.visibility, filters.price, revision, legacy]);
-  return { rows, total, catalogueTotal, undatedTotal, loading, error, knownPage, advanced, refresh: () => { cursors.current = {}; setKnownPage(1); setRevision(value => value + 1); } };
+  return { rows, total, catalogueTotal, undatedTotal, needsCatalogue, loading, error, knownPage, advanced, refresh: () => { cursors.current = {}; setKnownPage(1); setRevision(value => value + 1); } };
 }
