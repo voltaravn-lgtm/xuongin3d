@@ -562,6 +562,10 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     Object.prototype.hasOwnProperty.call(quickPriceDrafts, product.id) &&
     quickPriceDrafts[product.id] !== (product.retailPrice ?? product.price ?? "");
   const handleSaveQuickPrice = async (product: Product) => {
+    if ((product.variants || []).length > 0) {
+      showToast("Sản phẩm có phân loại: vui lòng chỉnh giá theo phân loại.", "warning");
+      return;
+    }
     const draft = String(quickPriceDrafts[product.id] || "").trim();
     if (!parsePriceValue(draft)) {
       showToast("Vui lòng nhập giá bán lẻ hợp lệ.", "warning");
@@ -2257,7 +2261,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                     </span>
                   </div>
                   <h3 className="text-[11px] font-display font-bold text-white uppercase line-clamp-1 leading-snug">{prod.name}</h3>
-                  <div className="flex items-center gap-2 pt-1">
+                  {(prod.variants || []).length === 0 && <div className="flex items-center gap-2 pt-1">
                     <label className="flex min-w-0 flex-1 items-center gap-2">
                       <span className="shrink-0 text-[8px] font-bold uppercase tracking-wider text-gray-500">Giá web</span>
                       <input
@@ -2281,7 +2285,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       </button>
                     )}
                     {prod.salePrice && <span className="shrink-0 text-[8px] font-bold text-emerald-400">KM: {prod.salePrice}</span>}
-                  </div>
+                  </div>}
 
                   {(prod.variants || []).length > 0 && (
                     <div className="mt-2 border-t border-white/5 pt-2">
