@@ -13,6 +13,7 @@ import { getProductHref } from "../lib/productRoutes";
 import { productDisplayName } from "../lib/productDisplayName";
 import ProductDetailClient from "../components/ProductDetailClient";
 import ProductPromoImage from "../components/ProductPromoImage";
+import ProductCatalogueSidebar from "../components/ProductCatalogueSidebar";
 import { getProductDescriptionExcerpt } from "../lib/productDescription";
 
 const PRODUCTS_PAGE_SIZE = 12;
@@ -223,7 +224,7 @@ export default function Products() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Sidebar on left - Hidden on mobile, visible on desktop */}
-          <div className="hidden lg:block lg:col-span-3 lg:sticky lg:top-28 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto lg:overscroll-contain space-y-6" id="products-sidebar" tabIndex={0} aria-label="Tìm kiếm và danh mục sản phẩm">
+          <ProductCatalogueSidebar>
             
             {/* Search Input inline */}
             <div className="bg-[#121212] border border-white/5 p-4 rounded-lg">
@@ -317,7 +318,7 @@ export default function Products() {
               <span className="block text-[8.5px] text-gray-600 mt-2 font-mono">({contactSettings.workingHours})</span>
             </div>
 
-          </div>
+          </ProductCatalogueSidebar>
 
           {/* Product grid pane on right */}
           <div className="lg:col-span-9 space-y-6" id="products-grid-pane">
