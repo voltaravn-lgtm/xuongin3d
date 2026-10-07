@@ -14,9 +14,9 @@ test('card price ignores hidden cheapest variant and does not show base price if
   assert.equal(getProductCardPrice(product).price, '20000');
   assert.equal(getProductCardPrice({ ...product, variants: product.variants!.map(v => ({ ...v, hidden: true })) }).price, 'Liên hệ');
 });
-test('remembered local template keeps only name and size, never hidden status', () => {
+test('remembered local template keeps only name, never dimensions or hidden status', () => {
   const values = variantsFromTemplates(readVariantTemplates(JSON.stringify({ s: { name: 'S', size: '10cm', hidden: true, price: '10000' } })));
-  assert.deepEqual(values, [{ id: 's', name: 'S', size: '10cm' }]);
+  assert.deepEqual(values, [{ id: 's', name: 'S' }]);
 });
 test('Excel backup preserves visibility and never defaults to a hidden variant', () => {
   const [headers, row] = productWorkbookMatrix([product]);

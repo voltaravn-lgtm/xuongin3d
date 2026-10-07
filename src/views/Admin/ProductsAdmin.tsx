@@ -521,7 +521,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       return;
     }
     const next = { ...variantTemplates };
-    if (remember) next[variant.id] = { name: variant.name.trim(), size: variant.size?.trim() || "" };
+    if (remember) next[variant.id] = { name: variant.name.trim() };
     else delete next[variant.id];
     persistVariantTemplates(next);
   };
@@ -1049,9 +1049,9 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
   const handleUpdateVariant = (index: number, updates: Partial<ProductVariant>) => {
     const variant = productForm.variants?.[index];
-    if (variant && variantTemplates[variant.id] && (updates.name !== undefined || updates.size !== undefined)) {
+    if (variant && variantTemplates[variant.id] && updates.name !== undefined) {
       const updated = { ...variant, ...updates };
-      persistVariantTemplates({ ...variantTemplates, [variant.id]: { name: updated.name || "", size: updated.size || "" } });
+      persistVariantTemplates({ ...variantTemplates, [variant.id]: { name: updated.name || "" } });
     }
     setProductForm(prev => ({
       ...prev,
@@ -2670,7 +2670,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       <h3 className="text-[11px] font-display font-black uppercase tracking-widest text-[#F5C45A]">Phân loại sản phẩm</h3>
                       <p className="mt-1 text-[10px] text-gray-500">Nếu giá riêng để trống, phân loại sẽ dùng giá của sản phẩm chính. Ảnh riêng sẽ hiện khi khách chọn phân loại.</p>
                       <p className="mt-1 text-[10px] text-gray-500">“Chọn sẵn” là phân loại hiện đầu tiên khi khách mở sản phẩm, với giá và ảnh tương ứng. Khách vẫn có thể đổi phân loại.</p>
-                      <p className="mt-1 text-[10px] text-gray-500">“Lưu mẫu trên máy” giữ tên và kích thước cho sản phẩm mới trên trình duyệt này, không giữ giá, tồn kho hoặc ảnh. Bỏ tích để không dùng lại.</p>
+                      <p className="mt-1 text-[10px] text-gray-500">“Lưu mẫu trên máy” chỉ giữ tên size/phân loại (ví dụ Size S, Size M) cho sản phẩm mới trên trình duyệt này; không giữ kích thước, giá, tồn kho hoặc ảnh. Bỏ tích để không dùng lại.</p>
                     </div>
                     <button type="button" onClick={handleAddVariant} className="inline-flex items-center gap-1.5 border border-gold-dark/40 px-3 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light hover:border-gold-light hover:text-white">
                       <Plus className="w-3.5 h-3.5" />
