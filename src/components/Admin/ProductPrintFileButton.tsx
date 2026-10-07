@@ -1,18 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Link as LinkIcon, X } from 'lucide-react';
 import { db, isFirebaseConfigured } from '../../lib/firebase';
 import { normalizePrintFileUrl } from '../../lib/productPrintFile';
+import { cacheAdminPrintFileStatus } from '../../lib/adminProductPages';
 import type { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
 
-export default function ProductPrintFileButton({ product }: { product: Product }) {
+export default function ProductPrintFileButton({ product, hasPrintFile, onStatusChange }: { product: Product; hasPrintFile?: boolean; onStatusChange?: (id: string, exists: boolean) => void }) {
   const { showToast } = useApp();
   const [open, setOpen] = useState(false), [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false), [saving, setSaving] = useState(false);
   const [savedUrl, setSavedUrl] = useState(''), [url, setUrl] = useState(''), [error, setError] = useState('');
   const trigger = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLElement>(null);
   const saveLock = useRef(false);
 
   useEffect(() => {
@@ -38,10 +40,21 @@ export default function ProductPrintFileButton({ product }: { product: Product }
   };
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); close(); } };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); close(); }
+      if (event.key !== 'Tab') return;
+      const controls = dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href]');
+      if (!controls?.length) { event.preventDefault(); return; }
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialog.current?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !dialog.current?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, url, savedUrl]);
+  useEffect(() => {
+    if (open && loaded) dialog.current?.querySelector<HTMLInputElement>('input')?.focus();
+  }, [open, loaded]);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -53,19 +66,25 @@ export default function ProductPrintFileButton({ product }: { product: Product }
     if (!next && savedUrl && !window.confirm('Gỡ link file in đã lưu? File ở nơi lưu trữ không bị xóa.')) return;
     saveLock.current = true; setSaving(true);
     try {
-      await setDoc(doc(db, 'productPrintFiles', product.id), { url: next, updatedAt: serverTimestamp() });
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'productPrintFiles', product.id), { url: next, updatedAt: serverTimestamp() });
+      batch.update(doc(db, 'products', product.id), { hasPrintFile: Boolean(next) });
+      await batch.commit();
+      cacheAdminPrintFileStatus(product.id, Boolean(next));
+      onStatusChange?.(product.id, Boolean(next));
       setSavedUrl(next); setUrl(next);
       showToast(next ? 'Đã lưu link file in riêng cho sản phẩm.' : 'Đã gỡ link file in.', 'success');
     } catch (e) { setError(e instanceof Error ? e.message : 'Không lưu được link.'); }
     finally { saveLock.current = false; setSaving(false); }
   }
 
+  const linked = loaded ? Boolean(savedUrl) : (hasPrintFile ?? product.hasPrintFile ?? false);
   return <>
-    <button ref={trigger} type="button" onClick={() => setOpen(true)} title="Lưu / mở link file in nội bộ" className="flex items-center gap-1 border border-white/5 bg-[#111] px-2 py-1 text-[9px] font-display uppercase tracking-wider text-sky-300 hover:bg-[#222]">
+    <button ref={trigger} type="button" onClick={() => setOpen(true)} title={linked ? 'Đã có link file in · mở / chỉnh sửa' : 'Chưa có link file in · thêm link'} className={`flex items-center gap-1 border border-white/5 bg-[#111] px-2 py-1 text-[9px] font-display uppercase tracking-wider hover:bg-[#222] ${linked ? 'text-orange-400' : 'text-sky-300'}`}>
       <LinkIcon className="h-3 w-3" />File in
     </button>
     {open && createPortal(<div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4">
-      <section role="dialog" aria-modal="true" aria-label={`File in · ${product.name}`} className="w-full max-w-xl border border-gold-dark/40 bg-[#0a0a0a] p-5 shadow-xl">
+      <section ref={dialog} role="dialog" aria-modal="true" aria-label={`File in · ${product.name}`} className="w-full max-w-xl border border-gold-dark/40 bg-[#0a0a0a] p-5 shadow-xl">
         <div className="flex items-start justify-between gap-4"><div><h2 className="font-bold text-gold-light">Link file in</h2><p className="mt-1 text-sm text-gray-300">{product.name} · {product.sku || product.id}</p></div><button type="button" aria-label="Đóng file in" disabled={saving} onClick={close} className="p-1 text-gray-400 disabled:opacity-40"><X className="h-5 w-5" /></button></div>
         <p className="mt-3 text-xs text-gray-500">Chỉ quản trị viên xem được. Dán link Google Drive, thư mục hoặc trang tải file; không tải file lên website.</p>
         {loading && <p role="status" className="mt-3 text-sm text-gray-400">Đang tải link…</p>}

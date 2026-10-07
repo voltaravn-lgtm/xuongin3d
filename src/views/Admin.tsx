@@ -4,7 +4,7 @@
  */
 import WebpConverterAdmin from "../app/admin/tools/webp-converter/page";
 import PromoOverlayAdmin from "../app/admin/tools/promo-overlay/page";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useApp, MenuItem, HeroSlide } from "../context/AppContext";
 import { Product } from "../types";
 import { 
@@ -45,6 +45,8 @@ import NewsletterAdmin from "./Admin/NewsletterAdmin";
 import SiteContactAdmin from "./Admin/SiteContactAdmin";
 import LandingPagesAdmin from "./Admin/LandingPagesAdmin";
 import LandingOrdersAdmin from "./Admin/LandingOrdersAdmin";
+import { ADMIN_PRODUCT_CACHE_EVENT, loadAdminProductCatalogue, loadAdminProductTotal } from '../lib/adminProductPages';
+import { subscribeNewLandingOrderCount } from '../lib/landing/landingOrderRepository';
 
 export default function Admin() {
   const {
@@ -66,7 +68,38 @@ export default function Admin() {
     deleteQuoteRequest
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"aiCatalogue" | "hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "homepage" | "aboutpage" | "knowledge" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions">("hero");
+  const [activeTab, setActiveTabState] = useState<"aiCatalogue" | "hero" | "menu" | "webp" | "promoOverlay" | "products" | "landingPages" | "landingOrders" | "homepage" | "aboutpage" | "knowledge" | "contacts" | "contactSettings" | "quotes" | "newsletter" | "solutions">("hero");
+  const [loadingProductTool, setLoadingProductTool] = useState(false);
+  const [productTotal, setProductTotal] = useState<number | null>(null);
+  const [productTotalError, setProductTotalError] = useState(false);
+  const [newOrderCount, setNewOrderCount] = useState<number | null>(null);
+  const [orderBadgeError, setOrderBadgeError] = useState(false);
+  useEffect(() => {
+    let cancelled = false, request = 0;
+    const refresh = () => {
+      const version = ++request;
+      void loadAdminProductTotal().then(total => {
+        if (!cancelled && version === request) { setProductTotal(total); setProductTotalError(false); }
+      }).catch(() => { if (!cancelled && version === request) setProductTotalError(true); });
+    };
+    refresh();
+    window.addEventListener(ADMIN_PRODUCT_CACHE_EVENT, refresh);
+    return () => { cancelled = true; window.removeEventListener(ADMIN_PRODUCT_CACHE_EVENT, refresh); };
+  }, []);
+  useEffect(() => subscribeNewLandingOrderCount(count => {
+    setNewOrderCount(count); setOrderBadgeError(false);
+  }, () => { setOrderBadgeError(true); }), []);
+  const setActiveTab = async (tab: typeof activeTab) => {
+    if (loadingProductTool) return;
+    if (tab === 'aiCatalogue' || tab === 'promoOverlay') {
+      if (!window.confirm('Công cụ này cần đọc toàn bộ kho để đối chiếu sản phẩm. Dữ liệu lưu tạm 5 phút. Tiếp tục?')) return;
+      setLoadingProductTool(true);
+      try { setProducts(await loadAdminProductCatalogue()); }
+      catch { showToast('Không tải được kho cho công cụ. Chưa chuyển mục.', 'error'); return; }
+      finally { setLoadingProductTool(false); }
+    }
+    setActiveTabState(tab);
+  };
   const [catalogueTransfer, setCatalogueTransfer] = useState<CatalogueTransfer | null>(null);
 
   // Hero config state & multi-slides control
@@ -303,7 +336,7 @@ export default function Admin() {
             >
               <span className="flex items-center gap-3">
                 <Package className="w-4 h-4" />
-                Kho sản phẩm ({products.length})
+                <span title={productTotalError ? 'Không tải được tổng số sản phẩm' : 'Tổng sản phẩm trong kho'}>Kho sản phẩm ({productTotalError ? '?' : productTotal ?? '…'})</span>
               </span>
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "products" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
@@ -322,7 +355,9 @@ export default function Admin() {
               onClick={() => setActiveTab("landingOrders")}
               className={`w-full flex items-center justify-between text-left px-5 py-4 font-display text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${activeTab === "landingOrders" ? "bg-gold-dark/10 border-gold-light text-gold-light shadow-[0_0_15px_rgba(216,154,43,0.15)]" : "bg-black/40 border-[#1A1A1A] text-gray-400 hover:border-gold-dark/30 hover:text-white"}`}
             >
-              <span className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /> Đơn Landing Page</span>
+              <span className="flex items-center gap-3"><ShoppingBag className="w-4 h-4 shrink-0" /><span>Đơn Landing Page</span>
+                {orderBadgeError ? <span title="Không kết nối được thông báo đơn mới. Mở mục đơn hàng để kiểm tra." className="text-orange-400">!</span> : newOrderCount !== null && newOrderCount > 0 && <span role="status" aria-label={`${newOrderCount >= 100 ? 'Ít nhất 100' : newOrderCount} đơn mới chưa xử lý`} title="Đơn mới chưa xử lý" className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold tracking-normal text-black">{newOrderCount >= 100 ? '99+' : newOrderCount}</span>}
+              </span>
               <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === "landingOrders" ? "rotate-90 text-gold-light" : ""}`} />
             </button>
 

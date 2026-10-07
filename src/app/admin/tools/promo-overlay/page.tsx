@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Download, Eraser, ImagePlus, Layers, Loader2, Maximize2, Move, Palette, Save, Trash2, Upload } from "lucide-react";
 import { useApp } from "../../../../context/AppContext";
+import LoadAdminCatalogueButton from '../../../../components/Admin/LoadAdminCatalogueButton';
 import { isCloudinaryConfigured, uploadImageToCloudinary } from "../../../../lib/cloudinary";
 import { revalidateProductCache } from "../../../../lib/productCacheClient";
 import { drawWatermark, type WatermarkOptions } from "../../../../lib/watermark";
@@ -1491,6 +1492,7 @@ export default function PromoOverlayPage(): React.ReactElement {
                 <Upload className="h-4 w-4" />
                 Đăng ảnh vào sản phẩm
               </div>
+              <LoadAdminCatalogueButton />
               <p className="mb-4 text-[11px] leading-relaxed text-gray-500">
                 Đăng trực tiếp kết quả đang xem trước lên Cloudinary dưới dạng WebP 70% và cập nhật sản phẩm — không cần tải về rồi thêm lại. Thumbnail bên dưới là đầu ra sau khi chỉnh nền, vị trí, tỷ lệ và overlay.
               </p>

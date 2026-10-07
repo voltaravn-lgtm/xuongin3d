@@ -8,7 +8,10 @@ import ProductWatermarkControls from "../../components/Admin/ProductWatermarkCon
 import ProductTrashPanel from "../../components/Admin/ProductTrashPanel";
 import ProductPagination from "../../components/Admin/ProductPagination";
 import ProductPrintFileButton from "../../components/Admin/ProductPrintFileButton";
-import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
+import { normalizePrintFileUrl } from "../../lib/productPrintFile";
+import useAdminProductPages, { filterAdminProducts } from "../../components/Admin/useAdminProductPages";
+import { ADMIN_PRODUCT_CACHE_EVENT, invalidateAdminProductPages, loadAdminProductCatalogue, loadAdminPrintFileStatuses } from "../../lib/adminProductPages";
+import { collection, doc, getDoc, getDocs, limit, query, where, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
@@ -409,6 +412,26 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const deletingProductIds = useRef(new Set<string>());
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productPrintUrl, setProductPrintUrl] = useState('');
+  const [initialProductPrintUrl, setInitialProductPrintUrl] = useState('');
+  const [printUrlLoading, setPrintUrlLoading] = useState(false);
+  const [printUrlError, setPrintUrlError] = useState('');
+  const [printUrlRetry, setPrintUrlRetry] = useState(0);
+  const productSaveLock = useRef(false);
+  useEffect(() => {
+    if (!isProductModalOpen) return;
+    let cancelled = false;
+    setProductPrintUrl(''); setInitialProductPrintUrl(''); setPrintUrlError('');
+    if (!editingProduct) { setPrintUrlLoading(false); return; }
+    setPrintUrlLoading(true);
+    void getDoc(doc(db, 'productPrintFiles', editingProduct.id)).then(snapshot => {
+      if (cancelled) return;
+      const url = snapshot.exists() ? String(snapshot.data().url || '') : '';
+      setProductPrintUrl(url); setInitialProductPrintUrl(url);
+    }).catch(() => { if (!cancelled) setPrintUrlError('Không tải được link file in. Bấm thử lại trước khi lưu.'); })
+      .finally(() => { if (!cancelled) setPrintUrlLoading(false); });
+    return () => { cancelled = true; };
+  }, [isProductModalOpen, editingProduct?.id, printUrlRetry]);
   const [isToolbarPreviewMode, setIsToolbarPreviewMode] = useState(false);
   const [isQuickImagePanelOpen, setIsQuickImagePanelOpen] = useState(false);
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null);
@@ -422,6 +445,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [isComboPanelOpen, setIsComboPanelOpen] = useState(false);
   const [comboProductQueries, setComboProductQueries] = useState<Record<number, string>>({});
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [appliedProductSearch, setAppliedProductSearch] = useState('');
   const [productVisibilityFilter, setProductVisibilityFilter] = useState<"all" | "visible" | "hidden">("all");
   const [productPriceFilter, setProductPriceFilter] = useState<"all" | "missing" | "complete" | "variants">("all");
   const [productPageSize, setProductPageSize] = useState(ADMIN_PRODUCTS_PAGE_SIZE);
@@ -429,7 +453,38 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const paginationTopRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setProductPage(1);
-  }, [productSearchQuery, productVisibilityFilter, productPriceFilter, productPageSize]);
+  }, [appliedProductSearch, productVisibilityFilter, productPriceFilter, productPageSize]);
+  useEffect(() => {
+    const reset = () => setProductPage(1);
+    window.addEventListener(ADMIN_PRODUCT_CACHE_EVENT, reset);
+    return () => window.removeEventListener(ADMIN_PRODUCT_CACHE_EVENT, reset);
+  }, []);
+  const productPages = useAdminProductPages(productPageSize, productPage, { search: appliedProductSearch, visibility: productVisibilityFilter, price: productPriceFilter }, items => {
+    setProducts(previous => {
+      const ids = new Set(items.map(item => item.id));
+      return [...previous.filter(item => !ids.has(item.id)), ...items];
+    });
+  });
+  const confirmFullCatalog = () => window.confirm('Tìm theo tên/lọc nâng cao cần đọc toàn bộ kho vì chưa có chỉ mục tìm kiếm. Dữ liệu sẽ được lưu tạm 5 phút. Tiếp tục? Tìm đúng mã IN3D-xxxx không cần đọc toàn kho.');
+  const applyProductSearch = () => {
+    const value = productSearchQuery.trim();
+    if (value && !/^IN3D-[A-Z0-9]+$/i.test(value) && !confirmFullCatalog()) return;
+    setAppliedProductSearch(value); setProductPage(1);
+  };
+  const [printFileStatuses, setPrintFileStatuses] = useState<Record<string, boolean>>({});
+  const printFileOverrides = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    const reset = () => { printFileOverrides.current = {}; setPrintFileStatuses({}); };
+    window.addEventListener(ADMIN_PRODUCT_CACHE_EVENT, reset);
+    return () => window.removeEventListener(ADMIN_PRODUCT_CACHE_EVENT, reset);
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void loadAdminPrintFileStatuses(productPages.rows).then(statuses => {
+      if (!cancelled) setPrintFileStatuses({ ...statuses, ...printFileOverrides.current });
+    }).catch(() => { /* Opening the button still reports private-link read errors. */ });
+    return () => { cancelled = true; };
+  }, [productPages.rows]);
   const [quickPriceDrafts, setQuickPriceDrafts] = useState<Record<string, string>>({});
   const [quickVariantPriceDrafts, setQuickVariantPriceDrafts] = useState<Record<string, string>>({});
   const [savingQuickPriceId, setSavingQuickPriceId] = useState<string | null>(null);
@@ -744,10 +799,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   };
 
   const handleDeleteProductCategory = (categoryId: string) => {
-    const usedCount = products.filter((product) => product.category === categoryId).length;
-    const message = usedCount
-      ? `Danh mục này đang có ${usedCount} sản phẩm. Xóa danh mục không xóa sản phẩm, nhưng sản phẩm sẽ cần gán lại danh mục. Bạn vẫn muốn xóa?`
-      : "Bạn có chắc muốn xóa danh mục này?";
+    const message = 'Xóa danh mục không xóa sản phẩm. Sản phẩm thuộc danh mục này (kể cả ở trang chưa tải) sẽ cần gán lại danh mục. Bạn vẫn muốn xóa?';
     if (!window.confirm(message)) return;
     setProductCategories((prev) => prev.filter((category) => category.id !== categoryId));
   };
@@ -788,10 +840,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   };
 
   const handleDeleteChildCategory = (categoryId: string, childId: string) => {
-    const usedCount = products.filter((product) => product.category === categoryId && product.subCategory === childId).length;
-    const message = usedCount
-      ? `Danh mục con này đang có ${usedCount} sản phẩm. Bạn vẫn muốn xóa?`
-      : "Bạn có chắc muốn xóa danh mục con này?";
+    const message = 'Bạn có chắc muốn xóa danh mục con này? Sản phẩm thuộc danh mục con (kể cả ở trang chưa tải) sẽ cần gán lại danh mục.';
     if (!window.confirm(message)) return;
     setProductCategories((prev) =>
       prev.map((category) => {
@@ -860,6 +909,15 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (productSaveLock.current) return;
+    if (printUrlLoading || printUrlError) { showToast('Vui lòng đợi tải hoặc thử lại link file in trước khi lưu.', 'warning'); return; }
+    let printUrl: string;
+    try { printUrl = normalizePrintFileUrl(productPrintUrl); }
+    catch (error) { showToast((error as Error).message, 'error'); return; }
+    if (initialProductPrintUrl && !printUrl && !window.confirm('Gỡ link file in đã lưu? File gốc không bị xóa.')) return;
+    const changedPrintUrl = !editingProduct || productPrintUrl !== initialProductPrintUrl ? printUrl : undefined;
+    productSaveLock.current = true;
+    try {
     if (uploadingImageTarget) {
       showToast("Vui lòng đợi ảnh tải xong trước khi lưu sản phẩm.", "warning");
       return;
@@ -896,6 +954,15 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       showToast("Slug URL sản phẩm bị trùng! Hãy đổi slug khác.", "error");
       return;
     }
+    // A paged client cannot prove global uniqueness from its loaded products.
+    try {
+      const [slugMatches, idMatch] = await Promise.all([
+        getDocs(query(collection(db, 'products'), where('slug', '==', currentForm.slug), limit(2))),
+        getDoc(doc(db, 'products', currentForm.id)),
+      ]);
+      if (slugMatches.docs.some(item => item.id !== editingProduct?.id)) { showToast('Slug URL sản phẩm bị trùng!', 'error'); return; }
+      if (currentForm.id !== editingProduct?.id && idMatch.exists()) { showToast('ID Sản phẩm đã tồn tại!', 'error'); return; }
+    } catch { showToast('Không kiểm tra được ID/slug trên Firebase. Chưa lưu sản phẩm.', 'error'); return; }
 
     if (editingProduct) {
       const originalId = editingProduct.id;
@@ -910,11 +977,11 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       currentForm.id = nextId;
 
       if (isChangingId) {
-        const didAdd = await addProduct(currentForm);
+        const didAdd = await addProduct(currentForm, changedPrintUrl);
         if (!didAdd) return;
         if (!await deleteProduct(originalId)) return;
       } else {
-        const didUpdate = await updateProduct(currentForm);
+        const didUpdate = await updateProduct(currentForm, changedPrintUrl);
         if (!didUpdate) return;
       }
       showToast("Đã lưu chỉnh sửa sản phẩm thành công!", "success");
@@ -923,11 +990,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
         showToast("ID Sản phẩm bị trùng lặp! Hãy đổi ID khác.", "error");
         return;
       }
-      const didAdd = await addProduct(currentForm);
+      const didAdd = await addProduct(currentForm, changedPrintUrl);
       if (!didAdd) return;
       showToast("Đã thêm sản phẩm mới thành công!", "success");
     }
     setIsProductModalOpen(false);
+    } finally { productSaveLock.current = false; }
   };
 
   const handleDeleteProductPrompt = async (id: string, name: string) => {
@@ -1094,43 +1162,15 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     showToast(prod.hidden ? "Đã bật hiển thị sản phẩm." : "Đã ẩn sản phẩm khỏi trang công khai.", "info");
   };
 
-  const normalizedSearchQuery = productSearchQuery.trim().toLowerCase();
-  const filteredAdminProducts = products
-    .filter((prod) => {
-      const matchesSearch =
-        !normalizedSearchQuery ||
-        prod.name.toLowerCase().includes(normalizedSearchQuery) ||
-        prod.id.toLowerCase().includes(normalizedSearchQuery) ||
-        (prod.sku || "").toLowerCase().includes(normalizedSearchQuery) ||
-        prod.category.toLowerCase().includes(normalizedSearchQuery) ||
-        (prod.subCategory || "").toLowerCase().includes(normalizedSearchQuery) ||
-        prod.brand.toLowerCase().includes(normalizedSearchQuery);
-      const matchesVisibility =
-        productVisibilityFilter === "all" ||
-        (productVisibilityFilter === "hidden" ? Boolean(prod.hidden) : !prod.hidden);
-      const missingPrice = productHasMissingPrice(prod);
-      const matchesPrice =
-        productPriceFilter === "all" ||
-        (productPriceFilter === "missing" && missingPrice) ||
-        (productPriceFilter === "complete" && !missingPrice) ||
-        (productPriceFilter === "variants" && (prod.variants || []).length > 0);
-
-      return matchesSearch && matchesVisibility && matchesPrice;
-    })
-    .sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime || b.id.localeCompare(a.id);
-    });
-  // Display-only pagination: reuse the shared catalog without another API/Firestore read.
-  const productPageCount = Math.max(1, Math.ceil(filteredAdminProducts.length / productPageSize));
-  const currentProductPage = Math.min(productPage, productPageCount);
+  const productPageCount = Math.max(1, Math.ceil(productPages.total / productPageSize));
+  const currentProductPage = productPage;
   useEffect(() => {
-    setProductPage(page => Math.min(page, productPageCount));
-  }, [productPageCount]);
-  const visibleAdminProducts = filteredAdminProducts.slice((currentProductPage - 1) * productPageSize, currentProductPage * productPageSize);
+    if (!productPages.loading && !productPages.error) setProductPage(page => Math.min(page, productPageCount));
+  }, [productPageCount, productPages.loading, productPages.error]);
+  const visibleAdminProducts = productPages.rows;
   const changeProductPage = (page: number) => {
-    setProductPage(Math.max(1, Math.min(page, productPageCount)));
+    if (productPages.loading) return;
+    setProductPage(Math.max(1, Math.min(page, productPageCount, productPages.knownPage)));
     paginationTopRef.current?.scrollIntoView({ block: 'start' });
   };
   const changeProductPageSize = (size: number) => {
@@ -1799,9 +1839,11 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   };
 
   const handleExportProductsExcel = async () => {
-    const exportRows = filteredAdminProducts.length ? filteredAdminProducts : products;
-    if (!exportRows.length) { showToast("Chưa có sản phẩm để xuất file.", "warning"); return; }
+    if (!window.confirm('Xuất Excel cần đọc toàn bộ kho (hoặc dùng bản lưu tạm 5 phút). Tiếp tục?')) return;
     try {
+      const catalogue = await loadAdminProductCatalogue();
+      const exportRows = filterAdminProducts(catalogue, { search: appliedProductSearch, visibility: productVisibilityFilter, price: productPriceFilter });
+      if (!exportRows.length) { showToast("Chưa có sản phẩm để xuất file.", "warning"); return; }
       const XLSX = await import("xlsx");
       const matrix = productWorkbookMatrix(exportRows);
       const sheet = XLSX.utils.aoa_to_sheet(matrix);
@@ -1830,6 +1872,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
   const handleImportProducts = async (file: File | undefined) => {
     if (!file) return;
+    if (!window.confirm('Nhập Excel cần đọc toàn bộ kho để đối chiếu ID/mã và giữ dữ liệu cũ. Tiếp tục?')) return;
     setBulkImporting(true);
 
     try {
@@ -1851,10 +1894,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
             : [line, ""];
         }).filter(([key, value]) => key && value),
       );
-      const existingById = new Map(products.map((product) => [product.id, product]));
+      const importProducts = await loadAdminProductCatalogue();
+      setProducts(importProducts);
+      const existingById = new Map(importProducts.map((product) => [product.id, product]));
       const normalizeProductCode = (value: string | undefined) => String(value || "").trim().toLocaleLowerCase("vi");
       const existingByCode = new Map<string, Product>();
-      products.forEach((product) => {
+      importProducts.forEach((product) => {
         [product.id, product.sku, product.barcode].forEach((value) => {
           const normalized = normalizeProductCode(value);
           if (normalized) existingByCode.set(normalized, product);
@@ -1936,13 +1981,13 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       });
 
       if (!candidates.length) throw new Error("Không tìm thấy sản phẩm hợp lệ. File cần có cột Mã SP và Tên sản phẩm.");
-      const updateCount = candidates.filter((product) => products.some((current) => current.id === product.id)).length;
+      const updateCount = candidates.filter((product) => importProducts.some((current) => current.id === product.id)).length;
       const createCount = candidates.length - updateCount;
       if (!window.confirm(`Nhập ${candidates.length} sản phẩm: tạo mới ${createCount}, cập nhật ${updateCount}. Tiếp tục?`)) return;
 
       let successCount = 0;
       for (const product of candidates) {
-        const exists = products.some((current) => current.id === product.id);
+        const exists = importProducts.some((current) => current.id === product.id);
         const saved = exists ? await updateProduct(product) : await addProduct(product);
         if (saved) successCount += 1;
       }
@@ -1961,7 +2006,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
         <div className="space-y-1">
           <h2 className="text-lg font-display font-semibold tracking-wide text-white uppercase flex items-center gap-2 text-gold-light">
             <Battery className="w-4 h-4 scale-110" />
-            QUẢN LÝ KHO HÀNG SẢN PHẨM ({products.length})
+            QUẢN LÝ KHO HÀNG SẢN PHẨM {productPages.catalogueTotal !== null ? `(${productPages.catalogueTotal})` : ''}
           </h2>
           <p className="text-xs text-gray-400">Quản lý danh mục, kích thước, vật liệu, giá và thông tin các sản phẩm in 3D.</p>
         </div>
@@ -2122,14 +2167,17 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
               type="search"
               value={productSearchQuery}
               onChange={(e) => setProductSearchQuery(e.target.value)}
+              onKeyDown={event => { if (event.key === 'Enter') applyProductSearch(); }}
               placeholder="Tìm theo tên, ID, thương hiệu hoặc danh mục..."
               className="w-full bg-black border border-[#1A1A1A] text-[#ECECEC] pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:border-gold-light"
             />
+            <button type="button" disabled={productPages.loading} onClick={applyProductSearch} className="mt-2 border border-gold-dark/40 px-3 py-1 text-xs text-gold-light disabled:opacity-40">Tìm kiếm</button>
+            <button type="button" disabled={productPages.loading} onClick={() => { setProductSearchQuery(''); setAppliedProductSearch(''); setProductVisibilityFilter('all'); setProductPriceFilter('all'); setProductPage(1); }} className="ml-2 text-xs text-gray-400">Bỏ lọc</button>
           </div>
 
           <select
             value={productVisibilityFilter}
-            onChange={(e) => setProductVisibilityFilter(e.target.value as "all" | "visible" | "hidden")}
+            onChange={(e) => { if (e.target.value !== 'all' && !confirmFullCatalog()) return; setProductVisibilityFilter(e.target.value as "all" | "visible" | "hidden"); setProductPage(1); }}
             className="lg:col-span-2 bg-black border border-[#1A1A1A] text-[#ECECEC] px-3 py-2.5 text-xs focus:outline-none focus:border-gold-light font-display font-bold uppercase"
           >
             <option value="all">Tất cả trạng thái</option>
@@ -2139,7 +2187,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
           <select
             value={productPriceFilter}
-            onChange={(e) => setProductPriceFilter(e.target.value as "all" | "missing" | "complete" | "variants")}
+            onChange={(e) => { if (e.target.value !== 'all' && !confirmFullCatalog()) return; setProductPriceFilter(e.target.value as "all" | "missing" | "complete" | "variants"); setProductPage(1); }}
             className="lg:col-span-2 bg-black border border-[#1A1A1A] text-[#ECECEC] px-3 py-2.5 text-xs focus:outline-none focus:border-gold-light font-display font-bold uppercase"
           >
             <option value="all">Tất cả giá</option>
@@ -2207,7 +2255,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
             />
 
             <div className="flex items-center px-3 border border-[#1A1A1A] bg-black text-[10px] text-gray-500 font-mono uppercase">
-              {filteredAdminProducts.length}/{products.length} sản phẩm
+              {productPages.total} sản phẩm phù hợp
             </div>
           </div>
         </div>
@@ -2215,9 +2263,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
 
       {/* Catalog lists */}
       <div ref={paginationTopRef} className="scroll-mt-28">
-        <ProductPagination total={filteredAdminProducts.length} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} />
+        <ProductPagination total={productPages.total} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} disabled={productPages.loading} maxPage={productPages.knownPage} />
+        <p className="mt-2 text-[11px] text-gray-500">{productPages.advanced ? 'Đang tìm/lọc nâng cao; bản đọc toàn kho lưu tạm 5 phút.' : 'Tải từng trang theo ID, không đọc toàn kho. Dùng Sau để tải trang mới; trang đã tải lưu tạm 5 phút, kể cả F5.'}</p>
+        <button type="button" disabled={productPages.loading} onClick={() => { if (productPages.advanced && !confirmFullCatalog()) return; invalidateAdminProductPages(); }} className="mt-2 text-xs text-gold-light disabled:opacity-40">Làm mới từ Firebase</button>
       </div>
-      {filteredAdminProducts.length === 0 ? (
+      {productPages.error && <p role="alert" className="border border-red-400/30 p-3 text-sm text-red-300">{productPages.error}</p>}
+      {productPages.loading ? <p role="status" className="py-8 text-center text-gray-400">Đang tải trang sản phẩm…</p> : !productPages.error && visibleAdminProducts.length === 0 ? (
         <div className="border border-white/5 bg-black/50 py-14 text-center">
           <Search className="w-9 h-9 text-gray-600 mx-auto mb-3" />
           <p className="text-xs text-gray-400 font-display font-bold uppercase tracking-widest">Không tìm thấy sản phẩm phù hợp</p>
@@ -2353,7 +2404,11 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 )}
 
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                  <ProductPrintFileButton product={prod} />
+                  <ProductPrintFileButton product={prod} hasPrintFile={printFileStatuses[prod.id]} onStatusChange={(id, exists) => {
+                    printFileOverrides.current[id] = exists;
+                    setPrintFileStatuses(previous => ({ ...previous, [id]: exists }));
+                    setProducts(previous => previous.map(product => product.id === id ? { ...product, hasPrintFile: exists } : product));
+                  }} />
                   <button
                     type="button"
                     onClick={() => handleToggleProductVisibility(prod)}
@@ -2392,8 +2447,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
         </div>
       )}
 
-      {filteredAdminProducts.length > 0 && <div className="border-t border-white/10 pt-4">
-        <ProductPagination total={filteredAdminProducts.length} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} />
+      {productPages.total > 0 && <div className="border-t border-white/10 pt-4">
+        <ProductPagination total={productPages.total} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} disabled={productPages.loading} maxPage={productPages.knownPage} />
       </div>}
 
       {/* POPUP MODAL */}
@@ -2446,6 +2501,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   />
                 </div>
 
+                <div className="space-y-1 sm:col-span-2">
+                  <label htmlFor="product-print-file-url" className="text-[9px] font-display font-extrabold uppercase tracking-widest text-orange-400">Link file in · nội bộ (không bắt buộc)</label>
+                  <input id="product-print-file-url" type="url" value={productPrintUrl} disabled={printUrlLoading || Boolean(printUrlError)} onChange={event => setProductPrintUrl(event.target.value)} placeholder="https://drive.google.com/..." className="w-full bg-black border border-[#1A1A1A] focus:border-gold-light text-[#ECECEC] px-3.5 py-2.5 text-xs focus:outline-none disabled:opacity-40" />
+                  <p className="text-[10px] text-gray-500">{printUrlLoading ? 'Đang tải link file in…' : 'Chỉ quản trị viên xem được. Lưu cùng sản phẩm; không tải file lên website.'}</p>
+                  {printUrlError && <p role="alert" className="text-xs text-red-300">{printUrlError} <button type="button" onClick={() => setPrintUrlRetry(value => value + 1)} className="underline">Thử lại</button></p>}
+                </div>
                 <details className="sm:col-span-2 border border-white/10 p-3">
                   <summary className="cursor-pointer text-xs text-gray-400">Nâng cao · ID hệ thống và URL SEO</summary>
                   <div className="grid sm:grid-cols-2 gap-3 mt-3">

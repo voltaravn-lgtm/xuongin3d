@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../../lib/firebase';
 import { canRestoreProduct, permanentlyDeleteTrashedProducts, restoreTrashedProduct, type TrashedProduct } from '../../lib/productTrash';
 import { revalidateProductCache } from '../../lib/productCacheClient';
 import { useApp } from '../../context/AppContext';
+import { invalidateAdminProductPages } from '../../lib/adminProductPages';
 
 export default function ProductTrashPanel() {
   const { products, setProducts, showToast } = useApp();
@@ -34,8 +35,11 @@ export default function ProductTrashPanel() {
     if (!window.confirm(`Khôi phục sản phẩm “${row.product.name}”? Sản phẩm sẽ trở lại trạng thái hiển thị/ẩn như trước khi xóa.`)) return;
     operationLock.current = true; setBusy(row.id);
     try {
+      const checks = await Promise.all(['sku', 'slug'].filter(field => row.product[field as 'sku' | 'slug']).map(field => getDocs(query(collection(db, 'products'), where(field, '==', row.product[field as 'sku' | 'slug']), limit(1)))));
+      if (checks.some(snapshot => !snapshot.empty)) throw new Error('Mã SP hoặc slug đang được sử dụng trong kho. Không khôi phục đè lên sản phẩm khác.');
       const product = await restoreTrashedProduct(row.id);
       setProducts(previous => [...previous.filter(item => item.id !== product.id), product]);
+      invalidateAdminProductPages();
       setRows(previous => previous.filter(item => item.id !== row.id));
       setSelected(previous => previous.filter(id => id !== row.id));
       showToast('Đã khôi phục sản phẩm, giữ nguyên mã và đường dẫn.', 'success');

@@ -6,7 +6,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch, runTransaction } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch, runTransaction, serverTimestamp } from "firebase/firestore";
+import { normalizePrintFileUrl } from "../lib/productPrintFile";
 import { availableProductSku } from "../lib/productSku";
 import { Product, ProductVariant, ProductCombo, SalesProgram, Solution, Article, Branch, Dealer, HomeContent, AboutContent, Job, ContactSubmission, WarrantyRecord, ToastMessage, QuoteRequest, Course, CartItem } from "../types";
 import { getProductSlug } from "../lib/productRoutes";
@@ -16,6 +17,7 @@ import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { isAdminEmail } from "../lib/adminAuth";
 import { trashProduct } from "../lib/productTrash";
 import { revalidateProductCache } from "../lib/productCacheClient";
+import { invalidateAdminProductPages } from "../lib/adminProductPages";
 
 export interface MenuItem {
   name: string;
@@ -177,8 +179,8 @@ interface AppContextType {
   setAcademyCourses: React.Dispatch<React.SetStateAction<Course[]>>;
   
   // Dynamic State Modifiers for Easy Administration
-  updateProduct: (product: Product) => Promise<boolean>;
-  addProduct: (product: Product) => Promise<boolean>;
+  updateProduct: (product: Product, printFileUrl?: string) => Promise<boolean>;
+  addProduct: (product: Product, printFileUrl?: string) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<boolean>;
   updateMenuItem: (index: number, updatedItem: MenuItem) => void;
   addMenuItem: (item: MenuItem) => void;
@@ -507,6 +509,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Load or Initialize Products
   const [products, setProducts] = useState<Product[]>(() => {
+    if (isAdminRoute) return [];
     const saved = localStorage.getItem("xuongin3d_products");
     return saved ? JSON.parse(saved) : PRODUCTS_DATA;
   });
@@ -860,8 +863,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [canReadAdminData, productCategories, productCategoriesReady]);
 
   useEffect(() => {
-    localStorage.setItem("xuongin3d_products", JSON.stringify(products));
-  }, [products]);
+    // Admin pages only have a partial catalog; never replace the public catalog cache.
+    if (!isAdminRoute) localStorage.setItem("xuongin3d_products", JSON.stringify(products));
+  }, [products, isAdminRoute]);
 
   useEffect(() => {
     const syncProductsAcrossTabs = (event: StorageEvent) => {
@@ -944,9 +948,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem("xuongin3d_cart_items", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const updateProduct = async (updatedProduct: Product) => {
+  const updateProduct = async (updatedProduct: Product, printFileUrl?: string) => {
+    const printUrl = printFileUrl === undefined ? undefined : normalizePrintFileUrl(printFileUrl);
     const nextProduct = omitUndefinedValues({
       ...updatedProduct,
+      ...(printUrl === undefined ? {} : { hasPrintFile: Boolean(printUrl) }),
       slug: updatedProduct.slug || getProductSlug(updatedProduct),
       createdAt: updatedProduct.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -954,7 +960,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isFirebaseConfigured) {
       try {
-        await setDoc(doc(db, "products", nextProduct.id), nextProduct, { merge: true });
+        const batch = writeBatch(db);
+        batch.set(doc(db, "products", nextProduct.id), nextProduct, { merge: true });
+        if (printUrl !== undefined) batch.set(doc(db, 'productPrintFiles', nextProduct.id), { url: printUrl, updatedAt: serverTimestamp() });
+        await batch.commit();
       } catch (error) {
         console.error("Could not update product in Firestore:", error);
         showToast("Không thể lưu sản phẩm lên Firebase.", "error");
@@ -963,12 +972,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setProducts(prev => sortProductsNewestFirst(prev.map(p => p.id === nextProduct.id ? nextProduct : p)));
+    invalidateAdminProductPages();
     return true;
   };
 
-  const addProduct = async (newProduct: Product) => {
+  const addProduct = async (newProduct: Product, printFileUrl?: string) => {
+    const printUrl = printFileUrl === undefined ? undefined : normalizePrintFileUrl(printFileUrl);
     const nextProduct = omitUndefinedValues({
       ...newProduct,
+      ...(printUrl === undefined ? {} : { hasPrintFile: Boolean(printUrl) }),
       slug: newProduct.slug || getProductSlug(newProduct),
       createdAt: newProduct.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -982,30 +994,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isFirebaseConfigured) {
       try {
           if (/^IN3D-\d{4}$/.test(nextProduct.sku || '')) {
-            // Include old/manual products. Registry + product are committed atomically
-            // so concurrent batch publishers cannot allocate the same short SKU.
-            const existing = await getDocs(collection(db, "products"));
-            const legacyCodes = existing.docs.flatMap(p => [String(p.data().sku || ''), p.id]);
             const registryRef = doc(db, "productSkuRegistry", "shortCodes");
+            // Index legacy short SKUs once, not a full collection read per new product.
+            const registryBefore = await getDoc(registryRef);
+            const legacyOwners: Record<string, string> = {};
+            if (!registryBefore.data()?.legacyIndexed) {
+              const existing = await getDocs(collection(db, "products"));
+              existing.docs.forEach(item => {
+                [String(item.data().sku || ''), item.id].filter(code => /^IN3D-\d{4}$/.test(code)).forEach(code => { legacyOwners[code] = item.id; });
+              });
+            }
             const productRef = doc(db, "products", nextProduct.id);
             const assigned = await runTransaction(db, async transaction => {
               const registry = await transaction.get(registryRef);
               const saved = await transaction.get(productRef);
               if (saved.exists()) {
                 const value = saved.data();
-                if (value.name === nextProduct.name && value.image === nextProduct.image && /^IN3D-\d{4}$/.test(value.sku || '')) return value.sku as string;
+                if (value.name === nextProduct.name && value.image === nextProduct.image && /^IN3D-\d{4}$/.test(value.sku || '')) {
+                  if (printUrl !== undefined) {
+                    transaction.update(productRef, { hasPrintFile: Boolean(printUrl) });
+                    transaction.set(doc(db, 'productPrintFiles', nextProduct.id), { url: printUrl, updatedAt: serverTimestamp() });
+                  }
+                  return value.sku as string;
+                }
                 throw new Error('ID sản phẩm đã tồn tại.');
               }
-              const owners = (registry.data()?.owners || {}) as Record<string, string>;
-              const sku = availableProductSku(nextProduct.sku || '', [...legacyCodes, ...Object.keys(owners)]);
-              transaction.set(registryRef, { owners: { ...owners, [sku]: nextProduct.id } });
+              const owners = { ...legacyOwners, ...(registry.data()?.owners || {}) } as Record<string, string>;
+              const sku = availableProductSku(nextProduct.sku || '', Object.keys(owners));
+              transaction.set(registryRef, { owners: { ...owners, [sku]: nextProduct.id }, legacyIndexed: true });
               transaction.set(productRef, { ...nextProduct, sku });
+              if (printUrl) transaction.set(doc(db, 'productPrintFiles', nextProduct.id), { url: printUrl, updatedAt: serverTimestamp() });
               return sku;
             });
             nextProduct.sku = assigned;
             newProduct.sku = assigned;
           } else {
-            await setDoc(doc(db, "products", nextProduct.id), nextProduct);
+            const batch = writeBatch(db);
+            batch.set(doc(db, "products", nextProduct.id), nextProduct);
+            if (printUrl) batch.set(doc(db, 'productPrintFiles', nextProduct.id), { url: printUrl, updatedAt: serverTimestamp() });
+            await batch.commit();
           }
       } catch (error) {
         console.error("Could not add product to Firestore:", error);
@@ -1015,6 +1042,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setProducts(prev => sortProductsNewestFirst([nextProduct, ...prev]));
+    invalidateAdminProductPages();
     return true;
   };
 
@@ -1033,6 +1061,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     setProducts(prev => prev.filter(p => p.id !== id));
+    invalidateAdminProductPages();
     showToast("Đã chuyển vào mục Đã xóa. Có thể khôi phục trong 7 ngày.", "success");
     if (!await revalidateProductCache()) showToast("Đã xóa tạm nhưng chưa làm mới cache web được. Không cần xóa lại.", "warning");
     return true;

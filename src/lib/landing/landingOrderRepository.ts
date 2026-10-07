@@ -6,6 +6,7 @@ import {
   limit,
   onSnapshot,
   query,
+  where,
   setDoc,
   Unsubscribe,
 } from "firebase/firestore";
@@ -39,6 +40,15 @@ export function subscribeLandingOrders(
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     onData(orders);
   }, onError);
+}
+
+/** Sidebar badge: only new orders, capped at 100 to avoid reading order history. */
+export function subscribeNewLandingOrderCount(
+  onCount: (count: number) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  return onSnapshot(query(collection(db, LANDING_ORDER_COLLECTION), where('status', '==', 'new'), limit(100)),
+    snapshot => onCount(snapshot.size), onError);
 }
 
 export async function updateLandingOrderStatus(id: string, status: LandingOrderStatus): Promise<void> {

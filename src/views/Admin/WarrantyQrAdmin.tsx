@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { jsPDF } from "jspdf";
 import { Download, Eye, FileSpreadsheet, ImagePlus, Loader2, Plus, QrCode, Save, ShieldCheck } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import LoadAdminCatalogueButton from '../../components/Admin/LoadAdminCatalogueButton';
 import { WarrantyRecord } from "../../types";
 import {
   buildWarrantyQrUrl,
@@ -468,6 +469,7 @@ const y = margin + row * (slotH + gap) + (slotH - drawH) / 2;
             Về quản trị
           </a>
         </header>
+        <LoadAdminCatalogueButton />
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
           <section className="space-y-5">

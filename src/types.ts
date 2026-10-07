@@ -42,6 +42,7 @@ export interface Product {
   syncEnabled?: boolean;
   lastSyncedAt?: string;
   hidden?: boolean;
+  hasPrintFile?: boolean;
   createdAt?: string;
   updatedAt?: string;
   variants?: ProductVariant[];
