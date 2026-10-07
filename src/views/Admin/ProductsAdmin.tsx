@@ -6,6 +6,7 @@ import { uploadImageToCloudinary, isCloudinaryConfigured } from "../../lib/cloud
 import { watermarkImageFile, type WatermarkOptions } from "../../lib/watermark";
 import ProductWatermarkControls from "../../components/Admin/ProductWatermarkControls";
 import ProductTrashPanel from "../../components/Admin/ProductTrashPanel";
+import ProductPagination from "../../components/Admin/ProductPagination";
 import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
@@ -26,6 +27,7 @@ import {
   Loader2, Search, LayoutGrid, Rows3, EyeOff, Download, Undo2, Redo2, ChevronRight
 } from "lucide-react";
 const fulfillmentOptions = ["Có sẵn", "In theo yêu cầu", "Thiết kế + in", "In + sơn hoàn thiện", "Thiết kế + in + sơn hoàn thiện"];
+const ADMIN_PRODUCTS_PAGE_SIZE = 12;
 const defaultSpecTemplate: Product["specs"] = {
   "Công suất tối đa": "",
   "Trọng lượng thân máy": "",
@@ -421,6 +423,12 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [productVisibilityFilter, setProductVisibilityFilter] = useState<"all" | "visible" | "hidden">("all");
   const [productPriceFilter, setProductPriceFilter] = useState<"all" | "missing" | "complete" | "variants">("all");
+  const [productPageSize, setProductPageSize] = useState(ADMIN_PRODUCTS_PAGE_SIZE);
+  const [productPage, setProductPage] = useState(1);
+  const paginationTopRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setProductPage(1);
+  }, [productSearchQuery, productVisibilityFilter, productPriceFilter, productPageSize]);
   const [quickPriceDrafts, setQuickPriceDrafts] = useState<Record<string, string>>({});
   const [quickVariantPriceDrafts, setQuickVariantPriceDrafts] = useState<Record<string, string>>({});
   const [savingQuickPriceId, setSavingQuickPriceId] = useState<string | null>(null);
@@ -1109,6 +1117,22 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bTime - aTime || b.id.localeCompare(a.id);
     });
+  // Display-only pagination: reuse the shared catalog without another API/Firestore read.
+  const productPageCount = Math.max(1, Math.ceil(filteredAdminProducts.length / productPageSize));
+  const currentProductPage = Math.min(productPage, productPageCount);
+  useEffect(() => {
+    setProductPage(page => Math.min(page, productPageCount));
+  }, [productPageCount]);
+  const visibleAdminProducts = filteredAdminProducts.slice((currentProductPage - 1) * productPageSize, currentProductPage * productPageSize);
+  const changeProductPage = (page: number) => {
+    setProductPage(Math.max(1, Math.min(page, productPageCount)));
+    paginationTopRef.current?.scrollIntoView({ block: 'start' });
+  };
+  const changeProductPageSize = (size: number) => {
+    setProductPageSize(size);
+    setProductPage(1);
+    paginationTopRef.current?.scrollIntoView({ block: 'start' });
+  };
 
   const cleanDescriptionEditorHtml = (html: string) => {
     return html
@@ -2185,6 +2209,9 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
       </div>
 
       {/* Catalog lists */}
+      <div ref={paginationTopRef} className="scroll-mt-28">
+        <ProductPagination total={filteredAdminProducts.length} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} />
+      </div>
       {filteredAdminProducts.length === 0 ? (
         <div className="border border-white/5 bg-black/50 py-14 text-center">
           <Search className="w-9 h-9 text-gray-600 mx-auto mb-3" />
@@ -2192,7 +2219,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
         </div>
       ) : (
         <div className={adminViewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 mt-4" : "space-y-2 mt-4"}>
-          {filteredAdminProducts.map((prod) => (
+          {visibleAdminProducts.map((prod) => (
             <div
               key={prod.id}
               className={`bg-black/80 border transition-all duration-300 ${
@@ -2358,6 +2385,10 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
           ))}
         </div>
       )}
+
+      {filteredAdminProducts.length > 0 && <div className="border-t border-white/10 pt-4">
+        <ProductPagination total={filteredAdminProducts.length} page={currentProductPage} pageSize={productPageSize} onPageChange={changeProductPage} onPageSizeChange={changeProductPageSize} />
+      </div>}
 
       {/* POPUP MODAL */}
       {isProductModalOpen && (

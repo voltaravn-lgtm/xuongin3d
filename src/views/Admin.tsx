@@ -222,7 +222,11 @@ export default function Admin() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
           
           {/* 1. SIDEBAR CONTROLS */}
-          <div className="flex flex-col gap-2">
+          <nav
+            aria-label="Menu quản trị"
+            tabIndex={0}
+            className="flex flex-col gap-2 lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2 [&>button]:shrink-0 [&>div]:shrink-0"
+          >
             
             <button
               id="admin-tab-hero"
@@ -461,7 +465,7 @@ export default function Admin() {
               </p>
             </div>
 
-          </div>
+          </nav>
 
           {/* 2. CHOSEN SECTION FRAME COMPONENT */}
           <div className="min-w-0 bg-[#0A0A0A] border border-[#1A1A1A] p-6 sm:p-8">
