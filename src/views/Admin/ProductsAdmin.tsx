@@ -13,7 +13,7 @@ import useAdminProductPages, { filterAdminProducts } from "../../components/Admi
 import { ADMIN_PRODUCT_CACHE_EVENT, invalidateAdminProductPages, loadAdminProductCatalogue, loadAdminPrintFileStatuses, normalizeAdminProductSearch } from "../../lib/adminProductPages";
 import { collection, doc, getDoc, getDocs, limit, query, where, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
-import { getProductSlug, slugifyProductText } from "../../lib/productRoutes";
+import { getProductHref, getProductSlug, slugifyProductText } from "../../lib/productRoutes";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../lib/video";
 import { readProductExcelOptions } from "../../lib/productExcelOptions";
 import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras } from "../../lib/productWorkbook";
@@ -440,7 +440,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   const [watermarkOptions, setWatermarkOptions] = useState<WatermarkOptions>({position:'top-right',size:20,opacity:70,margin:3});
   useEffect(() => () => { if (watermarkLogoUrl.startsWith('blob:')) URL.revokeObjectURL(watermarkLogoUrl); }, [watermarkLogoUrl]);
   const [variantImagePickerId, setVariantImagePickerId] = useState<string | null>(null);
-  const [adminViewMode, setAdminViewMode] = useState<"grid" | "list">("grid");
+  const [adminViewMode, setAdminViewMode] = useState<"grid" | "list" | "images">("grid");
   const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false);
   const [isComboPanelOpen, setIsComboPanelOpen] = useState(false);
   const [comboProductQueries, setComboProductQueries] = useState<Record<number, string>>({});
@@ -2214,6 +2214,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 onClick={() => setAdminViewMode("grid")}
                 className={`w-10 flex items-center justify-center transition-colors ${adminViewMode === "grid" ? "bg-gold-dark text-black" : "text-gray-400 hover:text-white"}`}
                 title="Dạng thẻ"
+                aria-label="Dạng thẻ"
+                aria-pressed={adminViewMode === "grid"}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
@@ -2222,8 +2224,20 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 onClick={() => setAdminViewMode("list")}
                 className={`w-10 flex items-center justify-center transition-colors ${adminViewMode === "list" ? "bg-gold-dark text-black" : "text-gray-400 hover:text-white"}`}
                 title="Dạng danh sách"
+                aria-label="Dạng danh sách"
+                aria-pressed={adminViewMode === "list"}
               >
                 <Rows3 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminViewMode("images")}
+                className={`w-10 flex items-center justify-center transition-colors ${adminViewMode === "images" ? "bg-gold-dark text-black" : "text-gray-400 hover:text-white"}`}
+                title="Ảnh đại diện lớn"
+                aria-label="Ảnh đại diện lớn"
+                aria-pressed={adminViewMode === "images"}
+              >
+                <ImageIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -2289,7 +2303,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
           <p className="text-xs text-gray-400 font-display font-bold uppercase tracking-widest">Không tìm thấy sản phẩm phù hợp</p>
         </div>
       ) : (
-        <div className={adminViewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 mt-4" : "space-y-2 mt-4"}>
+        <div className={adminViewMode !== "list" ? "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 mt-4" : "space-y-2 mt-4"}>
           {visibleAdminProducts.map((prod) => (
             <div
               key={prod.id}
@@ -2297,15 +2311,16 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 prod.hidden
                   ? "border-gray-800 opacity-70 hover:opacity-100"
                   : "border-[#1A1A1A] hover:border-gold-dark/40"
-              } ${adminViewMode === "grid" ? "p-2.5 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
+              } ${adminViewMode !== "list" ? "p-2.5 flex flex-col justify-between" : "p-3 flex flex-col md:flex-row md:items-center gap-3"}`}
             >
-              <div className={`flex items-start gap-3 ${adminViewMode === "list" ? "flex-1 min-w-0" : ""}`}>
-                <div className="w-12 h-12 bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0">
+              <div className={`flex gap-3 ${adminViewMode === "images" ? "flex-col" : "items-start"} ${adminViewMode === "list" ? "flex-1 min-w-0" : ""}`}>
+                <a href={getProductHref(prod)} target="_blank" rel="noopener noreferrer" aria-label={`Xem sản phẩm ${prod.name} trong tab mới`} className={`${adminViewMode === "images" ? "w-full aspect-square" : "w-12 h-12"} bg-[#111] border border-[#222] p-1 flex items-center justify-center shrink-0 hover:border-gold-dark focus-visible:outline focus-visible:outline-gold-light`}>
                   {prod.image ? (
                     <img
                       src={prod.image}
                       alt={prod.name}
                       className="max-h-full max-w-full object-contain"
+                      loading="lazy"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
@@ -2313,8 +2328,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       Chưa có ảnh
                     </span>
                   )}
-                </div>
-                <div className={`space-y-1 min-w-0 ${adminViewMode === "list" ? "flex-1" : ""}`}>
+                </a>
+                <div className={`space-y-1 min-w-0 ${adminViewMode === "images" ? "w-full" : ""} ${adminViewMode === "list" ? "flex-1" : ""}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[9px] font-mono text-gold-light tracking-wide bg-gold-dark/10 p-0.5">{[prod.voltage, prod.capacity].filter(Boolean).join(" / ")}</span>
                     <span className="text-[9px] text-gray-500 font-mono" title={`ID nội bộ: ${prod.id}`}>Mã SP: {prod.sku || prod.id}</span>
@@ -2327,7 +2342,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                       {prod.hidden ? "Đang ẩn" : "Đang hiện"}
                     </span>
                   </div>
-                  <h3 className="text-[11px] font-display font-bold text-white uppercase line-clamp-1 leading-snug">{prod.name}</h3>
+                  <h3 className={`text-[11px] font-display font-bold text-white uppercase ${adminViewMode === "images" ? "line-clamp-2" : "line-clamp-1"} leading-snug`}><a href={getProductHref(prod)} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light hover:underline" title="Mở sản phẩm trong tab mới">{prod.name}</a></h3>
                   {(prod.variants || []).length === 0 && <div className="flex items-center gap-2 pt-1">
                     <label className="flex min-w-0 flex-1 items-center gap-2">
                       <span className="shrink-0 text-[8px] font-bold uppercase tracking-wider text-gray-500">Giá web</span>
@@ -2413,8 +2428,8 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                 </div>
               </div>
 
-              <div className={`${adminViewMode === "grid" ? "mt-2.5 pt-2 border-t border-[#1A1A1A] flex flex-wrap items-center justify-between gap-2" : "flex flex-wrap items-center justify-end gap-2 shrink-0"}`}>
-                {adminViewMode === "grid" && (
+              <div className={`${adminViewMode !== "list" ? "mt-2.5 pt-2 border-t border-[#1A1A1A] flex flex-wrap items-center justify-between gap-2" : "flex flex-wrap items-center justify-end gap-2 shrink-0"}`}>
+                {adminViewMode !== "list" && (
                   <span className="min-w-0 truncate text-[8px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 font-bold uppercase">{getCategoryDisplayName(prod.category, prod.subCategory)}</span>
                 )}
 
