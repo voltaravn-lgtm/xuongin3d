@@ -29,6 +29,7 @@ export function productWorkbookMatrix(products: Product[]) {
     ['Danh mục', p => p.category], ['Danh mục con', p => p.subCategory], ['Thương hiệu', p => p.brand],
     ['Có phân loại', p => p.variants?.length ? 'Có' : 'Không'],
     ['Giá bán', p => p.price], ['Giá giảm', p => p.salePrice],
+    ['Chế độ giá', p => p.pricingMode || ''], ['Kích thước giá đơn', p => p.singleSize || ''],
     ['Kích thước / quy mô', p => p.voltage], ['Màu sắc', p => p.colors?.join(', ')], ['Ghi chú đặt hàng', p => p.orderNote],
     ['Phân loại chọn sẵn', p => { const i = p.variants?.findIndex(v => v.id === p.defaultVariantId) ?? -1; return i < 0 ? '' : i + 1; }],
     ['Hình thức thực hiện', p => p.capacity], ['Vật liệu', p => p.cellType], ['Bảo hành', p => p.warranty],

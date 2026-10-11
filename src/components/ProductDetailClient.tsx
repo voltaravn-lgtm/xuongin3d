@@ -9,6 +9,16 @@ import { cleanVideoUrls, getProductVideoEmbed } from "../lib/video";
 import { Product, ProductCombo, ProductVariant } from "../types";
 import ProductPromoImage from "./ProductPromoImage";
 import { productNameWithSku } from "../lib/productDisplayName";
+import { getProductPricingMode, getSellingProduct } from '../lib/productPricingMode';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { isAdminEmail } from '../lib/adminAuth';
+import ProductInlineField from './Admin/ProductInlineField';
+import ProductInlineDescription from './Admin/ProductInlineDescription';
+import ProductInlineCover from './Admin/ProductInlineCover';
+import { selectProductCover } from '../lib/productImageSelection';
+import { editProductVariants } from '../lib/productVariantEditing';
+import PriceInput from './Admin/PriceInput';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -16,8 +26,49 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
-  const { products, productCategories, salesPrograms, addToCart, contactSettings, showToast } = useApp();
-  const currentProduct = products.find((item) => item.id === product.id) || product;
+  const { products, productCategories, salesPrograms, addToCart, contactSettings, showToast, updateProduct } = useApp();
+  const savedProduct = products.find((item) => item.id === product.id) || product;
+  const [admin, setAdmin] = useState(false);
+  const [draft, setDraft] = useState<Product | null>(null);
+  const [saving, setSaving] = useState(false);
+  const saveLock = useRef(false);
+  useEffect(() => onAuthStateChanged(auth, user => {
+    const allowed = Boolean(user?.emailVerified && isAdminEmail(user.email));
+    setAdmin(allowed);
+    if (!allowed) setDraft(null);
+  }), []);
+  useEffect(() => { setDraft(null); }, [product.id]);
+  useEffect(() => {
+    if (!draft) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [draft]);
+  const editing = admin && Boolean(draft);
+  const rawProduct = editing ? draft! : savedProduct;
+  const currentProduct = useMemo(() => getSellingProduct(rawProduct), [rawProduct]);
+  const changeDraft = (changes: Partial<Product>) => { if (!saveLock.current) setDraft(previous => previous ? { ...previous, ...changes } : previous); };
+  const changeVariant = (id: string, changes: Partial<ProductVariant>) => {
+    if (saveLock.current) return;
+    setDraft(previous => previous ? { ...previous, ...editProductVariants(previous,
+      (previous.variants || []).map(variant => variant.id === id ? { ...variant, ...changes } : variant)) } : previous);
+  };
+  const addVariant = () => {
+    if (saveLock.current) return;
+    const id = `variant-${crypto.randomUUID()}`;
+    setDraft(previous => previous ? { ...previous, ...editProductVariants(previous,
+      [...(previous.variants || []), { id, name: `Phân loại ${(previous.variants || []).length + 1}`, hidden: false }]) } : previous);
+  };
+  const saveDraft = async () => {
+    if (!draft || !admin || saveLock.current) return;
+    if (!draft.name.trim()) { showToast('Tên sản phẩm không được để trống.', 'warning'); return; }
+    if (getProductPricingMode(draft) === 'single' && !parsePriceNumber(draft.price)) { showToast('Vui lòng nhập giá đơn lớn hơn 0 trước khi lưu.', 'warning'); return; }
+    if (getProductPricingMode(draft) === 'variants' && !(draft.variants || []).some(v => v.name?.trim())) { showToast('Hãy thêm và đặt tên phân loại trước khi lưu.', 'warning'); return; }
+    saveLock.current = true; setSaving(true);
+    try { if (await updateProduct(draft)) { setDraft(null); showToast('Đã lưu thay đổi sản phẩm.'); } }
+    catch { showToast('Không lưu được sản phẩm. Bản sửa vẫn được giữ để thử lại.', 'error'); }
+    finally { saveLock.current = false; setSaving(false); }
+  };
   const productSource = (products.length > 0 ? products : [product, ...relatedProducts]).filter(item => !item.hidden);
   const sameCategoryProducts = productSource.filter(
     (item) => item.category === currentProduct.category && item.id !== currentProduct.id,
@@ -75,7 +126,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedComboId, setSelectedComboId] = useState("");
   const selectedVariant = productVariants.find((variant) => variant.id === selectedVariantId) || null;
-  const lockedSize = selectedVariant?.size?.trim() || "";
+  const lockedSize = currentProduct.pricingMode === 'single' ? currentProduct.singleSize?.trim() || '' : selectedVariant?.size?.trim() || "";
   const effectiveSize = lockedSize || selectedSize;
   const availableSizes = lockedSize ? [lockedSize] : productSizes;
   const selectedCombo = selectedComboId ? productCombos.find((combo) => combo.id === selectedComboId) || null : null;
@@ -130,7 +181,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       ["Bảo hành", currentProduct.warranty || ""],
     ];
     const seen = new Set<string>();
-    return [...baseSpecs, ...technicalSpecs]
+    return [...baseSpecs, ...technicalSpecs.filter(([key]) => currentProduct.pricingMode !== 'single' || !/^kích thước$/i.test(key.trim()))]
       .filter(([, value]) => String(value || "").trim())
       .filter(([key]) => {
         const normalized = key.trim().toLocaleLowerCase("vi");
@@ -138,7 +189,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         seen.add(normalized);
         return true;
       });
-  }, [effectiveSize, currentProduct.capacity, currentProduct.category, currentProduct.cellType, currentProduct.sku, currentProduct.voltage, currentProduct.warranty, productCategories, productColors, productVariants, technicalSpecs]);
+  }, [effectiveSize, currentProduct.capacity, currentProduct.category, currentProduct.cellType, currentProduct.sku, currentProduct.voltage, currentProduct.warranty, currentProduct.pricingMode, productCategories, productColors, productVariants, technicalSpecs]);
   const productVideos = useMemo(
     () => cleanVideoUrls(currentProduct.videoUrls).map((url, index) => getProductVideoEmbed(url, index)).filter(Boolean),
     [currentProduct.videoUrls],
@@ -175,8 +226,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   useEffect(() => {
-    setActiveImage(gallery[0] || currentProduct.image);
-  }, [gallery, currentProduct.image]);
+    setActiveImage(editing ? currentProduct.image : gallery[0] || currentProduct.image);
+  }, [gallery, currentProduct.image, editing]);
 
   useEffect(() => {
     const defaultVariant = productVariants.find((variant) => variant.id === currentProduct.defaultVariantId) || productVariants[0];
@@ -320,9 +371,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             <span className="text-gold-light line-clamp-1">{productNameWithSku(currentProduct.name, currentProduct.sku)}</span>
           </div>
 
+          {admin && <div className="sticky top-24 z-30 mb-6 flex flex-wrap items-center gap-3 border border-gold-dark/50 bg-black/95 p-3 text-xs text-gold-light">
+            {!editing ? <button type="button" onClick={() => setDraft(structuredClone(savedProduct))}>✎ Chỉnh sửa ngay trên trang</button> : <>
+              <span>Đang sửa · chỉ lưu khi bấm Lưu</span>
+              <button type="button" disabled={saving} onClick={() => void saveDraft()} className="bg-gold-light px-4 py-2 font-bold text-black disabled:opacity-50">{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
+              <button type="button" disabled={saving} onClick={() => { if (window.confirm('Hủy các thay đổi chưa lưu?')) setDraft(null); }}>Hủy</button>
+            </>}
+          </div>}
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
             <div className="lg:col-span-6">
               <div className="border border-gold-dark/25 bg-[#0A0A0A] p-5 shadow-[0_0_40px_rgba(216,154,43,0.08)]">
+                {editing && <ProductInlineCover image={rawProduct.image} images={[...(rawProduct.images || []), ...(rawProduct.variants || []).map(variant => variant.image || '')]}
+                  onSelect={image => { changeDraft(selectProductCover(rawProduct.image, rawProduct.images, image)); setActiveImage(image); }} />}
                 <div className="relative aspect-square bg-black flex items-center justify-center overflow-hidden">
                   {currentProduct.tag && (
                     <span className="absolute left-4 top-4 z-10 bg-gold-dark px-3 py-1 text-[10px] font-display font-bold uppercase tracking-wider text-black">
@@ -381,20 +441,45 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
             <div className="lg:col-span-6">
               <div className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-display font-bold uppercase tracking-[0.22em] text-gold-light">
-                <span>{currentProduct.brand}</span>
+                <ProductInlineField enabled={editing} label="thương hiệu" value={rawProduct.brand || ''} onChange={brand => changeDraft({ brand })}><span>{currentProduct.brand || (editing ? 'Thương hiệu' : '')}</span></ProductInlineField>
                 <span className="text-gray-600">•</span>
                 <span>{currentProduct.category}</span>
               </div>
 
               <h1 className="max-w-3xl text-2xl font-display font-black uppercase leading-tight text-white sm:text-3xl lg:text-4xl">
-                {productNameWithSku(currentProduct.name, currentProduct.sku)}
+                <ProductInlineField enabled={editing} label="tên sản phẩm" value={rawProduct.name} onChange={name => changeDraft({ name })}>{productNameWithSku(currentProduct.name, currentProduct.sku)}</ProductInlineField>
               </h1>
 
               <div className="my-6 h-[2px] w-28 bg-gradient-to-r from-gold-dark to-transparent" />
 
-              <p className="max-w-2xl text-sm leading-7 text-gray-300">
-                {shortDescription}
-              </p>
+              <div className="max-w-2xl text-sm leading-7 text-gray-300">
+                <ProductInlineDescription enabled={editing} label="mô tả" value={rawProduct.description} html={descriptionHtml} onChange={description => changeDraft({ description })}>{shortDescription}</ProductInlineDescription>
+              </div>
+
+              {editing && <div className="mt-5 space-y-3 border border-dashed border-gold-dark/50 p-3 text-xs text-gray-300">
+                <label className="block">Chế độ giá<select aria-label="Chế độ giá" value={getProductPricingMode(rawProduct)} onChange={e => changeDraft({ pricingMode: e.target.value as 'single' | 'variants' })} className="ml-3 border border-gold-dark bg-black p-2"><option value="single">Giá đơn · không chọn size</option><option value="variants">Giá theo phân loại</option></select></label>
+                {getProductPricingMode(rawProduct) === 'single' ? <>
+                  <label className="block">Giá đơn<PriceInput aria-label="Giá đơn" value={rawProduct.price || ''} onValueChange={price => changeDraft({ price, retailPrice: price })} placeholder="Nhập giá đơn" className="mt-1 w-full border border-gold-dark bg-black p-2" /></label>
+                  <label className="block">Giá giảm<PriceInput aria-label="Giá giảm đơn" value={rawProduct.salePrice || ''} onValueChange={salePrice => changeDraft({ salePrice })} placeholder="Không bắt buộc" className="mt-1 w-full border border-white/20 bg-black p-2" /></label>
+                  <label className="block">Kích thước riêng cho giá đơn<input aria-label="Kích thước giá đơn" value={rawProduct.singleSize || ''} onChange={e => changeDraft({ singleSize: e.target.value })} placeholder="Để trống để ẩn kích thước" className="mt-1 w-full border border-white/20 bg-black p-2" /></label>
+                  <p>Size và giá phân loại cũ vẫn được giữ. Màu sắc không thay đổi.</p>
+                </> : <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs text-gray-400">Tick để ẩn phân loại, bỏ tick để hiện lại. Không xóa dữ liệu.</span>
+                    <button type="button" onClick={addVariant} disabled={saving} className="border border-gold-dark/50 px-3 py-2 text-gold-light hover:bg-gold-dark/10 disabled:opacity-50">+ Thêm phân loại</button>
+                  </div>
+                  {(rawProduct.variants || []).map(variant => <div key={variant.id} className={`space-y-2 border p-3 ${variant.hidden ? 'border-white/10 bg-black/40' : 'border-gold-dark/25'}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <b className={variant.hidden ? 'text-gray-500' : 'text-gold-light'}>{variant.name}{variant.hidden ? ' · đang ẩn' : ''}</b>
+                      <label className="flex cursor-pointer items-center gap-2 text-xs"><input type="checkbox" checked={Boolean(variant.hidden)} onChange={e => changeVariant(variant.id, { hidden: e.target.checked })} className="accent-amber-500" />Ẩn phân loại</label>
+                    </div>
+                    <label className="block">Tên phân loại<input aria-label={`Tên phân loại ${variant.name}`} value={variant.name} onChange={e => changeVariant(variant.id, { name: e.target.value })} placeholder="VD: Size M" className="mt-1 w-full border border-white/20 bg-black p-2" /></label>
+                    <div className="grid grid-cols-2 gap-2">{(['price', 'salePrice'] as const).map(field => <label key={field}>{field === 'price' ? 'Giá riêng' : 'Giá giảm'}<PriceInput aria-label={`${variant.name} ${field}`} value={variant[field] || ''} onValueChange={value => changeVariant(variant.id, { [field]: value })} placeholder="Chưa có giá · nhập để bổ sung" className="mt-1 w-full border border-white/20 bg-black p-2" /></label>)}</div>
+                    <label className="block">Kích thước<input aria-label={`Kích thước ${variant.name}`} value={variant.size || ''} onChange={e => changeVariant(variant.id, { size: e.target.value })} className="mt-1 w-full border border-white/20 bg-black p-2" /></label>
+                  </div>)}
+                  {!(rawProduct.variants || []).length && <p className="text-xs text-gray-400">Chưa có phân loại. Bấm “Thêm phân loại” để nhập tên, giá và kích thước.</p>}
+                </div>}
+              </div>}
 
               {hasVisiblePrice && (
                 <div className="mt-5 inline-flex flex-wrap items-end gap-3 border border-gold-dark/25 bg-gold-dark/5 px-4 py-3">
@@ -451,7 +536,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               {availableSizes.length > 0 && (
                 <div className="mt-5">
                   <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">
-                    {lockedSize ? "Kích thước của phân loại" : "Chọn kích thước"} {!lockedSize && <span className="text-gold-light">*</span>}
+                    {currentProduct.pricingMode === 'single' ? 'Kích thước' : lockedSize ? "Kích thước của phân loại" : "Chọn kích thước"} {!lockedSize && <span className="text-gold-light">*</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((size) => (
@@ -475,6 +560,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </div>
               )}
 
+              {editing && <div className="mt-5 text-sm text-gray-300"><ProductInlineField enabled label="màu sắc" value={(rawProduct.colors || []).join(', ')} onChange={value => changeDraft({ colors: value.split(/[,|\n]/).map(v => v.trim()).filter(Boolean) })}><span>{productColors.join(', ') || 'Chưa có màu · nhấp để thêm'}</span></ProductInlineField></div>}
               {productColors.length > 0 && (
                 <div className="mt-5">
                   <div className="mb-2 text-[10px] font-display font-bold uppercase tracking-widest text-gray-500">
@@ -677,7 +763,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </button>
           </div>
           <div id="product-information-panel" role="tabpanel" aria-labelledby={activeInfoTab === "description" ? "product-description-tab" : "product-specs-tab"} className="p-4 sm:p-6">
+            {editing && <div className="mb-4 space-y-3 text-sm text-gray-300">
+              {(['cellType', 'warranty', 'capacity'] as const).map(field => <ProductInlineField key={field} enabled label={field === 'cellType' ? 'vật liệu' : field === 'warranty' ? 'bảo hành' : 'hình thức thực hiện'} value={rawProduct[field] || ''} onChange={value => changeDraft({ [field]: value })}><span>{rawProduct[field] || 'Chưa nhập'}</span></ProductInlineField>)}
+              {activeInfoTab === 'specs' && <div className="space-y-2">{Object.entries(rawProduct.specs || {}).map(([key, value]) => <ProductInlineField key={key} enabled label={key} value={value} onChange={value => changeDraft({ specs: { ...rawProduct.specs, [key]: value } })}><span>{key}: {value || 'Chưa nhập'}</span></ProductInlineField>)}</div>}
+            </div>}
             {activeInfoTab === "description" ? (
+              editing ? <ProductInlineDescription enabled label="mô tả đầy đủ" value={rawProduct.description} html={descriptionHtml} onChange={description => changeDraft({ description })}><div className="product-description-content text-sm leading-7 text-gray-300" dangerouslySetInnerHTML={{ __html: descriptionHtml }} /></ProductInlineDescription> :
               descriptionHtml ? (
                 <div
                   className="product-description-content text-sm leading-7 text-gray-300"

@@ -1,7 +1,6 @@
-import { collection, getDocs } from "firebase/firestore";
 import { NextResponse } from "next/server";
 import { PRODUCTS_DATA } from "../../../data";
-import { db, isFirebaseConfigured } from "../../../lib/firebase";
+import { readProductCatalogue } from "../../../lib/productData";
 import { Product } from "../../../types";
 
 export const dynamic = "force-dynamic";
@@ -17,14 +16,7 @@ function newestFirst(products: Product[]) {
 
 export async function GET() {
   try {
-    if (!isFirebaseConfigured) throw new Error("Firebase is not configured");
-
-    const snapshot = await getDocs(collection(db, "products"));
-    const products = newestFirst(
-      snapshot.docs
-        .map((item) => item.data() as Product)
-        .filter((product) => Boolean(product?.id)),
-    );
+    const products = newestFirst(await readProductCatalogue());
 
     return NextResponse.json(
       { products, source: "firestore" },

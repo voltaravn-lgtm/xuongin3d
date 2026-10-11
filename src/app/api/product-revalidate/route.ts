@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminEmail } from "../../../lib/adminAuth";
 import { firebaseConfig } from "../../../lib/firebase";
@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
   }
 
   revalidatePath("/api/products");
+  revalidateTag("public-products", { expire: 0 });
+  revalidatePath("/sitemap.xml");
   revalidatePath("/san-pham", "layout");
   return NextResponse.json({ revalidated: true });
 }

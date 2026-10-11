@@ -158,6 +158,7 @@ body.day-mode .fixed * {
 /* Custom scrollbar for dark premium look */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -171,6 +172,49 @@ body.day-mode .fixed * {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #D89A2B;
+}
+
+/* Keep product galleries compact without removing their scroll affordance. */
+.product-detail-page * {
+  scrollbar-width: thin;
+  scrollbar-color: #494139 transparent;
+}
+
+/* Chromium's standard scrollbar properties override pixel-sized WebKit
+   scrollbars. Reset them there; retain the thin fallback for Firefox. */
+@supports selector(::-webkit-scrollbar) {
+  .product-detail-page * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
+.product-detail-page *::-webkit-scrollbar {
+  width: 5px;
+  height: 4px;
+}
+
+.product-detail-page *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.product-detail-page *::-webkit-scrollbar-thumb {
+  background: #494139;
+  border-radius: 999px;
+}
+
+.product-detail-page *::-webkit-scrollbar-thumb:hover {
+  background: #D89A2B;
+}
+
+.product-detail-page *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.product-detail-page *::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Việt Nam Map lights animation */

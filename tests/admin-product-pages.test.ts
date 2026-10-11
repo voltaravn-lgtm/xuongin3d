@@ -68,6 +68,28 @@ test('2000-product catalog reads only requested page and uses cursor, never offs
   await assert.rejects(h.api.loadAdminProductPage(2000), /không hợp lệ/);
 });
 function nextIsDateCursor(cursor: any) { return typeof cursor?.createdAt === 'string' && typeof cursor?.id === 'string'; }
+
+test('saving, adding and deleting patch search cache without rereading the whole warehouse', async () => {
+  const h = harness();
+  await h.api.loadAdminProductCatalogue();
+  const before = h.stats.documents;
+  h.api.invalidateAdminProductPages({ product: { ...h.products[0], name: 'Changed' } });
+  assert.equal((await h.api.loadAdminProductCatalogue()).find((p: any) => p.id === h.products[0].id).name, 'Changed');
+  h.api.invalidateAdminProductPages({ product: { id: 'new', name: 'New' } });
+  assert.equal((await h.api.loadAdminProductCatalogue()).length, 2001);
+  h.api.invalidateAdminProductPages({ deletedId: 'new' });
+  assert.equal((await h.api.loadAdminProductCatalogue()).length, 2000);
+  assert.equal(h.stats.documents, before);
+  h.advance(5 * 60 * 1000 + 1);
+  await h.api.loadAdminProductCatalogue();
+  assert.equal(h.stats.documents, before + 2000);
+});
+
+test('partially typed numeric SKU never scans the warehouse', async () => {
+  const h = harness();
+  for (const value of ['2', '25', '257']) assert.equal((await h.api.loadAdminProductSearch(value)).length, 0);
+  assert.equal(h.stats.documents, 0);
+});
 test('newest cursors traverse all 2000 products exactly once, including tied dates', async () => {
   const h = harness();
   const ids: string[] = [];

@@ -1,36 +1,33 @@
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { PRODUCTS_DATA } from "../data";
 import { Product } from "../types";
 import { db, isFirebaseConfigured } from "./firebase";
 import { getProductSlug, slugifyProductText } from "./productRoutes";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
+
+// Shared across API, metadata, related products and sitemap. Do not cache failures.
+export const readProductCatalogue = unstable_cache(async (): Promise<Product[]> => {
+  if (!isFirebaseConfigured) throw new Error('Firebase is not configured');
+  const snapshot = await getDocs(collection(db, "products"));
+  return snapshot.docs.map(item => item.data() as Product).filter(product => Boolean(product?.id));
+}, ['public-product-catalogue-v1'], { revalidate: 300, tags: ['public-products'] });
 
 export async function getBuildProducts(): Promise<Product[]> {
   if (!isFirebaseConfigured) return PRODUCTS_DATA;
 
   try {
-    const snapshot = await getDocs(collection(db, "products"));
-    const remoteProducts = snapshot.docs.map((item) => item.data() as Product);
     // Firestore is authoritative, including an empty catalog. Merging static
     // examples back in would resurrect deleted products in pages and sitemap.
-    return remoteProducts.filter(product => Boolean(product?.id));
+    return await readProductCatalogue();
   } catch (error) {
     console.error("Could not load products for static product routes:", error);
     return PRODUCTS_DATA;
   }
 }
 
-export async function findBuildProductByRoute(id: string): Promise<Product | null> {
+export const findBuildProductByRoute = cache(async (id: string): Promise<Product | null> => {
   const normalizedId = slugifyProductText(id);
-
-  if (isFirebaseConfigured && normalizedId) {
-    try {
-      const snapshot = await getDocs(query(collection(db, "products"), where("slug", "==", normalizedId), limit(1)));
-      const product = snapshot.docs[0]?.data() as Product | undefined;
-      if (product) return product;
-    } catch (error) {
-      console.error("Could not load product by slug:", error);
-    }
-  }
 
   const products = await getBuildProducts();
   return products.find((item) =>
@@ -39,4 +36,4 @@ export async function findBuildProductByRoute(id: string): Promise<Product | nul
     slugifyProductText(item.slug || "") === normalizedId ||
     getProductSlug(item) === normalizedId
   ) || null;
-}
+});

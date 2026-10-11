@@ -4,6 +4,7 @@ import { Minus, Plus, Send, ShoppingCart, Trash2, X } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { getProductHref } from "../lib/productRoutes";
 import { isValidProductSize, resolveProductVariant } from "../lib/productSize";
+import { getSellingProduct } from '../lib/productPricingMode';
 import { VIETNAM_LOCATIONS } from "../lib/vietnamLocations";
 import { announceOrderSuccess } from "../lib/orderSuccess";
 
@@ -31,7 +32,8 @@ export default function CartDrawer() {
   const detailedItems = useMemo(() => {
     return cartItems
       .map((item) => {
-        const product = products.find((prod) => prod.id === item.productId);
+        const savedProduct = products.find((prod) => prod.id === item.productId);
+        const product = savedProduct ? getSellingProduct(savedProduct) : undefined;
         const variant = product ? resolveProductVariant(product, item.variantId) : undefined;
         const combo = product?.combos?.find((entry) => entry.id === item.comboId);
         return product ? { ...item, product, variant, combo } : null;
@@ -300,6 +302,8 @@ function inputClass() {
 }
 
 function getCartItemUnitPriceValue(item: any): number {
+  if (item.product.pricingMode === 'single' && !item.combo && !item.comboId) return parsePriceNumber(item.product.salePrice || item.product.price);
+  if (item.product.pricingMode === 'variants' && !item.combo && !item.comboId) return parsePriceNumber(item.variant?.salePrice || item.variant?.price);
   return parsePriceNumber(
     item.combo?.comboPrice ||
     item.comboPrice ||
@@ -313,6 +317,8 @@ function getCartItemUnitPriceValue(item: any): number {
 }
 
 function getCartItemOriginalPriceValue(item: any): number {
+  if (item.product.pricingMode === 'single' && !item.combo && !item.comboId) return parsePriceNumber(item.product.price);
+  if (item.product.pricingMode === 'variants' && !item.combo && !item.comboId) return parsePriceNumber(item.variant?.price);
   return parsePriceNumber(
     item.combo?.originalPrice ||
     item.comboOriginalPrice ||

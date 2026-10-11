@@ -2,6 +2,7 @@ import 'server-only';
 import { createHash } from 'crypto';
 import { FieldPath } from 'firebase-admin/firestore';
 import { Product, ProductVariant } from '../../types';
+import { getSellingProduct } from '../productPricingMode';
 import { ComboLandingBlock, LandingOrder, LandingOrderItemSnapshot, LandingOrderRequestInput, LandingPage, OrderFormLandingBlock, PriceLandingBlock } from '../../types/landing';
 import { getAdminFirestore } from '../firebaseAdmin';
 import { LANDING_ORDER_COLLECTION, LANDING_PAGE_COLLECTION, MAX_LANDING_ITEM_QUANTITY, MAX_LANDING_ORDER_ITEMS } from './landingSchema';
@@ -74,7 +75,7 @@ export async function createLandingOrder(input: LandingOrderRequestInput): Promi
 
   const combo = exactCombo(input.items, combos);
   let snapshots: LandingOrderItemSnapshot[] = input.items.map((item) => {
-    const product = products.get(item.productId)!; const variants = product.variants || [];
+    const product = getSellingProduct(products.get(item.productId)!); const variants = product.variants || [];
     const variant = item.variantId ? variants.find((entry) => !entry.hidden && entry.id === item.variantId) : undefined;
     if (variants.length && !item.variantId) throw new LandingOrderError(`Vui lòng chọn phân loại cho ${product.name}.`);
     if (item.variantId && !variant) throw new LandingOrderError(`Phân loại của ${product.name} không hợp lệ.`);

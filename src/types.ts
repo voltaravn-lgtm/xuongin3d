@@ -18,6 +18,8 @@ export interface Product {
   colors?: string[];
   orderNote?: string;
   defaultVariantId?: string;
+  pricingMode?: "single" | "variants";
+  singleSize?: string;
   tag?: string;
   description: string;
   category: string;

@@ -19,6 +19,7 @@ import { readProductExcelOptions } from "../../lib/productExcelOptions";
 import { productWorkbookMatrix, productWorkbookGuide, readProductWorkbookExtras } from "../../lib/productWorkbook";
 import { readVariantTemplates, variantsFromTemplates, VARIANT_TEMPLATES_KEY, type VariantTemplates } from "../../lib/variantTemplates";
 import PriceInput from "../../components/Admin/PriceInput";
+import { getProductPricingMode } from '../../lib/productPricingMode';
 import { variantNameOptions } from "../../lib/variantNameOptions";
 import { selectProductCover, removeProductImage } from "../../lib/productImageSelection";
 import { parseSpecsClipboard } from "../../lib/productSpecsPaste";
@@ -544,44 +545,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
     if (editor) editor.innerHTML = descriptionDraftRef.current;
   }, []);
   const productFormScrollRef = useRef<HTMLFormElement | null>(null);
-  const hasSyncedProductPreviewRef = useRef(false);
   const bulkImportInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (!isFirebaseConfigured || hasSyncedProductPreviewRef.current) return;
-    hasSyncedProductPreviewRef.current = true;
-    let cancelled = false;
-    Promise.all([
-      getDocs(collection(db, "products")),
-      getDoc(doc(db, "siteSettings", "employeeSampleProductSeed")),
-    ]).then(async ([snapshot, seedMarker]) => {
-      if (cancelled) return;
-      let remoteItems = snapshot.docs.map((item) => item.data() as Product);
-
-      if (snapshot.empty && !seedMarker.exists()) {
-        const now = new Date().toISOString();
-        const sampleProduct = { ...EMPLOYEE_SAMPLE_PRODUCT, createdAt: now, updatedAt: now };
-        const batch = writeBatch(db);
-        batch.set(doc(db, "products", sampleProduct.id), sampleProduct);
-        batch.set(doc(db, "siteSettings", "employeeSampleProductSeed"), {
-          productId: sampleProduct.id,
-          seededAt: now,
-        });
-        await batch.commit();
-        remoteItems = [sampleProduct];
-      }
-
-      if (cancelled) return;
-      setProducts(() => {
-        return remoteItems.sort((a, b) => {
-          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return bTime - aTime || String(b.id).localeCompare(String(a.id), "vi");
-        });
-      });
-    }).catch((error) => console.error("Could not sync product preview:", error));
-    return () => { cancelled = true; };
-  }, [setProducts]);
 
   const activeProductCategory = productCategories.find((category) => category.id === productForm.category);
   const activeProductSubCategories = (activeProductCategory?.children || []).filter((child) => !child.hidden);
@@ -950,6 +914,10 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
   specs: cleanProductSpecs(productForm.specs),
 } as Product;
     currentForm.id = currentForm.id.trim();
+    if (currentForm.pricingMode === 'single' && !parsePriceValue(currentForm.price)) {
+      showToast('Vui lòng nhập giá đơn trước khi lưu.', 'warning');
+      return;
+    }
     currentForm.slug = slugifyProductText(currentForm.slug || `${currentForm.name}-${currentForm.id}`);
     const slugOwner = products.find((product) =>
       product.id !== editingProduct?.id &&
@@ -2343,7 +2311,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                     </span>
                   </div>
                   <h3 className={`text-[11px] font-display font-bold text-white uppercase ${adminViewMode === "images" ? "line-clamp-2" : "line-clamp-1"} leading-snug`}><a href={getProductHref(prod)} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light hover:underline" title="Mở sản phẩm trong tab mới">{prod.name}</a></h3>
-                  {(prod.variants || []).length === 0 && <div className="flex items-center gap-2 pt-1">
+                  {getProductPricingMode(prod) === 'single' && <div className="flex items-center gap-2 pt-1">
                     <label className="flex min-w-0 flex-1 items-center gap-2">
                       <span className="shrink-0 text-[8px] font-bold uppercase tracking-wider text-gray-500">Giá web</span>
                       <input
@@ -2369,7 +2337,7 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                     {prod.salePrice && <span className="shrink-0 text-[8px] font-bold text-emerald-400">KM: {prod.salePrice}</span>}
                   </div>}
 
-                  {(prod.variants || []).length > 0 && (
+                  {getProductPricingMode(prod) === 'variants' && (
                     <div className="mt-2 border-t border-white/5 pt-2">
                       <button
                         type="button"
@@ -2642,6 +2610,11 @@ export default function ProductsAdmin({ catalogueTransfer, onCatalogueConsumed }
                   />
                 </div>
 
+                <div className="col-span-1 sm:col-span-2 space-y-2 border border-gold-dark/30 p-3 text-xs text-gray-300">
+                  <label>Chế độ giá<select value={getProductPricingMode(productForm as Product)} onChange={e => setProductForm(prev => ({ ...prev, pricingMode: e.target.value as 'single' | 'variants' }))} className="ml-3 border border-white/20 bg-black p-2"><option value="single">Giá đơn · không chọn size</option><option value="variants">Giá theo phân loại</option></select></label>
+                  {productForm.pricingMode === 'single' && <label className="block">Kích thước riêng cho giá đơn<input value={productForm.singleSize || ''} onChange={e => setProductForm(prev => ({ ...prev, singleSize: e.target.value }))} placeholder="Để trống để ẩn kích thước" className="mt-1 w-full border border-white/20 bg-black p-2" /></label>}
+                  <p>Màu sắc giữ nguyên. Chế độ giá đơn ẩn lựa chọn size trên web, không xóa dữ liệu phân loại bên dưới.</p>
+                </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-display font-extrabold uppercase tracking-widest text-gray-400">Giá bán</label>
                   <PriceInput

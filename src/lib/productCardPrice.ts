@@ -1,4 +1,5 @@
 import type { Product } from "../types";
+import { getSellingProduct } from './productPricingMode.ts';
 
 function moneyValue(price: string | undefined): number | null {
   const raw = (price || "").trim();
@@ -9,6 +10,7 @@ function moneyValue(price: string | undefined): number | null {
 
 /** Keep the original price paired with the cheapest purchasable variant. */
 export function getProductCardPrice(product: Product) {
+  product = getSellingProduct(product);
   const candidates = (product.variants || [])
     .filter((variant) => !variant.hidden && variant.name?.trim())
     .map((variant) => ({

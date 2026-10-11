@@ -972,7 +972,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setProducts(prev => sortProductsNewestFirst(prev.map(p => p.id === nextProduct.id ? nextProduct : p)));
-    invalidateAdminProductPages();
+    invalidateAdminProductPages({ product: nextProduct });
+    if (!await revalidateProductCache()) showToast("Đã lưu nhưng chưa làm mới cache web được.", "warning");
     return true;
   };
 
@@ -1042,7 +1043,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setProducts(prev => sortProductsNewestFirst([nextProduct, ...prev]));
-    invalidateAdminProductPages();
+    invalidateAdminProductPages({ product: nextProduct });
+    if (!await revalidateProductCache()) showToast("Đã thêm nhưng chưa làm mới cache web được.", "warning");
     return true;
   };
 
@@ -1061,7 +1063,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     setProducts(prev => prev.filter(p => p.id !== id));
-    invalidateAdminProductPages();
+    invalidateAdminProductPages({ deletedId: id });
     showToast("Đã chuyển vào mục Đã xóa. Có thể khôi phục trong 7 ngày.", "success");
     if (!await revalidateProductCache()) showToast("Đã xóa tạm nhưng chưa làm mới cache web được. Không cần xóa lại.", "warning");
     return true;

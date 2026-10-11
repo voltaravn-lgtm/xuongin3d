@@ -10,7 +10,7 @@ export function filterAdminProducts(products: Product[], filters: AdminProductFi
   return products.filter(product => {
     if (search && ![product.name, product.id, product.sku, product.category, product.subCategory, product.brand].some(value => searchableText(value).includes(search))) return false;
     if (filters.visibility === 'hidden' && !product.hidden || filters.visibility === 'visible' && product.hidden) return false;
-    const variants = product.variants || [];
+    const variants = product.pricingMode === 'single' ? [] : product.variants || [];
     const missing = variants.length ? variants.some(item => !price(item.salePrice || item.price)) : !price(product.retailPrice || product.salePrice || product.price);
     return filters.price === 'all' || filters.price === 'missing' && missing || filters.price === 'complete' && !missing || filters.price === 'variants' && variants.length > 0;
   }).sort((a, b) => (b.createdAt ? Date.parse(b.createdAt) || 0 : 0) - (a.createdAt ? Date.parse(a.createdAt) || 0 : 0) || b.id.localeCompare(a.id));

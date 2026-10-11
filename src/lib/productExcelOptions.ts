@@ -12,7 +12,7 @@ export function readProductExcelOptions(
   cell: (label: string) => string,
   productId: string,
   existing?: Product,
-): Pick<Product, "colors" | "orderNote" | "variants" | "defaultVariantId"> {
+): Pick<Product, "colors" | "orderNote" | "variants" | "defaultVariantId" | "pricingMode" | "singleSize"> {
   const indexes = Array.from(new Set(headers.flatMap((header) => {
     const match = header.match(/^phân loại (\d+) - tên$/i);
     return match ? [Number(match[1])] : [];
@@ -53,7 +53,11 @@ export function readProductExcelOptions(
   const requestedDefault = defaultIndex ? indexed.find(({ index }) => index === Number(defaultIndex))?.variant.id : undefined;
   if (defaultIndex && !requestedDefault) throw new Error(`${productId}: phân loại chọn sẵn phải là số thứ tự của phân loại đã điền tên.`);
   const colors = cell("Màu sắc");
+  const mode = cell('Chế độ giá');
+  if (mode && !['single', 'variants'].includes(mode)) throw new Error(`${productId}: chế độ giá phải là single hoặc variants.`);
   return {
+    ...(mode || existing?.pricingMode ? { pricingMode: (mode || existing?.pricingMode) as Product['pricingMode'] } : {}),
+    ...(cell('Kích thước giá đơn') || existing?.singleSize !== undefined ? { singleSize: cell('Kích thước giá đơn') === '-' ? '' : cell('Kích thước giá đơn') || existing?.singleSize || '' } : {}),
     colors: colors === "-" ? [] : colors ? splitProductChoices(colors) : existing?.colors || [],
     orderNote: cell("Ghi chú đặt hàng") === "-" ? "" : cell("Ghi chú đặt hàng") || existing?.orderNote || "",
     variants,

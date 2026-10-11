@@ -39,9 +39,20 @@ async function cached<T>(name: string, fetcher: () => Promise<T>): Promise<T> {
   pending.set(storageKey, request);
   return request;
 }
-export function invalidateAdminProductPages() {
+export function invalidateAdminProductPages(change?: { product?: Product; deletedId?: string }) {
+  // Patch an existing full-search snapshot instead of downloading it again on save.
+  const catalogue = change ? peekAdminProductCatalogue() : null;
+  let expiresAt = catalogueMemory.get(key('catalogue'))?.expiresAt || Date.now() + ADMIN_PRODUCT_CACHE_MS;
+  try { expiresAt = JSON.parse(sessionStorage.getItem(key('catalogue')) || 'null')?.expiresAt || expiresAt; } catch { /* Optional cache. */ }
   generation++; pending.clear(); catalogueMemory.clear();
   try { Object.keys(sessionStorage).filter(item => item.startsWith(prefix)).forEach(item => sessionStorage.removeItem(item)); } catch { /* Optional cache. */ }
+  if (catalogue) {
+    const value = catalogue.filter(item => item.id !== (change?.product?.id || change?.deletedId));
+    if (change?.product) value.push(change.product);
+    const entry = { expiresAt, value };
+    catalogueMemory.set(key('catalogue'), entry);
+    try { sessionStorage.setItem(key('catalogue'), JSON.stringify(entry)); } catch { /* Optional cache. */ }
+  }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(ADMIN_PRODUCT_CACHE_EVENT));
 }
 export function adminProductPageQuery(pageSize: number, cursor?: AdminProductCursor, legacy = false) {
@@ -97,7 +108,7 @@ export function subscribeAdminNewestProduct(onError?: (error: Error) => void) {
   return onSnapshot(query(collection(db, 'products'), orderBy('createdAt', 'desc'), orderBy(documentId(), 'desc'), limit(1)), snapshot => {
     const first = snapshot.docs[0];
     const marker = JSON.stringify(first ? [first.id, first.data().createdAt] : []);
-    if (previous !== null && marker !== previous) invalidateAdminProductPages();
+    if (previous !== null && marker !== previous) invalidateAdminProductPages(first ? { product: { ...first.data(), id: first.id } as Product } : undefined);
     previous = marker;
     try { sessionStorage.setItem(markerKey, marker); } catch { /* Optional storage. */ }
   }, onError);
@@ -132,6 +143,8 @@ export async function findAdminProductCode(code: string) {
 }
 export async function loadAdminProductSearch(search: string) {
   const normalized = normalizeAdminProductSearch(search);
+  // Do not scan the catalog while a staff member is still typing a numeric SKU.
+  if (/^\d{1,3}$/.test(normalized)) return [];
   return /^IN3D-[A-Z0-9]+$/i.test(normalized)
     ? findAdminProductCode(normalized)
     : loadAdminProductCatalogue();

@@ -26,9 +26,9 @@ const cleanText = (value?: string) => String(value || '')
   .trim();
 
 function retailOf(product: Product) {
-  const productPrice = parsePrice(product.retailPrice || product.salePrice || product.price);
+  const productPrice = product.pricingMode === 'variants' ? 0 : parsePrice(product.retailPrice || product.salePrice || product.price);
   if (productPrice) return productPrice;
-  const variantPrices = (product.variants || [])
+  const variantPrices = (product.pricingMode === 'single' ? [] : product.variants || [])
     .filter(variant => !variant.hidden)
     .map((variant) => parsePrice(variant.salePrice || variant.price))
     .filter((price) => price > 0);
