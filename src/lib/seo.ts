@@ -106,3 +106,7 @@ export const websiteJsonLd = {
     "query-input": "required name=search_term_string",
   },
 };
+
+export function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}

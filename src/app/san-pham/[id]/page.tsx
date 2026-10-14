@@ -1,11 +1,11 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Script from "next/script";
 import ProductDetailClient from "../../../components/ProductDetailClient";
 import { findBuildProductByRoute, getBuildProducts } from "../../../lib/productData";
 import { getProductDescriptionExcerpt } from "../../../lib/productDescription";
 import { getProductSlug } from "../../../lib/productRoutes";
-import { buildMetadata, siteUrl } from "../../../lib/seo";
+import { buildProductJsonLd } from "../../../lib/productStructuredData";
+import { buildMetadata, serializeJsonLd, siteUrl } from "../../../lib/seo";
 import { cleanVideoUrls, getProductVideoEmbed } from "../../../lib/video";
 
 interface ProductDetailPageProps {
@@ -66,54 +66,31 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     .map((url, index) => getProductVideoEmbed(url, index))
     .filter(Boolean);
   const plainDescription = getProductDescriptionExcerpt(product.description, product.name);
-
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    image: [product.image],
+  const productUrl = `${siteUrl}/san-pham/${getProductSlug(product)}`;
+  const productJsonLd = buildProductJsonLd({
+    product,
+    url: productUrl,
     description: plainDescription,
-    brand: {
-      "@type": "Brand",
-      name: product.brand || "Xưởng In 3D",
-    },
-    sku: product.id,
-    category: product.category,
-    offers: {
-      "@type": "Offer",
-      url: `${siteUrl}/san-pham/${getProductSlug(product)}`,
-      priceCurrency: "VND",
-      availability: "https://schema.org/InStock",
-    },
-    additionalProperty: Object.entries(product.specs || {}).filter(([, value]) => String(value || "").trim()).map(([name, value]) => ({
-      "@type": "PropertyValue",
-      name,
-      value,
+    videos: productVideos.map((video, index) => ({
+      name: `${product.name} - Video ${index + 1}`,
+      description: plainDescription,
+      thumbnailUrl: [product.image],
+      uploadDate: product.updatedAt || product.createdAt || new Date().toISOString(),
+      embedUrl: video?.embedUrl,
+      contentUrl: video?.directUrl,
+      url: video?.originalUrl,
     })),
-    ...(productVideos.length > 0
-      ? {
-          video: productVideos.map((video, index) => ({
-            "@type": "VideoObject",
-            name: `${product.name} - Video ${index + 1}`,
-            description: plainDescription,
-            thumbnailUrl: [product.image],
-            uploadDate: product.updatedAt || product.createdAt || new Date().toISOString(),
-            embedUrl: video?.embedUrl,
-            contentUrl: video?.directUrl,
-            url: video?.originalUrl,
-          })),
-        }
-      : {}),
-  };
+  });
 
   return (
     <>
-      <Script
-        id={`product-jsonld-${product.id}`}
-        type="application/ld+json"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
+      {productJsonLd && (
+        <script
+          id={`product-jsonld-${product.id}`}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
+        />
+      )}
       <ProductDetailClient product={product} relatedProducts={relatedProducts} />
     </>
   );

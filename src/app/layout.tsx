@@ -1,8 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
-import Script from "next/script";
 import RootClientLayout from "./RootClientLayout";
-import { buildMetadata, organizationJsonLd, siteName, siteUrl, websiteJsonLd } from "../lib/seo";
+import { buildMetadata, organizationJsonLd, serializeJsonLd, siteName, siteUrl, websiteJsonLd } from "../lib/seo";
 import "../index.css";
 
 export const metadata: Metadata = {
@@ -45,17 +44,15 @@ export default function RootLayout({
         className="min-h-screen bg-[#050505] text-[#ECECEC] antialiased"
         suppressHydrationWarning
       >
-        <Script
+        <script
           id="organization-jsonld"
           type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
         />
-        <Script
+        <script
           id="website-jsonld"
           type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
         />
         <RootClientLayout>{children}</RootClientLayout>
       </body>

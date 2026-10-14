@@ -32,7 +32,9 @@ function getInstagramEmbedUrl(url: URL) {
   const shortcode = parts[1];
   if (!shortcode || !["p", "reel", "tv"].includes(type)) return "";
 
-  return `https://www.instagram.com/${type}/${encodeURIComponent(shortcode)}/embed/captioned/`;
+  // The captioned embed repeats the full Instagram post copy and introduces an
+  // inner scrollbar. The compact embed keeps the product page focused on video.
+  return `https://www.instagram.com/${type}/${encodeURIComponent(shortcode)}/embed/`;
 }
 
 function getFacebookEmbedUrl(url: URL) {

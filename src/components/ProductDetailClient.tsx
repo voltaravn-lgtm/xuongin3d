@@ -801,38 +801,78 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-5">
-                {productVideos.map((video, index) => video && (
-                  <div key={`${video.originalUrl}-${index}`} className="overflow-hidden border border-white/10 bg-black">
-                    {video.embedUrl ? (
-                      <iframe
-                        src={video.embedUrl}
-                        title={`${currentProduct.name} video ${index + 1}`}
-                        className={`${video.provider === "instagram" || /facebook\.com\/reel\//i.test(video.originalUrl) ? "mx-auto aspect-[9/16] max-w-md" : "aspect-video"} w-full bg-black`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    ) : video.directUrl ? (
-                      <video controls src={video.directUrl} className="aspect-video w-full bg-black" />
-                    ) : (
-                      <div className="flex aspect-video flex-col items-center justify-center gap-4 bg-[#050505] p-6 text-center">
-                        <PlayCircle className="h-10 w-10 text-gold-light" />
-                        <p className="max-w-sm text-xs leading-relaxed text-gray-400">
-                          Video này cần mở trên trang nguồn.
-                        </p>
+              <div className={`grid grid-cols-1 gap-5 ${productVideos.length > 1 ? "xl:grid-cols-2" : ""}`}>
+                {productVideos.map((video, index) => {
+                  if (!video) return null;
+
+                  const isPortraitEmbed = video.provider === "instagram" || /facebook\.com\/reel\//i.test(video.originalUrl);
+                  const providerLabel = video.provider === "instagram"
+                    ? "Instagram Reel"
+                    : video.provider === "facebook"
+                      ? "Facebook Video"
+                      : video.provider === "youtube"
+                        ? "YouTube"
+                        : "Video sản phẩm";
+
+                  return (
+                    <article
+                      key={`${video.originalUrl}-${index}`}
+                      className={`${isPortraitEmbed ? "mx-auto max-w-[390px]" : "w-full"} overflow-hidden border border-white/10 bg-[#070707] shadow-[0_22px_70px_rgba(0,0,0,0.35)]`}
+                    >
+                      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-white/10 bg-white/[0.025] px-3.5 py-2.5">
+                        <span className="inline-flex min-w-0 items-center gap-2 text-[10px] font-display font-bold uppercase tracking-[0.14em] text-gray-300">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold-dark/35 bg-gold-dark/10 text-gold-light">
+                            <PlayCircle className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="truncate">{providerLabel}</span>
+                        </span>
                         <a
                           href={video.originalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 border border-gold-dark/40 px-4 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light hover:border-gold-light hover:text-white"
+                          className="inline-flex shrink-0 items-center gap-1.5 text-[9px] font-display font-bold uppercase tracking-wider text-gray-500 transition-colors hover:text-gold-light"
+                          aria-label={`Mở ${providerLabel} trên trang nguồn`}
                         >
-                          Mở video
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          Xem bản gốc
+                          <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      <div className={`relative w-full overflow-hidden bg-black ${isPortraitEmbed ? "aspect-[9/16]" : "aspect-video"}`}>
+                        {video.embedUrl ? (
+                          <iframe
+                            src={video.embedUrl}
+                            title={`${currentProduct.name} video ${index + 1}`}
+                            className="absolute inset-0 h-full w-full border-0 bg-black"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            scrolling="no"
+                          />
+                        ) : video.directUrl ? (
+                          <video controls playsInline preload="metadata" src={video.directUrl} className="absolute inset-0 h-full w-full bg-black object-contain" />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#050505] p-6 text-center">
+                            <PlayCircle className="h-10 w-10 text-gold-light" />
+                            <p className="max-w-sm text-xs leading-relaxed text-gray-400">
+                              Video này cần mở trên trang nguồn.
+                            </p>
+                            <a
+                              href={video.originalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 border border-gold-dark/40 px-4 py-2 text-[10px] font-display font-bold uppercase tracking-widest text-gold-light hover:border-gold-light hover:text-white"
+                            >
+                              Mở video
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           )}

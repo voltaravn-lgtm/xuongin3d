@@ -18,37 +18,62 @@ const routes = [
   "/lien-he",
 ];
 
+function validDate(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+
+  const vietnameseDate = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/);
+  const normalized = vietnameseDate
+    ? `${vietnameseDate[3]}-${vietnameseDate[2].padStart(2, "0")}-${vietnameseDate[1].padStart(2, "0")}${vietnameseDate[4]}`
+    : value;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
   const [products, landings] = await Promise.all([getBuildProducts(), listPublishedLandingsForSitemap()]);
 
   const pageRoutes = routes.map((route) => ({
     url: new URL(route || "/", siteUrl).toString(),
-    lastModified,
     changeFrequency: route === "" ? ("weekly" as const) : ("monthly" as const),
     priority: route === "" ? 1 : route === "/san-pham" ? 0.9 : 0.7,
   }));
 
-  const productRoutes = products.filter((product) => !product.hidden).map((product) => ({
-    url: new URL(`/san-pham/${getProductSlug(product)}`, siteUrl).toString(),
-    lastModified,
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
-  }));
+  const visibleProducts = products.filter((product) => !product.hidden);
+  const productRoutes = visibleProducts.map((product) => {
+    const lastModified = validDate(product.updatedAt) || validDate(product.createdAt);
+    return {
+      url: new URL(`/san-pham/${getProductSlug(product)}`, siteUrl).toString(),
+      ...(lastModified ? { lastModified } : {}),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    };
+  });
 
-  const landingRoutes = landings.map((landing) => ({
-    url: new URL(`/landing/${landing.slug}`, siteUrl).toString(),
-    lastModified: landing.updatedAt ? new Date(landing.updatedAt) : lastModified,
+  const categoryRoutes = Array.from(new Set(visibleProducts.map((product) => product.category).filter(Boolean))).map((category) => ({
+    url: new URL(`/san-pham/danh-muc/${encodeURIComponent(category)}`, siteUrl).toString(),
     changeFrequency: "weekly" as const,
-    priority: 0.85,
+    priority: 0.75,
   }));
 
-  const articleRoutes = ARTICLES_DATA.map((article) => ({
-    url: new URL(`/kien-thuc/${article.id}`, siteUrl).toString(),
-    lastModified,
-    changeFrequency: "monthly" as const,
-    priority: 0.65,
-  }));
+  const landingRoutes = landings.map((landing) => {
+    const lastModified = validDate(landing.updatedAt);
+    return {
+      url: new URL(`/landing/${landing.slug}`, siteUrl).toString(),
+      ...(lastModified ? { lastModified } : {}),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    };
+  });
 
-  return [...pageRoutes, ...productRoutes, ...articleRoutes, ...landingRoutes];
+  const articleRoutes = ARTICLES_DATA.map((article) => {
+    const lastModified = validDate(article.date);
+    return {
+      url: new URL(`/kien-thuc/${article.id}`, siteUrl).toString(),
+      ...(lastModified ? { lastModified } : {}),
+      changeFrequency: "monthly" as const,
+      priority: 0.65,
+    };
+  });
+
+  return [...pageRoutes, ...categoryRoutes, ...productRoutes, ...articleRoutes, ...landingRoutes];
 }
